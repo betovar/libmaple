@@ -26,6 +26,7 @@ cSRCS_$(d) := adc.c                    \
               i2c.c                    \
               rcc.c                    \
               spi.c                    \
+              sdio.c                   \
               syscalls.c               \
               systick.c                \
               timer.c                  \
