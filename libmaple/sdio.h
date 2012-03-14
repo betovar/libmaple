@@ -263,7 +263,7 @@ typedef struct sdio_reg_map {
 #define SDIO_MASK_TXUNDERRIE_BIT    4
 #define SDIO_MASK_DTIMEOUTIE_BIT    3
 #define SDIO_MASK_CTIMEOUTIE_BIT    2
-#define SDIO_MASK_DCRCFAILIE_BIT    1
+s#define SDIO_MASK_DCRCFAILIE_BIT    1
 #define SDIO_MASK_CCRCFAILIE_BIT    0
 	
 #define SDIO_MASK_CEATAENDIE        BIT(SDIO_MASK_CEATAENDIE_BIT)
@@ -319,10 +319,13 @@ extern sdio_dev *SDIO;
  */
 
 void sdio_init(sdio_dev *dev);
-void sdio_set_ck_freq(void);
+void sdio_set_ck_freq(sdio_dev *dev);
+void sdio_configure_gpio(sdio_dev *dev);
 
 void sdio_peripheral_enable(sdio_dev *dev);
 void sdio_peripheral_disable(sdio_dev *dev);
+
+void sdio_configure_dma(sdio_dev *dev);
 
 void sdio_tx_dma_enable(sdio_dev *dev);
 void sdio_tx_dma_disable(sdio_dev *dev);
@@ -330,6 +333,10 @@ void sdio_tx_dma_disable(sdio_dev *dev);
 void sdio_rx_dma_enable(sdio_dev *dev);
 void sdio_rx_dma_disable(sdio_dev *dev);
 
+void sdio_broadcast_cmd(sdio_dev *dev);
+void sdio_broadcast_cmd_wresponse(sdio_dev *dev);
+void sdio_addr_cmd(sdio_dev *dev);
+void sdio_addr_data_xfer_cmd(sdio_dev *dev);
 
 
 #ifdef __cplusplus

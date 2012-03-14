@@ -64,6 +64,18 @@ void sdio_init(sdio_dev *dev) {
 }
 
 /**
+ * @brief 
+ * @param dev 
+ */
+void sdio_set_ck_freq(sdio_dev *dev);
+
+/**
+ * @brief 
+ * @param dev 
+ */
+void sdio_configure_gpio(sdio_dev *dev);
+
+/**
  * @brief Enable an SDIO peripheral
  * @param dev Device to enable
  */
@@ -78,6 +90,13 @@ void sdio_peripheral_enable(sdio_dev *dev) {
 void sdio_peripheral_disable(sdio_dev *dev) {
     //bb_peri_set_bit(&dev->regs->CR1, SPI_CR1_SPE_BIT, 0);
 }
+
+/**
+ * @brief 
+ * @param dev 
+ */
+void sdio_configure_dma(sdio_dev *dev);
+
 
 /**
  * @brief Enable DMA requests whenever the transmit buffer is empty
@@ -115,14 +134,27 @@ void sdio_rx_dma_disable(sdio_dev *dev) {
  * @brief 
  * @param dev 
  */
-
-void sdio_set_ck_freq(sdio_dev *dev);
+void sdio_broadcast_cmd(sdio_dev *dev);
 
 /**
  * @brief 
  * @param dev 
  */
-void sdio_configure_dma(sdio_dev *dev);
+void sdio_broadcast_cmd_wresponse(sdio_dev *dev);
+
+/**
+ * @brief 
+ * @param dev 
+ */
+void sdio_addr_cmd(sdio_dev *dev);
+
+/**
+ * @brief 
+ * @param dev 
+ */
+void sdio_addr_data_xfer_cmd(sdio_dev *dev);
+
+
 
 /*
  * IRQ handlers (TODO)

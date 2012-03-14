@@ -30,12 +30,10 @@
  * @brief SDIO class
  */
 
-/* TODO [0.1.0] Remove deprecated methods. */
 
 #include "libmaple_types.h"
 #include "sdio.h"
-
-#include "boards.h"
+//#include "boards.h"
 
 #ifndef _HARDWARESDIO_H_
 #define _HARDWARESDIO_H_
@@ -61,68 +59,79 @@ typedef enum SDIODataBusSpeed {
     SDIO_DBS_DDR50
 } SDIODataBusSpeed;
 
-#define MAX_SPI_FREQS 8
+typedef enum SDIOFrequency {
+    SDIO_100_KHZ = 0,
+    SDIO_200_KHZ,
+    SDIO_400_KHZ,
+    SDIO_500_KHZ,
+    SDIO_1_MHZ,
+    SDIO_3_MHZ,
+    SDIO_6_MHZ,
+    SDIO_12_MHZ,
+    SDIO_25_MHZ,
+} SDIOFrequency;
 
-#if CYCLES_PER_MICROSECOND != 72
-/* TODO [0.2.0?] something smarter than this */
-#warning "Unexpected clock speed; SPI frequency calculation will be incorrect"
-#endif
 
 /**
- * @brief Wirish SPI interface.
- *
- * This implementation uses software slave management, so the caller
- * is responsible for controlling the slave select line.
+ * @brief Wirish SDIO interface
  */
 class HardwareSDIO {
 public:
     /**
-     * @param spiPortNumber Number of the SPI port to manage.
+     * @brief SDIO class constructor
+     * @param 
      */
-    HardwareSPI(uint32 spiPortNumber);
-
-
-    void begin(SPIFrequency frequency, uint32 bitOrder, uint32 mode);
+    HardwareSDIO(void);
 
     /**
-     * @brief Equivalent to begin(SPI_1_125MHZ, MSBFIRST, 0).
+     * @brief 
+     * @param frequency
+     * @param mode
      */
-    void begin(void);
+    void begin(SDIOFrequency frequency, SDIODataBusWidth mode);
 
     /**
-     * @brief Disables the SPI port, but leaves its GPIO pin modes unchanged.
+     * @brief Disables the SDIO port, but leaves its GPIO pin modes unchanged.
      */
     void end(void);
 
-    /*
-     * I/O
-     */
 
+/*
+ * I/O
+ */
 
     /**
-     * @brief Read length bytes, storing them into buffer.
-     * @param buffer Buffer to store received bytes into.
-     * @param length Number of bytes to store in buffer.  This
-     *               function will block until the desired number of
-     *               bytes have been read.
+     * @brief 
+     * @param 
      */
     void read(uint8 *buffer, uint32 length);
 
 
     /**
-     * @brief Transmit multiple bytes.
-     * @param buffer Bytes to transmit.
-     * @param length Number of bytes in buffer to transmit.
+     * @brief 
+     * @param 
      */
     void write(const uint8 *buffer, uint32 length);
 
-void sdio_gpio_init_cfg(SDIODataBusWidth data_bus_width);
-void sdio_card_id_process(void);			
-void sdio_configure_dma(void);
-void sdio_send_cmd(void);
+    void command(void);
+    void card_reset(void);
+    void valid_voltage_range(void);
+    void blockRead(void);
+    void blockWrite(void);
+    void card_identification(void);
+    void card_status_register(void);
+    void sd_status_register(void);
+    void write_protect(void);
+    void abort(void);
+    void erase(void);
+
 
 private:
-    spi_dev *spi_d;
+    sdio_dev *sdio_d;
+    void configure_gpio(SDIODataBusWidth data_bus_width);
+    void configure_dma(void);
+    void wide_bus(void);
+
 };
 
 #endif
