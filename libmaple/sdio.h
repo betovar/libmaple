@@ -45,7 +45,7 @@ extern "C" {
 
 /** SDIO register map type */
 typedef struct sdio_reg_map {
-    __io uint32 PWR;            ///< Power Control Register
+    __io uint32 POWER;          ///< Power Control Register
     __io uint32 CLKCR;          ///< Clock Control Register
     __io uint32 ARG;            ///< Argument Register
     __io uint32 CMD;            ///< Command Register
@@ -74,7 +74,7 @@ typedef struct sdio_reg_map {
  */
 	
 /* Power Control Register */
-#define SDIO_PWR_PWRCTRL            0x3
+#define SDIO_POWER_PWRCTRL          0x3
 	
 /* Clock Control Register */
 #define SDIO_CLKCR_HWFC_EN_BIT      14

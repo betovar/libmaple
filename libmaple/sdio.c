@@ -64,16 +64,50 @@ void sdio_init(sdio_dev *dev) {
 }
 
 /**
- * @brief 
- * @param dev 
+ * @brief Initialization SDIO clock control register
+ * @param dev Device to initialize
+ * @param clk_div clock divider factor to set the sdio_ck frequency
  */
-void sdio_set_ck_freq(sdio_dev *dev);
+void sdio_ck_init(sdio_dev *dev, uint8 clk_div) {
+    /* HWFC_EN: Hardware Flow Control is Disabled */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_HWFC_EN_BIT, 0);
+    /* NEGEDGE: SDIO_CK generated on rising edge of SDIOCLK */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_NEGEDGE_BIT, 0);
+    /* WIDBUS: 1-bit bus mode during initialization */
+    dev->regs->CLKCR &= ~SDIO_CLKCR_WIDEBUS;
+    /* BYPASS: Clock divider bypass disabled */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_BYPASS_BIT, 0);
+    /* PWRSAV: Turn power save on by default */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_PWRSAV_BIT, 1);
+    /* CLKDIV: Clock Divide Factor, SDIO_CK = SDIOCLK/[CLKDIV+2] */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_CLKDIV_BIT, 1);
+    /* CLKEN: Clock is enabled */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 1);
+}
 
 /**
  * @brief 
  * @param dev 
  */
-void sdio_configure_gpio(sdio_dev *dev);
+void sdio_reset(sdio_dev *dev) {
+    dev->regs->POWER  = 0x00000000;
+    dev->regs->CLKCR  = 0x00000000;
+    dev->regs->ARG    = 0x00000000;
+    dev->regs->CMD    = 0x00000000;
+    dev->regs->DTIMER = 0x00000000;
+    dev->regs->DLEN   = 0x00000000;
+    dev->regs->DCTRL  = 0x00000000;
+    dev->regs->ICR    = 0x00C007FF;
+    dev->regs->MASK   = 0x00000000;
+}
+
+/**
+ * @brief 
+ * @param dev 
+ */
+void sdio_configure_gpio(sdio_dev *dev) {
+
+}
 
 /**
  * @brief Enable an SDIO peripheral
