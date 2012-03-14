@@ -51,34 +51,8 @@ sdio_dev *SDIO = &sdio;
 
 
 /*
- * SDIO convenience routines
+ * SDIO convenience functions
  */
-
-/**
- * @brief Configure GPIO bit modes for use as an SDIO port's pins
- * @param data_bus_width Enum to configure pins for use as an SDIO card
- */
-void sdio_gpio_cfg(uint8 data_bus_width) {
-    switch (data_bus_width) {
-    case 2:
-        // 8-bit data bus width not implemented on maple native
-        gpio_set_mode(BOARD_SDIO_D7_DEV, BOARD_SDIO_D7_BIT, GPIO_AF_OUTPUT_PP);
-        gpio_set_mode(BOARD_SDIO_D6_DEV, BOARD_SDIO_D6_BIT, GPIO_AF_OUTPUT_PP);
-        gpio_set_mode(BOARD_SDIO_D5_DEV, BOARD_SDIO_D5_BIT, GPIO_AF_OUTPUT_PP);
-        gpio_set_mode(BOARD_SDIO_D4_DEV, BOARD_SDIO_D4_BIT, GPIO_AF_OUTPUT_PP);
-    case 1:
-        gpio_set_mode(BOARD_SDIO_D3_DEV, BOARD_SDIO_D3_BIT, GPIO_AF_OUTPUT_PP);
-        gpio_set_mode(BOARD_SDIO_D2_BIT, BOARD_SDIO_D2_BIT, GPIO_AF_OUTPUT_PP);
-    case 0:
-        gpio_set_mode(BOARD_SDIO_D1_BIT, BOARD_SDIO_D1_BIT, GPIO_AF_OUTPUT_PP);
-        gpio_set_mode(BOARD_SDIO_D0_DEV, BOARD_SDIO_D0_BIT, GPIO_INPUT_FLOATING);
-        gpio_set_mode(BOARD_SDIO_CK_DEV,BOARD_SDIO_CK_BIT, GPIO_AF_OUTPUT_OD);
-        gpio_set_mode(BOARD_SDIO_CMD_DEV, BOARD_SDIO_CMD_BIT, GPIO_AF_OUTPUT_PP);
-        break;
-    default:
-        ASSERT(0);
-    }
-}
 
 /**
  * @brief Initialize and reset an SDIO device
@@ -136,6 +110,19 @@ void sdio_rx_dma_enable(sdio_dev *dev) {
 void sdio_rx_dma_disable(sdio_dev *dev) {
     //bb_peri_set_bit(&dev->regs->CR2, SPI_CR2_RXDMAEN_BIT, 0);
 }
+
+/**
+ * @brief 
+ * @param dev 
+ */
+
+void sdio_set_ck_freq(sdio_dev *dev);
+
+/**
+ * @brief 
+ * @param dev 
+ */
+void sdio_configure_dma(sdio_dev *dev);
 
 /*
  * IRQ handlers (TODO)

@@ -42,49 +42,7 @@
 extern "C" {
 #endif
 
-#define BOARD_SDIO_CMD_DEV     GPIOD
-#define BOARD_SDIO_CMD_BIT     2
-#define BOARD_SDIO_CK_DEV      GPIOC
-#define BOARD_SDIO_CK_BIT      12
-#define BOARD_SDIO_D0_DEV      GPIOC
-#define BOARD_SDIO_D0_BIT      8
-#define BOARD_SDIO_D1_DEV      GPOIC
-#define BOARD_SDIO_D1_BIT      9
-#define BOARD_SDIO_D2_DEV      GPIOC
-#define BOARD_SDIO_D2_BIT      10
-#define BOARD_SDIO_D3_DEV      GPIOC
-#define BOARD_SDIO_D3_BIT      11
-#define BOARD_SDIO_D4_DEV      GPIOB
-#define BOARD_SDIO_D4_BIT      8
-#define BOARD_SDIO_D5_DEV      GPIOB
-#define BOARD_SDIO_D5_BIT      9
-#define BOARD_SDIO_D6_DEV      GPIOC
-#define BOARD_SDIO_D6_BIT      6
-#define BOARD_SDIO_D7_DEV      GPIOC
-#define BOARD_SDIO_D7_BIT      7
 
-	
-/*
- * Types
- */
-
-typedef enum SDIODataBusWidth {
-    SDIO_DBW_0 = 0,
-    SDIO_DBW_4 = 1,
-    SDIO_DBW_8 = 2
-} SDIODataBusWidth;
-
-typedef enum SDIODataBusSpeed {
-    SDIO_DBS_DEFAULT = 0, // 25 MHz
-    SDIO_DBS_HIGH = 1, // 50 MHz
-    // Bus speeds below require 1.8V signaling
-    SDIO_DBS_SDR12 = 2,
-    SDIO_DBS_SDR25 = 3,
-    SDIO_DBS_SDR50 = 4,
-    SDIO_DBS_SDR104 = 5,
-    SDIO_DBS_DDR50 = 6
-} SDIODataBusSpeed;
-	
 /** SDIO register map type */
 typedef struct sdio_reg_map {
     __io uint32 PWR;            ///< Power Control Register
@@ -341,7 +299,7 @@ typedef struct sdio_reg_map {
 
 	
 /*
- * Device
+ * SDIO Device
  */
 
 /** SDIO device type */
@@ -357,12 +315,11 @@ extern sdio_dev *SDIO;
 
 	
 /*
- * SDIO Convenience functions
+ * SDIO Functions
  */
 
 void sdio_init(sdio_dev *dev);
-
-void sdio_gpio_cfg(uint8 data_bus_width);
+void sdio_set_ck_freq(void);
 
 void sdio_peripheral_enable(sdio_dev *dev);
 void sdio_peripheral_disable(sdio_dev *dev);
@@ -372,6 +329,8 @@ void sdio_tx_dma_disable(sdio_dev *dev);
 
 void sdio_rx_dma_enable(sdio_dev *dev);
 void sdio_rx_dma_disable(sdio_dev *dev);
+
+
 
 #ifdef __cplusplus
 }

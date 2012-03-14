@@ -87,4 +87,25 @@
 #define BOARD_SDIO_D2_PIN       17
 #define BOARD_SDIO_D3_PIN       18
 
+#define BOARD_SDIO_CMD_DEV     GPIOD
+#define BOARD_SDIO_CMD_BIT     2
+#define BOARD_SDIO_CK_DEV      GPIOC
+#define BOARD_SDIO_CK_BIT      12
+#define BOARD_SDIO_D0_DEV      GPIOC
+#define BOARD_SDIO_D0_BIT      8
+#define BOARD_SDIO_D1_DEV      GPOIC
+#define BOARD_SDIO_D1_BIT      9
+#define BOARD_SDIO_D2_DEV      GPIOC
+#define BOARD_SDIO_D2_BIT      10
+#define BOARD_SDIO_D3_DEV      GPIOC
+#define BOARD_SDIO_D3_BIT      11
+#define BOARD_SDIO_D4_DEV      GPIOB
+#define BOARD_SDIO_D4_BIT      8
+#define BOARD_SDIO_D5_DEV      GPIOB
+#define BOARD_SDIO_D5_BIT      9
+#define BOARD_SDIO_D6_DEV      GPIOC
+#define BOARD_SDIO_D6_BIT      6
+#define BOARD_SDIO_D7_DEV      GPIOC
+#define BOARD_SDIO_D7_BIT      7
+
 #endif
