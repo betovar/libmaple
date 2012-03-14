@@ -80,4 +80,11 @@
 #define BOARD_USB_DISC_DEV      GPIOB
 #define BOARD_USB_DISC_BIT      8
 
+#define BOARD_SDIO_CMD_PIN      27
+#define BOARD_SDIO_CK_PIN       19
+#define BOARD_SDIO_D0_PIN       15
+#define BOARD_SDIO_D1_PIN       16
+#define BOARD_SDIO_D2_PIN       17
+#define BOARD_SDIO_D3_PIN       18
+
 #endif
