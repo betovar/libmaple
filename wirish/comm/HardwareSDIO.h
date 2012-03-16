@@ -42,6 +42,13 @@
  * Types
  */
 
+typedef enum SDIOPower {
+    SDIO_POWER_OFF = 0,
+    // Reserved    = 1,
+    SDIO_POWER_UP  = 2,
+    SDIO_POWER_ON  = 3,
+} SDIOPowerState;
+
 typedef enum SDIODataBusWidth {
     SDIO_DBW_0 = 0,
     SDIO_DBW_4 = 4,
@@ -50,7 +57,7 @@ typedef enum SDIODataBusWidth {
 
 typedef enum SDIODataBusSpeed {
     SDIO_DBS_DEFAULT = 0, // 25 MHz
-    SDIO_DBS_HIGH, // 50 MHz
+    SDIO_DBS_HIGH,        // 50 MHz
     // The folliwing bus speeds require 1.8V signaling
     SDIO_DBS_SDR12,
     SDIO_DBS_SDR25,
@@ -70,7 +77,6 @@ typedef enum SDIOFrequency {
     SDIO_12_MHZ  = 8,
     SDIO_25_MHZ  = 9,
 } SDIOFrequency;
-
 
 typedef enum SDIODataBlockSize {
     SDIO_BLOCK_SIZE_1     = 0,
@@ -122,18 +128,10 @@ public:
      * @brief 
      * @param 
      */
-    void read(uint8 *buffer, uint32 length);
-
-
-    /**
-     * @brief 
-     * @param 
-     */
-    void write(const uint8 *buffer, uint32 length);
 
     void command(void);
-    void card_reset(void);
-    void valid_voltage_range(void);
+    void reset(void);
+    void voltage(void);
     void blockRead(void);
     void blockWrite(void);
     void card_identification(void);
@@ -145,7 +143,7 @@ public:
 
 
 private:
-    sdio_dev *sdio_d;
+    sdio_dev *SDIO;
     void configure_gpio(SDIODataBusWidth data_bus_width);
     void configure_dma(void);
     void configure_clock(void);

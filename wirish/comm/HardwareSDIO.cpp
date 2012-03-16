@@ -54,18 +54,19 @@ HardwareSDIO::HardwareSDIO(void) {
 void HardwareSDIO::begin(SDIOFrequency freq,
                          SDIODataBusSpeed speed,
                          SDIODataBusWidth mode) {
+    sdio_cfg_clock(dev, freq);
     //only one speed mode supported at this time
     if (speed != SDIO_DBS_DEFAULT) { 
         ASSERT(0);
         return;
-    }
-    cfgClock(freq);
-    cfgDataBus(speed, mode);
+    } else {
+    sdio_cfg_databus(speed, mode);
     sdio_peripheral_enable();
+    }
 }
 
 void HardwareSDIO::end(void) {
-    ASSERT(1);
+    sdio_reset();
 }
 
 /*
@@ -177,8 +178,7 @@ HardwareSDIO::card_identification_process(void) {
   *   for the SDIO command.
   * @retval : None
   */
-void HardwareSDIO::send_command(SDIO_CmdInitTypeDef *SDIO_CmdInitStruct)
-{
+void HardwareSDIO::send_command(SDIO_CmdInitTypeDef *SDIO_CmdInitStruct) {
   uint32_t tmpreg = 0;
   
   /* Check the parameters */
@@ -212,9 +212,8 @@ void HardwareSDIO::send_command(SDIO_CmdInitTypeDef *SDIO_CmdInitStruct)
   * @param  None
   * @retval : Number of remaining data bytes to be transferred
   */
-uint32 HardwareSDIO::GetDataCounter(void)
-{ 
-  return SDIO->DCOUNT;
+uint32 HardwareSDIO::getDataCounter(void) {
+    return SDIO->DCOUNT;
 }
 
 /**
@@ -222,9 +221,8 @@ uint32 HardwareSDIO::GetDataCounter(void)
   * @param  None
   * @retval : Data received
   */
-uint32 HardwareSDIO::read_data(void)
-{ 
-  return SDIO->FIFO;
+uint32 HardwareSDIO::readData(void) { 
+    return SDIO->FIFO;
 }
 
 /**
@@ -232,9 +230,8 @@ uint32 HardwareSDIO::read_data(void)
   * @param Data: 32-bit data word to write.
   * @retval : None
   */
-void HardwareSDIO::WriteData(uint32_t Data)
-{ 
-  SDIO->FIFO = Data;
+void HardwareSDIO::writeData(uint32 Data) {
+    SDIO->FIFO = Data;
 }
 
 /**
@@ -243,9 +240,8 @@ void HardwareSDIO::WriteData(uint32_t Data)
   * @param  None
   * @retval : Remaining number of words.
   */
-uint32 HardwareSDIO::GetFIFOCount(void)
-{ 
-  return SDIO->FIFOCNT;
+uint32 HardwareSDIO::getFIFOCount(void) {
+    return SDIO->FIFOCNT;
 }
 
 

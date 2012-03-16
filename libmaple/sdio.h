@@ -80,6 +80,7 @@ typedef struct sdio_reg_map {
 /* Clock Control Register */
 #define SDIO_CLKCR_HWFC_EN_BIT      14
 #define SDIO_CLKCR_NEGEDGE_BIT      13
+#define SDIO_CLKCR_WIDBUS_BIT       11
 #define SDIO_CLKCR_BYPASS_BIT       10
 #define SDIO_CLKCR_PWRSAV_BIT       9
 #define SDIO_CLKCR_CLKEN_BIT        8
@@ -87,10 +88,10 @@ typedef struct sdio_reg_map {
 #define SDIO_CLKCR_RESERVED         0xFFFF8000
 #define SDIO_CLKCR_HWFC_EN          BIT(SDIO_CLKCR_HWFC_EN_BIT)
 #define SDIO_CLKCR_NEGEDGE          BIT(SDIO_CLKCR_NEGEDGE_BIT)
-#define SDIO_CLKCR_WIDEBUS          (0x3 << 11)
-#define SDIO_CLKCR_WIDEBUS_DEFAULT  (0x0 << 11)
-#define SDIO_CLKCR_WIDEBUS_4WIDE    (0x1 << 11)
-#define SDIO_CLKCR_WIDEBUS_8WIDE    (0x2 << 11)
+#define SDIO_CLKCR_WIDBUS           (0x3 << SDIO_CLKCR_WIDBUS_BIT)
+#define SDIO_CLKCR_WIDEUS_DEFAULT   (0x0 << SDIO_CLKCR_WIDBUS_BIT)
+#define SDIO_CLKCR_WIDBUS_4WIDE     (0x1 << SDIO_CLKCR_WIDBUS_BIT)
+#define SDIO_CLKCR_WIDBUS_8WIDE     (0x2 << SDIO_CLKCR_WIDBUS_BIT)
 #define SDIO_CLKCR_BYPASS           BIT(SDIO_CLKCR_BYPASS_BIT)
 #define SDIO_CLKCR_PWRSAV           BIT(SDIO_CLKCR_PWRSAV_BIT)
 #define SDIO_CLKCR_CLKEN            BIT(SDIO_CLKCR_CLKEN_BIT)
@@ -147,6 +148,7 @@ typedef struct sdio_reg_map {
 #define SDIO_DCTRL_RWMOD_BIT        10
 #define SDIO_DCTRL_RWSTOP_BIT       9
 #define SDIO_DCTRL_RWSTART_BIT      8
+#define SDIO_DCTRL_DBLOCKSIZE_BIT   4
 #define SDIO_DCTRL_DMAEN_BIT        3
 #define SDIO_DCTRL_DTMODE_BIT       2
 #define SDIO_DCTRL_DTDIR_BIT        1
@@ -157,7 +159,7 @@ typedef struct sdio_reg_map {
 #define SDIO_DCTRL_RWMOD            BIT(SDIO_DCTRL_RWMOD_BIT)
 #define SDIO_DCTRL_RWSTOP           BIT(SDIO_DCTRL_RWSTOP_BIT)
 #define SDIO_DCTRL_RWSTART          BIT(SDIO_DCTRL_RWSTART_BIT)
-#define SDIO_DCTRL_DBLOCKSIZE       (0xF << 4)
+#define SDIO_DCTRL_DBLOCKSIZE       (0xF << SDIO_DCTRL_DBLOCKSIZE_BIT)
 #define SDIO_DCTRL_DMAEN            BIT(SDIO_DCTRL_DMAEN_BIT)
 #define SDIO_DCTRL_DTMODE           BIT(SDIO_DCTRL_DTMODE_BIT)
 #define SDIO_DCTRL_DTDIR            BIT(SDIO_DCTRL_DTDIR_BIT)
@@ -331,21 +333,22 @@ extern sdio_dev *SDIO;
 
 void sdio_init(sdio_dev *dev);
 void sdio_reset(sdio_dev *dev);
-void sdio_set_ccr(sdio_dev *dev, uint32 ccr);
-void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div);
-void sdio_set_dcr(sdio_dev *dev, uint32 dcr);
-void sdio_cfg_dpsm(sdio_dev *dev, uint32 dcr);    
+void sdio_cfg_ccr(sdio_dev *dev, uint32 ccr);
+void sdio_cfg_dcr(sdio_dev *dev, uint32 dcr);
+void sdio_set_dataspeed(sdio_dev *dev, uint8 clk_div);
+void sdio_set_busmode(sdio_dev *dev, uint8 bus_width);
+void sdio_set_blocksize(sdio_dev *dev, uint32 block_size);    
+void sdio_set_datalength(sdio_dev *dev, uint32 data_length);
+uint32 sdio_get_datacount(sdio_dev *dev);
+
 void sdio_load_arg(sdio_dev *dev, uint32 arg);
 void sdio_post_cmd(sdio_dev *dev, uint8 cmd);
-uint8 sdio_get_resp(sdio_dev *dev);
-void sdio_set_timeout(sdio_dev *dev, uint32 timeout);
-//void sdio_configure_gpio(sdio_dev *dev, data_bus_width);
+uint8 sdio_get_last_cmd(sdio_dev *dev);
 
+//void sdio_cfg_gpio(sdio_dev *dev, data_bus_width);
 void sdio_cfg_dma(sdio_dev *dev);
 void sdio_dma_enable(sdio_dev *dev);
 void sdio_dma_disable(sdio_dev *dev);
-void sdio_peripheral_enable(sdio_dev *dev);
-void sdio_peripheral_disable(sdio_dev *dev);
 
 void sdio_broadcast_cmd(sdio_dev *dev, uint8 cmd);
 void sdio_broadcast_cmd_wresponse(sdio_dev *dev, uint8 cmd);

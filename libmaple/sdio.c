@@ -64,7 +64,7 @@ void sdio_init(sdio_dev *dev) {
 }
 
 /**
- * @brief Reset SDIO Device
+ * @brief Reset an SDIO Device
  * @param dev SDIO Device
  */
 void sdio_reset(sdio_dev *dev) {
@@ -80,49 +80,102 @@ void sdio_reset(sdio_dev *dev) {
 }
 
 /**
- * @brief Set the Clock Control Register
+ * @brief Configure the Clock Control Register
  * @param dev SDIO Device
  * @param ccr Clock Control Register Data 
  */
-void sdio_set_ccr(sdio_dev *dev, uint32 ccr) {
+void sdio_cfg_ccr(sdio_dev *dev, uint32 ccr) {
     // Elminate stray bits in the reserved space
     dev->regs->CLKCR = (~SDIO_CLKCR_RESERVED &= ccr);
 }
 
 /**
- * @brief Set Clock Divisor in the Clock Control Register
- * @param dev SDIO
+ * @brief Configure the Data Control Register
+ * @param dev SDIO Device
+ * @param dcr Data Control Register Data 
+ */
+void sdio_cfg_dcr(sdio_dev *dev, uint32 dcr) {
+    // Elminate stray bits in the reserved space
+    dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & dcr);
+}
+
+/**
+ * @brief Set the Clock Divisor in the Clock Control Register
+ * @param dev SDIO Device
  * @param clk_div clock divider factor to set the sdio_ck frequency
  */
-void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div) {
+void sdio_set_dataspeed(sdio_dev *dev, uint8 clk_div) {
     dev->regs->CCR &= ~SDIO_CCR_CLKDIV;
     dev->regs->CCR |= (uint32)clk_div;
 }
 
 /**
- * @brief Set the Data Control Register
+ * @brief Set the Wide Bus in the Clock Control Register
  * @param dev SDIO Device
- * @param ccr Data Control Register Data 
+ * @param bus_width Data Bus Width for the SDIO device
  */
-void sdio_set_dcr(sdio_dev *dev, uint32 dcr) {
-    dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & dcr);
+void sdio_set_databus(sdio_dev *dev, uint8 bus_width) {
+    dev->regs->CCR &= ~SDIO_CCR_WIDBUS;
+    if (bus_width >=4) {
+        break;
+    } else {
+        dev->regs->CCR |= ((uint32)bus_width) << SDIO_CLKCR_WIDBUS_BIT;
+    }
 }
 
 /**
- * @brief Configure the Data Path State Machine through the 
+ * @brief Set the Data Block Size through the 
  *        Data Control Register
  * @param dev SDIO Device 
- * @param dcr Data Control Register Data
+ * @param block_size Data Block Size
  * @note  A data transfer must be written to the data timer register
  *        and the data length register before being written to the
  *        data control register.
  */
-void sdio_cfg_dpsm(sdio_dev *dev, uint32 dcr) {
-    dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & dcr);
+void sdio_set_blocksize(sdio_dev *dev, uint8 block_size) {
+    dev->regs->DCTRL &= ~SDIO_DCTRL_DBLOCKSIZE;
+    if (block_size >= 15) {
+        // error: 0b1111 is reserved, all else invalid block size
+        break;
+    } else {
+        dev->regs->DCTRL |= ((uint32)block_size) << SDIO_DCTRL_DBLOCKSIZE_BIT;
+    }
 }
 
 /**
- * @brief Load argument into SDIO Argument Register
+ * @brief Set the Datatime through the Data Timer Register
+ * @param dev SDIO Device
+ * @param timeout Timeout value for the data path state
+ *        machine in card bus clock periods.
+ */
+void sdio_set_timeout(sdio_dev *dev, uint32 timeout) {
+    // Data timeout period ecpressed in card bus clock periods
+    dev->regs->DTIMER = timeout;
+}
+
+/**
+ * @brief Set the Datalength through the Data Length Register
+ * @param dev SDIO Device
+ * @param data_length Number of bytes to be transfered
+ */
+void sdio_set_datalength(sdio_dev *dev, uint32 data_length) {
+    // Elminate stray bits in the reserved space
+    dev->regs->DLEN = (~SDIO_DLEN_RESERVED & data_length);
+}
+
+/**
+ * @brief Get the Datacount value through the
+ *        Data Count Register
+ * @param dev SDIO Device
+ */
+uint32 sdio_get_datacount(sdio_dev *dev) {
+    uint32 data_count = dev->regs->DCOUNT;
+    // Elminate stray bits in the reserved space
+    return (~SDIO_DLEN_RESERVED & data_count);
+}
+
+/**
+ * @brief Load Argument into SDIO Argument Register
  * @param dev SDIO Device
  * @param arg Argument Data
  */
@@ -131,50 +184,26 @@ void sdio_load_arg(sdio_dev *dev, uint32 arg) {
 }
 
 /**
- * @brief Send command to external card
+ * @brief Send Command to external card
  * @param dev SDIO Device
  * @param cmd SDIO Command to send 
  */
 void sdio_post_cmd(sdio_dev *dev, uint8 cmd) {
     // Ignore possible WAITRESP data
-    cmd &= SDIO_CMD_CMDINDEX;
+    dev->regs->CMD &= ~SDIO_CMD_CMDINDEX;
     // Elminate stray bits in the reserved space
-    dev->regs->CMD |= (~SDIO_CMD_RESERVED &= (uint32)cmd);
+    dev->regs->CMD |= (uint32)cmd;
+    bb_peri_set_bit(&dev->regs->CMD, SDIO_CMD_CMDEN, 1);
 }
 
 /**
- * @brief Get command response
+ * @brief Get last command response
  * @param dev SDIO Device 
  */
-uint8 sdio_get_resp(sdio_dev *dev) {
+uint8 sdio_get_last_cmd(sdio_dev *dev) {
+    // Contains the command index of the last command response received
     uint32 ret = dev->regs->RESPCMD;
     return (uint8)(~SDIO_RESPCMD_RESERVED & ret);
-}
-
-/**
- * @brief Set response timeout
- * @param dev SDIO Device 
- * @param timeout Timeout value for the data path state
- *        machine in card bus clock periods.
- */
-void sdio_set_timeout(sdio_dev *dev, uint32 timeout) {
-    dev->regs->RESPCMD = timeout;
-}
-
-/**
- * @brief Enable an SDIO peripheral
- * @param dev SDIO Device
- */
-void sdio_peripheral_enable(sdio_dev *dev) {
-    //bb_peri_set_bit(&dev->regs->, SPI_CR1_SPE_BIT, 1);
-}
-
-/**
- * @brief Disable an SDIO peripheral
- * @param dev SDIO Device
- */
-void sdio_peripheral_disable(sdio_dev *dev) {
-    //bb_peri_set_bit(&dev->regs->CR1, SPI_CR1_SPE_BIT, 0);
 }
 
 /**
@@ -182,24 +211,24 @@ void sdio_peripheral_disable(sdio_dev *dev) {
  * @param dev SDIO device
  */
 void sdio_cfg_dma(sdio_dev *dev) {
-    //dev->regs->DCTRL, SDIO_DCTRL_DMAEN
+    //dev->regs->DCTRL = SDIO_DCTRL_DMAEN
 }
 
 
 /**
- * @brief Enable DMA requests whenever the transmit buffer is empty
+ * @brief Enable DMA requests
  * @param dev SDIO device
  */
 void sdio_dma_enable(sdio_dev *dev) {
-    //bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
+    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
 }
 
 /**
- * @brief Disable DMA requests whenever the transmit buffer is empty
+ * @brief Disable DMA requests
  * @param dev SDIO device
  */
 void sdio_dma_disable(sdio_dev *dev) {
-    //bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
+    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 0);
 }
 
 /**
@@ -207,7 +236,7 @@ void sdio_dma_disable(sdio_dev *dev) {
  * @param dev SDIO Device
  */
 void sdio_broadcast_cmd(sdio_dev *dev, uint8 cmd) {
-    dev->regs->CMD &= SDIO_CMD_
+    dev->regs->CMD &= ~SDIO_CMD_CMDINDEX;
     dev->regs->CMD |= (uint32)cmd;
     bb_peri_set_bit(&dev->regs->CMD, SDIO_CMD_CMDEN, 1);
 }
@@ -216,19 +245,22 @@ void sdio_broadcast_cmd(sdio_dev *dev, uint8 cmd) {
  * @brief Broadcast Command with Response to the SDIO card
  * @param dev SDIO Device
  */
-void sdio_broadcast_cmd_wresponse(sdio_dev *dev, uint8 cmd);
+void sdio_broadcast_cmd_wresponse(sdio_dev *dev, uint8 cmd) {
+}
 
 /**
  * @brief Addressed Command to the SDIO card
  * @param dev SDIO Device
  */
-void sdio_addr_cmd(sdio_dev *dev, uint8 cmd);
+void sdio_addr_cmd(sdio_dev *dev, uint8 cmd) {
+}
 
 /**
  * @brief Addressed Data Transfer Command to the SDIO card
  * @param dev SDIO Device
  */
-void sdio_addr_data_xfer_cmd(sdio_dev *dev, uint8 cmd);
+void sdio_addr_data_xfer_cmd(sdio_dev *dev, uint8 cmd) {
+}
 
 
 /*
