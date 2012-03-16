@@ -30,8 +30,8 @@ PRODUCT_ID := 0003
 ##
 
 # Try "make help" for more information on BOARD and MEMORY_TARGET;
-# these default to a Maple Flash build.
-BOARD ?= maple
+# these default to a Maple Native Flash build.
+BOARD ?= maple_native
 MEMORY_TARGET ?= flash
 
 # $(BOARD)- and $(MEMORY_TARGET)-specific configuration
@@ -133,7 +133,7 @@ help:
 	@echo "      sketch:   Compile for BOARD to MEMORY_TARGET (default)."
 	@echo "      install:  Compile and upload code over USB, using Maple bootloader"
 	@echo "  "
-	@echo "  You *must* set BOARD if not compiling for Maple (e.g."
+	@echo "  You *must* set BOARD if not compiling for Maple Native (e.g."
 	@echo "  use BOARD=maple_mini for mini, etc.), and MEMORY_TARGET"
 	@echo "  if not compiling to Flash."
 	@echo "  "

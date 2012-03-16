@@ -25,18 +25,18 @@
  *****************************************************************************/
 
 /**
- * @author Marti Bolivar <mbolivar@leaflabs.com>
- * @brief Wirish SPI implementation.
+ * @author Brian E Tovar <betovar@leaflabs.com>
+ * @brief Wirish SDIO implementation. 
  */
 
-#include "HardwareSPI.h"
+#include "HardwareSDIO.h"
 
-#include "timer.h"
+#include "sdio.h"
 #include "util.h"
 #include "rcc.h"
 
 #include "wirish.h"
-#include "boards.h"
+//#include "boards.h"
 
 
 /*
@@ -44,32 +44,35 @@
  */
 
 HardwareSDIO::HardwareSDIO(void) {
-
+    sdio_peripheral_enable();
 }
 
 /*
  * Public Members
  */
 
-void HardwareSPI::begin(SPIFrequency frequency, uint32 bitOrder, uint32 mode) {
-    if (mode >= 4) {
+void HardwareSDIO::begin(SDIOFrequency freq,
+                         SDIODataBusSpeed speed,
+                         SDIODataBusWidth mode) {
+    //only one speed mode supported at this time
+    if (speed != SDIO_DBS_DEFAULT) { 
         ASSERT(0);
         return;
     }
-    spi_cfg_flag end = bitOrder == MSBFIRST ? SPI_FRAME_MSB : SPI_FRAME_LSB;
-    spi_mode m = (spi_mode)mode;
-    enable_device(this->spi_d, true, frequency, end, m);
+    cfgClock(freq);
+    cfgDataBus(speed, mode);
+    sdio_peripheral_enable();
 }
 
-void HardwareSPI::end(void) {
-
+void HardwareSDIO::end(void) {
+    ASSERT(1);
 }
 
 /*
  * I/O
  */
 
-void HardwareSPI::read(uint8 *buf, uint32 len) {
+void HardwareSDIO::read(uint8 *buf, uint32 len) {
     uint32 rxed = 0;
     while (rxed < len) {
         while (!spi_is_rx_nonempty(this->spi_d))
@@ -78,7 +81,7 @@ void HardwareSPI::read(uint8 *buf, uint32 len) {
     }
 }
 
-void HardwareSPI::write(const uint8 *data, uint32 length) {
+void HardwareSDIO::write(const uint8 *data, uint32 length) {
     uint32 txed = 0;
     while (txed < length) {
         txed += spi_tx(this->spi_d, data + txed, length - txed);
@@ -94,8 +97,28 @@ void HardwareSPI::write(const uint8 *data, uint32 length) {
  * @param data_bus_width Enum to configure pins for use as an SDIO card
  * @note 8-bit data bus width not implemented on maple as of March 2012
  */
-void HardwareSDIO::sdio_gpio_init_cfg(SDIODataBusWidth data_bus_width) {
-    switch (data_bus_width) {
+void HardwareSDIO::cfgClock(SDIODataBusWidth width) {
+    /* HWFC_EN: Hardware Flow Control is enabled */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_HWFC_EN_BIT, 1);
+    /* NEGEDGE: SDIO_CK generated on rising edge of SDIOCLK */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_NEGEDGE_BIT, 0);
+    /* WIDBUS: 1-bit bus mode during initialization */
+    dev->regs->CLKCR &= ~SDIO_CLKCR_WIDEBUS;
+    /* BYPASS: Clock divider bypass disabled */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_BYPASS_BIT, 0);
+    /* PWRSAV: Turn power save on by default */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_PWRSAV_BIT, 1);
+    /* CLKEN: Clock is enabled */
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 1);
+}
+
+/**
+ * @brief Configure GPIO bit modes for use as an SDIO port's pins
+ * @param data_bus_width Enum to configure pins for use as an SDIO card
+ * @note 8-bit data bus width not implemented on maple as of March 2012
+ */
+void HardwareSDIO::cfgGPIO(SDIODataBusWidth width) {
+    switch (width) {
     case SDIO_DBW_8:
         gpio_set_mode(BOARD_SDIO_D7_DEV,
                       BOARD_SDIO_D7_BIT, 
@@ -132,10 +155,10 @@ void HardwareSDIO::sdio_gpio_init_cfg(SDIODataBusWidth data_bus_width) {
         break;
     default:
         ASSERT(0);
-    }
+    } //end of switch case
 }
 
-HardwareSDIO::sdio_card_id_process(void) {
+HardwareSDIO::card_identification_process(void) {
     //activate bus
     //host broadcasts SD_APP_OP_COND
     //card resp: ocr
@@ -154,7 +177,7 @@ HardwareSDIO::sdio_card_id_process(void) {
   *   for the SDIO command.
   * @retval : None
   */
-void HardwareSDIO::sdio_send_cmd(SDIO_CmdInitTypeDef *SDIO_CmdInitStruct)
+void HardwareSDIO::send_command(SDIO_CmdInitTypeDef *SDIO_CmdInitStruct)
 {
   uint32_t tmpreg = 0;
   
@@ -199,7 +222,7 @@ uint32 HardwareSDIO::GetDataCounter(void)
   * @param  None
   * @retval : Data received
   */
-uint32 HardwareSDIO::ReadData(void)
+uint32 HardwareSDIO::read_data(void)
 { 
   return SDIO->FIFO;
 }
@@ -224,3 +247,5 @@ uint32 HardwareSDIO::GetFIFOCount(void)
 { 
   return SDIO->FIFOCNT;
 }
+
+
