@@ -64,16 +64,6 @@ void sdio_init(sdio_dev *dev) {
 }
 
 /**
- * @brief Set Clock Divisor in the Clock Control Register
- * @param dev SDIO
- * @param clk_div clock divider factor to set the sdio_ck frequency
- */
-void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div) {
-    dev->regs->CCR &= ~SDIO_CCR_CLKDIV;
-    dev->regs->CCR |= (uint32)clk_div;
-}
-
-/**
  * @brief Reset SDIO Device
  * @param dev SDIO Device
  */
@@ -90,19 +80,6 @@ void sdio_reset(sdio_dev *dev) {
 }
 
 /**
- * @brief Configure the Data Path State Machine through the 
- *        Data Control Register
- * @param dev SDIO Device 
- * @param dcr Data Control Register Data
- * @note  A data transfer must be written to the data timer register
- *        and the data length register before being written to the
- *        data control register.
- */
-void sdio_cfg_dpsm(sdio_dev *dev, uint32 dcr) {
-    dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & dcr);
-}
-
-/**
  * @brief Set the Clock Control Register
  * @param dev SDIO Device
  * @param ccr Clock Control Register Data 
@@ -113,11 +90,34 @@ void sdio_set_ccr(sdio_dev *dev, uint32 ccr) {
 }
 
 /**
+ * @brief Set Clock Divisor in the Clock Control Register
+ * @param dev SDIO
+ * @param clk_div clock divider factor to set the sdio_ck frequency
+ */
+void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div) {
+    dev->regs->CCR &= ~SDIO_CCR_CLKDIV;
+    dev->regs->CCR |= (uint32)clk_div;
+}
+
+/**
  * @brief Set the Data Control Register
  * @param dev SDIO Device
  * @param ccr Data Control Register Data 
  */
 void sdio_set_dcr(sdio_dev *dev, uint32 dcr) {
+    dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & dcr);
+}
+
+/**
+ * @brief Configure the Data Path State Machine through the 
+ *        Data Control Register
+ * @param dev SDIO Device 
+ * @param dcr Data Control Register Data
+ * @note  A data transfer must be written to the data timer register
+ *        and the data length register before being written to the
+ *        data control register.
+ */
+void sdio_cfg_dpsm(sdio_dev *dev, uint32 dcr) {
     dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & dcr);
 }
 
@@ -213,19 +213,19 @@ void sdio_broadcast_cmd(sdio_dev *dev, uint8 cmd) {
 }
 
 /**
- * @brief 
+ * @brief Broadcast Command with Response to the SDIO card
  * @param dev SDIO Device
  */
 void sdio_broadcast_cmd_wresponse(sdio_dev *dev, uint8 cmd);
 
 /**
- * @brief 
+ * @brief Addressed Command to the SDIO card
  * @param dev SDIO Device
  */
 void sdio_addr_cmd(sdio_dev *dev, uint8 cmd);
 
 /**
- * @brief 
+ * @brief Addressed Data Transfer Command to the SDIO card
  * @param dev SDIO Device
  */
 void sdio_addr_data_xfer_cmd(sdio_dev *dev, uint8 cmd);

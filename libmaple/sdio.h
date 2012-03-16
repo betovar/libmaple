@@ -74,6 +74,7 @@ typedef struct sdio_reg_map {
  */
 	
 /* Power Control Register */
+#define SDIO_POWER_RESERVED         0xFFFFFFFC
 #define SDIO_POWER_PWRCTRL          0x3
 	
 /* Clock Control Register */
@@ -330,10 +331,10 @@ extern sdio_dev *SDIO;
 
 void sdio_init(sdio_dev *dev);
 void sdio_reset(sdio_dev *dev);
-void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div);
-void sdio_cfg_dpsm(sdio_dev *dev, uint32 dcr);    
 void sdio_set_ccr(sdio_dev *dev, uint32 ccr);
+void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div);
 void sdio_set_dcr(sdio_dev *dev, uint32 dcr);
+void sdio_cfg_dpsm(sdio_dev *dev, uint32 dcr);    
 void sdio_load_arg(sdio_dev *dev, uint32 arg);
 void sdio_post_cmd(sdio_dev *dev, uint8 cmd);
 uint8 sdio_get_resp(sdio_dev *dev);
