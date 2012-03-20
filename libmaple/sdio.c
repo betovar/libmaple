@@ -262,7 +262,6 @@ void sdio_addr_cmd(sdio_dev *dev, uint8 cmd) {
 void sdio_addr_data_xfer_cmd(sdio_dev *dev, uint8 cmd) {
 }
 
-
 /*
  * IRQ handlers (TODO)
  */

@@ -42,6 +42,7 @@
 #include "wirish_debug.h"
 #include "wirish_math.h"
 #include "wirish_time.h"
+#include "HardwareSDIO.h"
 #include "HardwareSPI.h"
 #include "HardwareSerial.h"
 #include "HardwareTimer.h"

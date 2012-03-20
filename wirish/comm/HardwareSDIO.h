@@ -50,9 +50,9 @@ typedef enum SDIOPower {
 } SDIOPowerState;
 
 typedef enum SDIODataBusWidth {
-    SDIO_DBW_0 = 0,
+    SDIO_DBW_0 = 0, // SDIO initialization default
     SDIO_DBW_4 = 4,
-    SDIO_DBW_8 = 8,
+    SDIO_DBW_8 = 8, // MultiMedia Cards only
 } SDIODataBusWidth;
 
 typedef enum SDIODataBusSpeed {
@@ -109,7 +109,8 @@ public:
 
     /**
      * @brief 
-     * @param frequency
+     * @param freq
+     * @param speed
      * @param mode
      */
     void begin(SDIOFrequency freq, SDIODataBusSpeed speed, SDIODataBusWidth mode);

@@ -123,23 +123,23 @@ void HardwareSDIO::cfgGPIO(SDIODataBusWidth width) {
     case SDIO_DBW_8:
         gpio_set_mode(BOARD_SDIO_D7_DEV,
                       BOARD_SDIO_D7_BIT, 
-                      GPIO_AF_OUTPUT_PP);
+					  GPIO_INPUT_FLOATING);
         gpio_set_mode(BOARD_SDIO_D6_DEV,
                       BOARD_SDIO_D6_BIT, 
-                      GPIO_AF_OUTPUT_PP);
+					  GPIO_INPUT_FLOATING);
         gpio_set_mode(BOARD_SDIO_D5_DEV,
                       BOARD_SDIO_D5_BIT, 
-                      GPIO_AF_OUTPUT_PP);
+					  GPIO_INPUT_FLOATING);
         gpio_set_mode(BOARD_SDIO_D4_DEV,
                       BOARD_SDIO_D4_BIT, 
-                      GPIO_AF_OUTPUT_PP);
+					  GPIO_INPUT_FLOATING);
     case SDIO_DBW_4:
         gpio_set_mode(BOARD_SDIO_D3_DEV,
                       BOARD_SDIO_D3_BIT, 
-                      GPIO_AF_OUTPUT_PP);
+					  GPIO_INPUT_FLOATING);
         gpio_set_mode(BOARD_SDIO_D2_BIT,
                       BOARD_SDIO_D2_BIT, 
-                      GPIO_AF_OUTPUT_PP);
+					  GPIO_INPUT_FLOATING);
     case SDIO_DBW_0:
         gpio_set_mode(BOARD_SDIO_D1_BIT,
                       BOARD_SDIO_D1_BIT, 
