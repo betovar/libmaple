@@ -1,7 +1,7 @@
 /******************************************************************************
  * The MIT License
  *
- * Copyright (c) 2010 Perry Hung.
+ * Copyright (c) 2012 LeafLabs, LLC
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -89,7 +89,7 @@ typedef struct sdio_reg_map {
 #define SDIO_CLKCR_HWFC_EN          BIT(SDIO_CLKCR_HWFC_EN_BIT)
 #define SDIO_CLKCR_NEGEDGE          BIT(SDIO_CLKCR_NEGEDGE_BIT)
 #define SDIO_CLKCR_WIDBUS           (0x3 << SDIO_CLKCR_WIDBUS_BIT)
-#define SDIO_CLKCR_WIDEUS_DEFAULT   (0x0 << SDIO_CLKCR_WIDBUS_BIT)
+#define SDIO_CLKCR_WIDBUS_DEFAULT   (0x0 << SDIO_CLKCR_WIDBUS_BIT)
 #define SDIO_CLKCR_WIDBUS_4WIDE     (0x1 << SDIO_CLKCR_WIDBUS_BIT)
 #define SDIO_CLKCR_WIDBUS_8WIDE     (0x2 << SDIO_CLKCR_WIDBUS_BIT)
 #define SDIO_CLKCR_BYPASS           BIT(SDIO_CLKCR_BYPASS_BIT)

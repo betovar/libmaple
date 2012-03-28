@@ -1,7 +1,7 @@
 /******************************************************************************
  * The MIT License
  *
- * Copyright (c) 2010 Perry Hung.
+ * Copyright (c) 2012 LeafLabs LLC
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -51,31 +51,32 @@ typedef enum SDIOPower {
 
 typedef enum SDIODataBusWidth {
     SDIO_DBW_0 = 0, // SDIO initialization default
-    SDIO_DBW_4 = 4,
-    SDIO_DBW_8 = 8, // MultiMedia Cards only
+    SDIO_DBW_4 = 1,
+    SDIO_DBW_8 = 2, // MultiMedia Cards only
 } SDIODataBusWidth;
 
-typedef enum SDIODataBusSpeed {
-    SDIO_DBS_DEFAULT = 0, // 25 MHz
-    SDIO_DBS_HIGH,        // 50 MHz
+typedef enum SDIODataBusMode {
+    SDIO_DBM_DEFAULT = 0, // 25 MHz
+    SDIO_DBM_HIGH, // 50 MHz
     // The folliwing bus speeds require 1.8V signaling
-    SDIO_DBS_SDR12,
-    SDIO_DBS_SDR25,
-    SDIO_DBS_SDR50,
-    SDIO_DBS_SDR104,
-    SDIO_DBS_DDR50,
-} SDIODataBusSpeed;
+    SDIO_DBM_SDR12,
+    SDIO_DBM_SDR25,
+    SDIO_DBM_SDR50,
+    SDIO_DBM_SDR104,
+    SDIO_DBM_DDR50,
+} SDIODataBusMode;
 
 typedef enum SDIOFrequency {
-    SDIO_100_KHZ = 0,
-    SDIO_200_KHZ = 1,
-    SDIO_400_KHZ = 3,
-    SDIO_500_KHZ = 4,
-    SDIO_1_MHZ   = 5,
-    SDIO_3_MHZ   = 6,
-    SDIO_6_MHZ   = 7,
-    SDIO_12_MHZ  = 8,
-    SDIO_25_MHZ  = 9,
+    SDIO_INIT_FREQ = 254,
+    SDIO_200_KHZ = 128,
+    SDIO_400_KHZ = 64,
+    SDIO_500_KHZ = 32,
+    SDIO_1_MHZ   = 16,
+    SDIO_3_MHZ   = 8,
+    SDIO_6_MHZ   = 4,
+    SDIO_12_MHZ  = 2,
+    SDIO_25_MHZ  = 1,
+    SDIO_36_MHZ  = 0,
 } SDIOFrequency;
 
 typedef enum SDIODataBlockSize {
@@ -110,10 +111,18 @@ public:
     /**
      * @brief 
      * @param freq
-     * @param speed
+     * @param width 
      * @param mode
      */
-    void begin(SDIOFrequency freq, SDIODataBusSpeed speed, SDIODataBusWidth mode);
+    void begin(void);
+
+    /**
+     * @brief 
+     * @param freq
+     * @param width 
+     * @param mode
+     */
+    void begin(SDIOFrequency freq, SDIODataBusWidth width, SDIODataBusMode mode);
 
     /**
      * @brief Disables the SDIO port, but leaves its GPIO pin modes unchanged.
@@ -129,6 +138,14 @@ public:
      * @brief 
      * @param 
      */
+    void read(uint8 *buffer, uint32 length);
+
+
+    /**
+     * @brief 
+     * @param 
+     */
+    void write(const uint8 *buffer, uint32 length);
 
     void command(void);
     void reset(void);
@@ -144,12 +161,9 @@ public:
 
 
 private:
-    sdio_dev *SDIO;
-    void configure_gpio(SDIODataBusWidth data_bus_width);
-    void configure_dma(void);
-    void configure_clock(void);
-    void configure_clock(void);
-
+    sdio_dev *sdio_d;
+    void dmaConfig(void);
+    void clockConfig(SDIOFrequency freq, SDIODataBusWidth width, SDIODataBusMode mode);
 };
 
 #endif
