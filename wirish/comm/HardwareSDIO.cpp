@@ -59,9 +59,10 @@ HardwareSDIO::HardwareSDIO(void) {
 void HardwareSDIO::begin(SDIOFrequency freq,
                          SDIODataBusWidth width,
                          SDIODataBusMode mode) {
-    sdio_cfg_clock(this->sdio_d, (uint8)freq);//FIXME
+    sdio_cfg_clock(this->sdio_d, (uint8)freq);
     sdio_cfg_bus(this->sdio_d, (uint8)width);
-    //sdio_cfg_mode(mode);
+    sdio_cfg_mode(this->sdio_d, (uint8)mode); //TODO [0.2.0]
+//    sdio_set_ccr(this->sdio_d, SDIO_CLKCR_CLKEN)
     sdio_peripheral_enable(this->sdio_d);
 }
 

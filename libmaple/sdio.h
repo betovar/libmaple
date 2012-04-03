@@ -27,7 +27,7 @@
 /**
  * @file sdio.h
  * @author Brian E Tovar <betovar@leaflabs.com>
- * @brief SDIO interface support
+ * @brief SDIO interface support and Adapter Register Block definitions
  */
 
 #ifndef _SDIO_H_
@@ -331,6 +331,7 @@ extern sdio_dev *SDIO;
  * SDIO Functions
  */
 
+// SDIO configure functions
 void sdio_init(sdio_dev *dev);
 void sdio_reset(sdio_dev *dev);
 void sdio_cfg_ccr(sdio_dev *dev, uint32 ccr);
@@ -349,11 +350,32 @@ uint8 sdio_get_last_cmd(sdio_dev *dev);
 void sdio_cfg_dma(sdio_dev *dev);
 void sdio_dma_enable(sdio_dev *dev);
 void sdio_dma_disable(sdio_dev *dev);
-
+void sdio_cfg_dma(sdio_dev *dev);
+// SDIO command functions
+void sdio_set_timeout(sdio_dev *dev, uint32 timeout);
+uint32 sdio_get_data_count(sdio_dev *dev);
+void sdio_load_arg(sdio_dev *dev, uint32 arg);
+void sdio_send_cmd(sdio_dev *dev, uint8 cmd);
+uint8 sdio_get_cmd(sdio_dev *dev);
+uint32 sdio_get_resp(sdio_dev *dev);
 void sdio_broadcast_cmd(sdio_dev *dev, uint8 cmd);
 void sdio_broadcast_cmd_wresponse(sdio_dev *dev, uint8 cmd);
 void sdio_addrd_cmd(sdio_dev *dev, uint8 cmd);
 void sdio_addrd_data_xfer_cmd(sdio_dev *dev, uint8 cmd);
+// SDIO status functions
+uint32 sdio_is_rx_data_aval(sdio_dev *dev);
+uint32 sdio_is_tx_data_aval(sdio_dev *dev);
+uint32 sdio_is_rx_act(sdio_dev *dev);
+uint32 sdio_is_tx_act(sdio_dev *dev);
+uint32 sdio_is_xfer_in_prog(sdio_dev *dev);
+// SDIO auxiliary functions
+uint32 sdio_read_data(sdio_dev *dev);
+void sdio_write_data(sdio_dev *dev, uint32 data);
+uint32 sdio_get_count(sdio_dev *dev);
+// SDIO interrupt functions
+void sdio_clear_flag(sdio_dev *dev, uint32 flag);
+uint8 sdio_get_status(sdio_dev *dev, uint32 rupt);
+void sdio_clear_pending(sdio_dev *dev, uint32 pend);
 
 #ifdef __cplusplus
 }

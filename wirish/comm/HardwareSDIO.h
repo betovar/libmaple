@@ -67,34 +67,34 @@ typedef enum SDIODataBusMode {
 } SDIODataBusMode;
 
 typedef enum SDIOFrequency {
-    SDIO_INIT_FREQ = 254,
-    SDIO_200_KHZ = 128,
-    SDIO_400_KHZ = 64,
-    SDIO_500_KHZ = 32,
-    SDIO_1_MHZ   = 16,
-    SDIO_3_MHZ   = 8,
-    SDIO_6_MHZ   = 4,
-    SDIO_12_MHZ  = 2,
-    SDIO_25_MHZ  = 1,
     SDIO_36_MHZ  = 0,
+    SDIO_25_MHZ  = 1,
+    SDIO_12_MHZ  = 2,
+    SDIO_6_MHZ   = 4,
+    SDIO_3_MHZ   = 8,
+    SDIO_1_MHZ   = 16,
+    SDIO_500_KHZ = 32,
+    SDIO_400_KHZ = 64,
+    SDIO_200_KHZ = 128,
+    SDIO_INIT_FREQ = 254,
 } SDIOFrequency;
 
 typedef enum SDIODataBlockSize {
-    SDIO_BLOCK_SIZE_1     = 0,
-    SDIO_BLOCK_SIZE_2     = 1,
-    SDIO_BLOCK_SIZE_4     = 2,
-    SDIO_BLOCK_SIZE_8     = 3,
-    SDIO_BLOCK_SIZE_16    = 4,
-    SDIO_BLOCK_SIZE_32    = 5,
-    SDIO_BLOCK_SIZE_64    = 6,
-    SDIO_BLOCK_SIZE_128   = 7,
-    SDIO_BLOCK_SIZE_256   = 8,
-    SDIO_BLOCK_SIZE_512   = 9,
-    SDIO_BLOCK_SIZE_1024  = 10,
-    SDIO_BLOCK_SIZE_2048  = 11,
-    SDIO_BLOCK_SIZE_4096  = 12,
-    SDIO_BLOCK_SIZE_8192  = 13,
-    SDIO_BLOCK_SIZE_16384 = 14,
+    SDIO_DBSZ_1     = 0,
+    SDIO_DBSZ_2     = 1,
+    SDIO_DBSZ_4     = 2,
+    SDIO_DBSZ_8     = 3,
+    SDIO_DBSZ_16    = 4,
+    SDIO_DBSZ_32    = 5,
+    SDIO_DBSZ_64    = 6,
+    SDIO_DBSZ_128   = 7,
+    SDIO_DBSZ_256   = 8,
+    SDIO_DBSZ_512   = 9,
+    SDIO_DBSZ_1024  = 10,
+    SDIO_DBSZ_2048  = 11,
+    SDIO_DBSZ_4096  = 12,
+    SDIO_DBSZ_8192  = 13,
+    SDIO_DBSZ_16384 = 14,
 } SDIODataBlockSize;
 
 /**
@@ -147,9 +147,9 @@ public:
      */
     void write(const uint8 *buffer, uint32 length);
 
-    void command(void);
-    void reset(void);
-    void voltage(void);
+    uint32 command(uint8);
+    void card_reset(void);
+    void valid_voltage_range(void);
     void blockRead(void);
     void blockWrite(void);
     void card_identification(void);
