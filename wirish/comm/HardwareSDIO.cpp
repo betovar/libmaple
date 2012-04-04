@@ -49,20 +49,34 @@
  */
 
 HardwareSDIO::HardwareSDIO(void) {
-    sdio_peripheral_enable();
+    this->sdio_d = SDIO;
 }
 
 /*
  * Public Members
  */
 
+/**
+ * @brief 
+ * @param 
+ */
+void HardwareSDIO::begin(void) {
+    this->begin(SDIO_INIT_FREQ, SDIO_DBW_0, SDIO_DBM_DEFAULT);
+}
+
+/**
+ * @brief 
+ * @param freq
+ * @param width
+ * @param mode
+ */
 void HardwareSDIO::begin(SDIOFrequency freq,
                          SDIODataBusWidth width,
                          SDIODataBusMode mode) {
     sdio_cfg_clock(this->sdio_d, (uint8)freq);
     sdio_cfg_bus(this->sdio_d, (uint8)width);
     sdio_cfg_mode(this->sdio_d, (uint8)mode); //TODO [0.2.0]
-//    sdio_set_ccr(this->sdio_d, SDIO_CLKCR_CLKEN)
+//    sdio_set_ccr(this->sdio_d, SDIO_CLKCR_CLKEN, (0x1 << SDIO_CLKCR_CLKEN_BIT));
     sdio_peripheral_enable(this->sdio_d);
 }
 
@@ -79,8 +93,7 @@ void HardwareSDIO::read(uint8 *buf, uint32 len) {
     uint32 rxed = 0;
     while (rxed < len) {
         while (!spi_is_rx_nonempty(this->spi_d))
-            ;
-        buf[rxed++] = (uint8)spi_rx_reg(this->spi_d);
+            buf[rxed++] = (uint8)spi_rx_reg(this->spi_d);
     }
 }
 

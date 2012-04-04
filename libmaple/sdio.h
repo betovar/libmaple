@@ -66,7 +66,7 @@ typedef struct sdio_reg_map {
 } sdio_reg_map;
 
 /** SDIO register map base pointer */
-#define SDIO_BASE                       ((struct sdio_reg_map*)0x40018000)
+#define SDIO_BASE                   ((struct sdio_reg_map*)0x40018000)
 	
 	
 /*
@@ -76,6 +76,9 @@ typedef struct sdio_reg_map {
 /* Power Control Register */
 #define SDIO_POWER_RESERVED         0xFFFFFFFC
 #define SDIO_POWER_PWRCTRL          0x3
+
+#define SDIO_POWER_OFF				0x0
+#define SDIO_POWER_ON				0x3
 	
 /* Clock Control Register */
 #define SDIO_CLKCR_HWFC_EN_BIT      14
@@ -102,16 +105,17 @@ typedef struct sdio_reg_map {
 	
 /* Command Register */
 #define SDIO_CMD_ATACMD_BIT         14
-#define SDIO_CMD_NIEN_BIT           13
+#define SDIO_CMD_IEN_BIT            13
 #define SDIO_CMD_ENCMD_BIT          12
 #define SDIO_CMD_SDIOS_BIT          11
 #define SDIO_CMD_CPSMEN_BIT         10
 #define SDIO_CMD_WAITPEND_BIT       9
 #define SDIO_CMD_WAITINT_BIT        8
+#define SDIO_CMD_WAITRESP_BIT       6
 
 #define SDIO_CMD_RESERVED           0xFFFF8000
 #define SDIO_CMD_ATACMD             BIT(SDIO_CMD_ATACMD_BIT)
-#define SDIO_CMD_NIEN               BIT(SDIO_CMD_NIEN_BIT)
+#define SDIO_CMD_IEN                BIT(SDIO_CMD_IEN_BIT)
 #define SDIO_CMD_ENCMD              BIT(SDIO_CMD_ENCMD_BIT)
 #define SDIO_CMD_SDIOS              BIT(SDIO_CMD_SDIOS_BIT)
 #define SDIO_CMD_CPSMEN             BIT(SDIO_CMD_CPSMEN_BIT)
@@ -119,7 +123,7 @@ typedef struct sdio_reg_map {
 #define SDIO_CMD_WAITINT            BIT(SDIO_CMD_WAITINT_BIT)
 #define SDIO_CMD_WAITRESP           (0x3 << 6)
 #define SDIO_CMD_CMDINDEX           0x3F
-	
+
 /* Command Response Register */
 #define SDIO_RESPCMD_RESERVED       0xFFFFFFC0
 #define SDIO_RESPCMD_RESPCMD        0x3F
@@ -328,7 +332,7 @@ extern sdio_dev *SDIO;
 
 	
 /*
- * SDIO Functions
+ * SDIO function prototypes
  */
 
 // SDIO configure functions
@@ -352,8 +356,6 @@ void sdio_dma_enable(sdio_dev *dev);
 void sdio_dma_disable(sdio_dev *dev);
 void sdio_cfg_dma(sdio_dev *dev);
 // SDIO command functions
-void sdio_set_timeout(sdio_dev *dev, uint32 timeout);
-uint32 sdio_get_data_count(sdio_dev *dev);
 void sdio_load_arg(sdio_dev *dev, uint32 arg);
 void sdio_send_cmd(sdio_dev *dev, uint8 cmd);
 uint8 sdio_get_cmd(sdio_dev *dev);
@@ -369,9 +371,11 @@ uint32 sdio_is_rx_act(sdio_dev *dev);
 uint32 sdio_is_tx_act(sdio_dev *dev);
 uint32 sdio_is_xfer_in_prog(sdio_dev *dev);
 // SDIO auxiliary functions
+void sdio_set_timeout(sdio_dev *dev, uint32 timeout);
+uint32 sdio_get_data_count(sdio_dev *dev);
+uint32 sdio_get_fifo_count(sdio_dev *dev);
 uint32 sdio_read_data(sdio_dev *dev);
 void sdio_write_data(sdio_dev *dev, uint32 data);
-uint32 sdio_get_count(sdio_dev *dev);
 // SDIO interrupt functions
 void sdio_clear_flag(sdio_dev *dev, uint32 flag);
 uint8 sdio_get_status(sdio_dev *dev, uint32 rupt);

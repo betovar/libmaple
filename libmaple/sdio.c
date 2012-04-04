@@ -61,6 +61,7 @@ sdio_dev *SDIO = &sdio;
 void sdio_init(sdio_dev *dev) {
     rcc_clk_enable(dev->clk_id);
     rcc_reset_dev(dev->clk_id);
+    dev->regs->POWER = SDIO_POWER_ON;
 }
 
 /**
@@ -82,11 +83,24 @@ void sdio_reset(sdio_dev *dev) {
 /**
  * @brief Set the Clock Control Register
  * @param dev SDIO Device
- * @param ccr Clock Control Register Data 
+ * @param ccr Clock Control Register Data
+ * @note you should know what you're doing to use this
  */
 void sdio_set_ccr(sdio_dev *dev, uint32 ccr) {
     // Elminate stray bits in the reserved space
     dev->regs->CLKCR = (~SDIO_CLKCR_RESERVED & ccr);
+}
+
+/**
+ * @brief Configure the Command Path State Machine
+ * @param dev SDIO Device
+ * @param spc Register space to clear
+ * @param val value to set in register
+ */
+void sdio_cfg_cpsm(sdio_dev *dev, uint32 spc, uint32 val) {
+    dev->regs->CLKCR &= ~spc;
+    // Elminate stray bits in the reserved space
+    dev->regs->CLKCR |= (~SDIO_CLKCR_RESERVED & val & spc);
 }
 
 /**
@@ -157,7 +171,8 @@ void sdio_cfg_mode(sdio_dev *dev, uint8 mode) {
 /**
  * @brief Set the Data Control Register
  * @param dev SDIO Device
- * @param ccr Data Control Register Data 
+ * @param dcr Data Control Register Data
+ * @note you should know what you're doing to use this
  */
 void sdio_set_dcr(sdio_dev *dev, uint32 dcr) {
     dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & dcr);
@@ -225,27 +240,6 @@ void sdio_cfg_dma(sdio_dev *dev) {
 /*
  * SDIO command functions
  */
-
-/**
- * @brief Set response timeout
- * @param dev SDIO Device 
- * @param timeout Timeout value for the data path state
- *        machine in card bus clock periods.
- */
-void sdio_set_timeout(sdio_dev *dev, uint32 timeout) {
-    dev->regs->DTIMER = timeout;
-}
-
-/**
-  * @brief  Part of the data path state machine, this (read-only)register
-  *         loads the value from the data length register and decrements
-  *         until 0.
-  * @param  dev SDIO Device
-  * @retval Number of remaining data bytes to be transferred 
-  */
-uint32 sdio_get_data_count(sdio_dev *dev) {
-    return dev->regs->DCOUNT;
-}
 
 /**
  * @brief Load argument into SDIO Argument Register
@@ -385,16 +379,37 @@ void sdio_write_data(sdio_dev *dev, uint32 data) {
 }
 
 /**
+ * @brief Set response timeout
+ * @param dev SDIO Device 
+ * @param timeout Timeout value for the data path state
+ *        machine in card bus clock periods.
+ */
+void sdio_set_timeout(sdio_dev *dev, uint32 timeout) {
+    dev->regs->DTIMER = timeout;
+}
+
+/**
+  * @brief  Part of the data path state machine, this (read-only)register
+  *         loads the value from the data length register and decrements
+  *         until 0.
+  * @param  dev SDIO Device
+  * @retval Number of remaining data bytes to be transferred 
+  */
+uint32 sdio_get_data_count(sdio_dev *dev) {
+    return dev->regs->DCOUNT;
+}
+
+/**
   * @brief  Returns the number of words left to be written to or read from FIFO.    
   * @param  None
   * @retval Remaining number of words.
   */
-uint32 sdio_get_count(sdio_dev *dev) {
+uint32 sdio_get_fifo_count(sdio_dev *dev) {
     return dev->regs->FIFOCNT;
 }
 
 /*
- * IRQ handlers (TODO)
+ * SDIO interrupt functions
  */
 
 /**
