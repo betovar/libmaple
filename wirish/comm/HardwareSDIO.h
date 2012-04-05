@@ -55,28 +55,19 @@ typedef enum SDIODataBusWidth {
     SDIO_DBW_8 = 2, // MultiMedia Cards only
 } SDIODataBusWidth;
 
-typedef enum SDIODataBusMode {
-    SDIO_DBM_DEFAULT = 0, // 25 MHz
-    SDIO_DBM_HIGH, // 50 MHz
-    // The folliwing bus speeds require 1.8V signaling
-    SDIO_DBM_SDR12,
-    SDIO_DBM_SDR25,
-    SDIO_DBM_SDR50,
-    SDIO_DBM_SDR104,
-    SDIO_DBM_DDR50,
-} SDIODataBusMode;
-
 typedef enum SDIOFrequency {
-    SDIO_36_MHZ  = 0,
-    SDIO_25_MHZ  = 1,
-    SDIO_12_MHZ  = 2,
-    SDIO_6_MHZ   = 4,
-    SDIO_3_MHZ   = 8,
-    SDIO_1_MHZ   = 16,
-    SDIO_500_KHZ = 32,
-    SDIO_400_KHZ = 64,
-    SDIO_200_KHZ = 128,
-    SDIO_INIT_FREQ = 254,
+    SDIO_36_MHZ  = 0, // not supported for UHS_OM_DS
+    SDIO_24_MHZ  = 1,
+    SDIO_18_MHZ  = 2,
+    SDIO_12_MHZ  = 4,
+    SDIO_6_MHZ   = 10,
+    SDIO_3_MHZ   = 22,
+    SDIO_2_MHZ   = 34,
+    SDIO_1_MHZ   = 70,
+    SDIO_500_KHZ = 142,
+    SDIO_400_KHZ = 178,
+    SDIO_300_KHZ = 238,
+    SDIO_INIT_FREQ = 254, // 281,250 Hz
 } SDIOFrequency;
 
 typedef enum SDIODataBlockSize {
@@ -122,7 +113,7 @@ public:
      * @param width 
      * @param mode
      */
-    void begin(SDIOFrequency freq, SDIODataBusWidth width, SDIODataBusMode mode);
+    void begin(SDIOFrequency freq, SDIODataBusWidth width);
 
     /**
      * @brief Disables the SDIO port, but leaves its GPIO pin modes unchanged.
@@ -138,32 +129,48 @@ public:
      * @brief 
      * @param 
      */
-    void read(uint8 *buffer, uint32 length);
-
+    void readData(uint8 *buffer, uint32 length);
 
     /**
      * @brief 
      * @param 
      */
-    void write(const uint8 *buffer, uint32 length);
+    void writeData(const uint8 *buffer, uint32 length);
 
-    uint32 command(uint8);
+    
+    void wide_bus_selection(void); // ACMD6
     void card_reset(void);
-    void valid_voltage_range(void);
-    void blockRead(void);
-    void blockWrite(void);
-    void card_identification(void);
+    void card_initialization(void); // ACMD41
+    void card_identification_process(void);
+    void operating_voltage_validation(void);
     void card_status_register(void);
     void sd_status_register(void);
-    void write_protect(void);
-    void abort(void);
-    void erase(void);
+    
+    void protect(void); // write protect
+    void passwordSet(void);
+    void passwordReset(void);
+    void cardLock(void);
+    void cardUnlock(void);
 
+    void readBlock(void);
+    void writeBlock(void);
+    void abort(void);
+    void stop(void); // CMD12
+    void erase(void);
+    void eraseForce(void);
+/** functions for UHS cards
+void voltageSwitchSequence(void); // CMD11
+*/
 
 private:
     sdio_dev *sdio_d;
+    uint32 command(uint8);
     void dmaConfig(void);
-    void clockConfig(SDIOFrequency freq, SDIODataBusWidth width, SDIODataBusMode mode);
+      /**
+     * @brief 
+     * @param 
+     */
+    void busWidth(uint8 width);
 };
 
 #endif

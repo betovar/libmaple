@@ -100,7 +100,7 @@ void sdio_set_ccr(sdio_dev *dev, uint32 ccr) {
 void sdio_cfg_cpsm(sdio_dev *dev, uint32 spc, uint32 val) {
     dev->regs->CLKCR &= ~spc;
     // Elminate stray bits in the reserved space
-    dev->regs->CLKCR |= (~SDIO_CLKCR_RESERVED & val & spc);
+    dev->regs->CLKCR |= (~SDIO_CLKCR_RESERVED & (spc & val));
 }
 
 /**
@@ -118,7 +118,7 @@ void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div) {
 /**
  * @brief Configure GPIO bit modes for use as an SDIO port's pins
  * @param width WIDBUS tag to configure pins for use as an SDIO card
- * @note 8-bit data bus width not implemented on maple as of April 2012
+ * @note 8-bit data bus width is only allowed for UHS-I cards
  * @note This assumes you're on a LeafLabs-style board
  *       (CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
  */
@@ -151,16 +151,18 @@ void sdio_cfg_bus(sdio_dev *dev, uint8 width) {
     default:
         ASSERT(0);
     } //end of switch case
-    /* WIDBUS: width of data bus is set */
-    if (width <= 2) {
-        dev->regs->CLKCR &= ~SDIO_CLKCR_WIDBUS;
-        dev->regs->CLKCR |= (width << SDIO_CLKCR_WIDBUS_BIT);
+    if (width <= 1) {
+        sdio_cfg_cpsm(dev, SDIO_CLKCR_WIDBUS, 
+                      (width << SDIO_CLKCR_WIDBUS_BIT) );
+    } else {
+        ASSERT(0); //TODO[0.2.0] add support for UHS cards
     }
 }
 
 /**
- * @brief Configure SDIO pins by mode
+ * @brief Configure SDIO pins by Ultra High Speed Card mode
  * @param dev SDIO Device
+ * @param mode UHS mode (UHS_OM_DS=0 is default)
  * @note this is not implemented on maple as of April 2012
  */
 void sdio_cfg_mode(sdio_dev *dev, uint8 mode) {

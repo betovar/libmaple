@@ -338,20 +338,16 @@ extern sdio_dev *SDIO;
 // SDIO configure functions
 void sdio_init(sdio_dev *dev);
 void sdio_reset(sdio_dev *dev);
-void sdio_cfg_ccr(sdio_dev *dev, uint32 ccr);
-void sdio_cfg_dcr(sdio_dev *dev, uint32 dcr);
-void sdio_set_dataspeed(sdio_dev *dev, uint8 clk_div);
-void sdio_set_busmode(sdio_dev *dev, uint8 bus_width);
-void sdio_set_blocksize(sdio_dev *dev, uint32 block_size);    
-void sdio_set_datalength(sdio_dev *dev, uint32 data_length);
-uint32 sdio_get_datacount(sdio_dev *dev);
-
-void sdio_load_arg(sdio_dev *dev, uint32 arg);
-void sdio_post_cmd(sdio_dev *dev, uint8 cmd);
-uint8 sdio_get_last_cmd(sdio_dev *dev);
-
-//void sdio_cfg_gpio(sdio_dev *dev, data_bus_width);
-void sdio_cfg_dma(sdio_dev *dev);
+void sdio_set_ccr(sdio_dev *dev, uint32 ccr);
+void sdio_cfg_cpsm(sdio_dev *dev, uint32 spc, uint32 val);
+void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div);
+void sdio_cfg_bus(sdio_dev *dev, uint8 width);
+//void sdio_set_bus(sdio_dev *dev, uint8 width);
+void sdio_set_dcr(sdio_dev *dev, uint32 dcr);
+void sdio_cfg_dpsm(sdio_dev *dev, uint32 dcr);
+// SDIO hardware functions
+void sdio_peripheral_enable(sdio_dev *dev);
+void sdio_peripheral_disable(sdio_dev *dev);
 void sdio_dma_enable(sdio_dev *dev);
 void sdio_dma_disable(sdio_dev *dev);
 void sdio_cfg_dma(sdio_dev *dev);

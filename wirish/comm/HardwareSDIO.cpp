@@ -61,7 +61,7 @@ HardwareSDIO::HardwareSDIO(void) {
  * @param 
  */
 void HardwareSDIO::begin(void) {
-    this->begin(SDIO_INIT_FREQ, SDIO_DBW_0, SDIO_DBM_DEFAULT);
+    this->begin(SDIO_INIT_FREQ, SDIO_DBW_0);
 }
 
 /**
@@ -71,11 +71,9 @@ void HardwareSDIO::begin(void) {
  * @param mode
  */
 void HardwareSDIO::begin(SDIOFrequency freq,
-                         SDIODataBusWidth width,
-                         SDIODataBusMode mode) {
+                         SDIODataBusWidth width) {
     sdio_cfg_clock(this->sdio_d, (uint8)freq);
     sdio_cfg_bus(this->sdio_d, (uint8)width);
-    sdio_cfg_mode(this->sdio_d, (uint8)mode); //TODO [0.2.0]
 //    sdio_set_ccr(this->sdio_d, SDIO_CLKCR_CLKEN, (0x1 << SDIO_CLKCR_CLKEN_BIT));
     sdio_peripheral_enable(this->sdio_d);
 }
@@ -115,7 +113,7 @@ void HardwareSDIO::write(const uint8 *data, uint32 length) {
  * @param data_bus_width Enum to configure pins for use as an SDIO card
  * @note 8-bit data bus width not implemented on maple as of March 2012
  */
-void HardwareSDIO::card_identification(void) {
+void HardwareSDIO::card_identification_process(void) {
     //activate bus
     //host broadcasts SD_APP_OP_COND
     //card resp: ocr
@@ -124,4 +122,21 @@ void HardwareSDIO::card_identification(void) {
     //card resp: cid numbers
     //host issues: SET_RELATIVE_ADDR (rca)
     //
+}
+
+/**
+ * @brief Set bus width in clock control register
+ * @param width WIDBUS value to set
+ */
+void HardwareSDIO::busWidth(uint8 width) {
+    /* WIDBUS: width of data bus is set */
+    if (width <= 1) {
+        sdio_cfg_cpsm(this->sdio_d, SDIO_CLKCR_WIDBUS, 
+                      (width << SDIO_CLKCR_WIDBUS_BIT) );
+    } else {
+        ASSERT(0); //TODO[0.2.0] add support for UHS cards
+    }
+    //FIXME
+    // send command to set bus width in card
+    //this->command((SD)ACMD6 or (SDIO)CMD52);
 }
