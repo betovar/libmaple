@@ -1,0 +1,10 @@
+Card Command Library for Maple
+
+The goal of this library is to provide an feature set of commands specific to
+each card type. Thereby, a user can implement (at a minimum) read and writes
+to a card's registers.
+
+We begin with a Secure Digital card command set as this library is being
+developed alongside the sdio hardware peripheral.
+
+this page was last modified on 4 April 2012.

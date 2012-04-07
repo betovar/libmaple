@@ -355,11 +355,12 @@ void sdio_cfg_dma(sdio_dev *dev);
 void sdio_load_arg(sdio_dev *dev, uint32 arg);
 void sdio_send_cmd(sdio_dev *dev, uint8 cmd);
 uint8 sdio_get_cmd(sdio_dev *dev);
-uint32 sdio_get_resp(sdio_dev *dev);
+uint32 sdio_get_resp_short(sdio_dev *dev);
+void sdio_get_resp_long(sdio_dev *dev, uint32 *buf);
 void sdio_broadcast_cmd(sdio_dev *dev, uint8 cmd);
 void sdio_broadcast_cmd_wresponse(sdio_dev *dev, uint8 cmd);
-void sdio_addrd_cmd(sdio_dev *dev, uint8 cmd);
-void sdio_addrd_data_xfer_cmd(sdio_dev *dev, uint8 cmd);
+void sdio_addr_cmd(sdio_dev *dev, uint8 cmd);
+void sdio_addr_data_xfer_cmd(sdio_dev *dev, uint8 cmd);
 // SDIO status functions
 uint32 sdio_is_rx_data_aval(sdio_dev *dev);
 uint32 sdio_is_tx_data_aval(sdio_dev *dev);

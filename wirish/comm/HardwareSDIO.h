@@ -154,7 +154,6 @@ public:
 
     void readBlock(void);
     void writeBlock(void);
-    void abort(void);
     void stop(void); // CMD12
     void erase(void);
     void eraseForce(void);

@@ -160,17 +160,6 @@ void sdio_cfg_bus(sdio_dev *dev, uint8 width) {
 }
 
 /**
- * @brief Configure SDIO pins by Ultra High Speed Card mode
- * @param dev SDIO Device
- * @param mode UHS mode (UHS_OM_DS=0 is default)
- * @note this is not implemented on maple as of April 2012
- */
-void sdio_cfg_mode(sdio_dev *dev, uint8 mode) {
-    if (mode != 0) {
-        ASSERT(0);
-    }
-}
-/**
  * @brief Set the Data Control Register
  * @param dev SDIO Device
  * @param dcr Data Control Register Data
@@ -267,7 +256,7 @@ void sdio_send_cmd(sdio_dev *dev, uint8 cmd) {
 }
 
 /**
- * @brief Get command response
+ * @brief Get last sent command
  * @param dev SDIO Device 
  */
 uint8 sdio_get_cmd(sdio_dev *dev) {
@@ -276,11 +265,25 @@ uint8 sdio_get_cmd(sdio_dev *dev) {
 }
 
 /**
- * @brief Get response
- * @param dev SDIO Device 
+ * @brief Get short response
+ * @param dev SDIO Device
+ * @retval The 32-bit short response
  */
-uint32 sdio_get_resp(sdio_dev *dev) {
-    return 0;
+uint32 sdio_get_resp_short(sdio_dev *dev) {
+    return dev->regs->RESP1;
+}
+
+/**
+ * @brief Get long response
+ * @param dev SDIO Device 
+ * @param buf Pointer to 32-bit response buffer
+ * @retval None
+ */
+void sdio_get_resp_long(sdio_dev *dev, uint32 *buf) {
+     buf[0] = dev->regs->RESP1;
+     buf[1] = dev->regs->RESP2;
+     buf[2] = dev->regs->RESP3;
+     buf[3] = dev->regs->RESP4;
 }
 
 /**
