@@ -74,7 +74,8 @@ void HardwareSDIO::begin(SDIOFrequency freq,
                          SDIODataBusWidth width) {
     sdio_cfg_clock(this->sdio_d, (uint8)freq);
     sdio_cfg_bus(this->sdio_d, (uint8)width);
-//    sdio_set_ccr(this->sdio_d, SDIO_CLKCR_CLKEN, (0x1 << SDIO_CLKCR_CLKEN_BIT));
+    //sdio_set_ccr(this->sdio_d, SDIO_CLKCR_CLKEN, 
+    //(0x1 << SDIO_CLKCR_CLKEN_BIT));
     sdio_peripheral_enable(this->sdio_d);
 }
 

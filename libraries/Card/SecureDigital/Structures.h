@@ -35,7 +35,7 @@ typedef struct manufacturing_date {
 typedef struct CardIdentificationRegister {
   /** An 8-bit binary number that identifies the card manufacturer */
   uint8 MID; // Manufacturer ID
-  /** A 2-character ASCII string that identifies the card OEM and/or the card contents */
+  /** A 2-character ASCII string that identifies the card OEM */
   char OID[2]; // OEM/Application ID
   /** The product name is a string, 5-character ASCII string */
   char PNM[5]; // Product Name
@@ -62,7 +62,7 @@ typedef uint16 RCA;
 #endif
 
 // DriverStageRegister
-typedef uint16 DSR; // Default is 0x404
+typedef uint16 DSR; // Default is 0x0404
 
 typedef struct CardSpecificDataV1 {
     unsigned CSD_STRUCTURE          :2;
@@ -100,6 +100,45 @@ typedef struct CardSpecificDataV1 {
     unsigned Reserved5              :2;
     unsigned CRC                    :7;
     unsigned Always1                :1;
+} V1;
+
+typedef struct CardSpecificDataV1 {
+    unsigned CSD_STRUCTURE          :2;
+    unsigned Reserved1              :6;
+    uint8 TAAC;
+    uint8 NSAC;
+    uint8 TRAN_SPEED;
+    unsigned CCC                    :12;
+    unsigned READ_BL_LEN            :4;
+    unsigned READ_BL_PARTIAL        :1;
+    unsigned WRITE_BLK_MISALIGN     :1;
+    unsigned READ_BLK_MISALIGN      :1;
+    unsigned DSR_IMP                :1;
+    unsigned Reserved2              :6;
+    unsigned C_SIZE                 :22;
+    unsigned Reserved3              :1;
+    unsigned ERASE_BLK_EN           :1;
+    unsigned SECTOR_SIZE            :7;
+    unsigned WP_GRP_SIZE            :7;
+    unsigned WP_GRP_ENABLE          :1;
+    unsigned Reserved4              :2;
+    unsigned R2W_FACTOR             :3;
+    unsigned WRITE_BL_LEN           :4;
+    unsigned WRITE_BL_PARTIAL       :1;
+    unsigned Reserved5              :5;
+    unsigned FILE_FORMAT_GRP        :1;
+    unsigned COPY                   :1;
+    unsigned PERM_WRITE_PROTECT     :1;
+    unsigned TMP_WRITE_PROTECT      :1;
+    unsigned FILE_FORMAT            :2;
+    unsigned Reserved6              :2;
+    unsigned CRC                    :7;
+    unsigned Always1                :1;
+} V2;
+
+typedef union CardSpecificData {
+    V1;
+    V2;
 } CSD;
 
 typedef struct SdConfigurationRegister {

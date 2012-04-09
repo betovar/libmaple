@@ -40,9 +40,17 @@ static uint8 GO_INACTIVE_STATE = 0x0F;
 
 //#ifdef SD_SPI_BUS_PROTCOL
 //// Block-Oriented Read Commands (class 2)
-///** SET_BLOCKLEN - In the case of a Standard Capacity SD Memory Card, this command sets the block length (in bytes) for all following block commands (read, write, lock). Default block length is fixed to 512 Bytes. Set length is valid for memory access commands only if partial block read operation are allowed in CSD.
-//In the case of SDHC and SDXC Cards, block length set by CMD16 command doen't affect memory read and write commands. Always 512 Bytes fixed block length is used. This command is effective for LOCK_UNLOCK command.
-//In both cases, if block length is set larger than 512Bytes, the card sets the BLOCK_LEN_ERROR bit. In DDR50 mode, data is sampled on both edges of the clock. Therefore, block length shall always be even */
+///** SET_BLOCKLEN - In the case of a Standard Capacity SD Memory Card, this
+// command sets the block length (in bytes) for all following block commands
+// (read, write, lock). Default block length is fixed to 512 Bytes. Set length
+// is valid for memory access commands only if partial block read operation
+// are allowed in CSD.
+//In the case of SDHC and SDXC Cards, block length set by CMD16 command doen't
+// affect memory read and write commands. Always 512 Bytes fixed block length
+// is used. This command is effective for LOCK_UNLOCK command.
+//In both cases, if block length is set larger than 512Bytes, the card sets
+// the BLOCK_LEN_ERROR bit. In DDR50 mode, data is sampled on both edges of
+// the clock. Therefore, block length shall always be even */
 //static uint8 CMD16 = 0X00;
 ///** CMD17 - read a single data block from the card */
 //static uint8 READ_SINGLE_BLOCK = 0X11;

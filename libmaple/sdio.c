@@ -247,11 +247,12 @@ void sdio_load_arg(sdio_dev *dev, uint32 arg) {
  * @param cmd SDIO Command to send 
  */
 void sdio_send_cmd(sdio_dev *dev, uint8 cmd) {
-    // copy register and reset cmdindex
-    uint32 temp = dev->regs->CMD & SDIO_CMD_CMDINDEX;
-    // Ignore possible WAITRESP data
-    temp |= (uint32)cmd;// FIXME
-    // Elminate stray bits in the reserved space
+    // copy register
+    uint32 temp = dev->regs->CMD;
+    // clear cmd space
+    temp &= !(SDIO_CMD_WAITRESP & SDIO_CMD_CMDINDEX);
+    temp |= (uint32)cmd;
+    // load command register
     dev->regs->CMD = temp;
 }
 
@@ -405,7 +406,7 @@ uint32 sdio_get_data_count(sdio_dev *dev) {
 }
 
 /**
-  * @brief  Returns the number of words left to be written to or read from FIFO.    
+  * @brief  Returns the number of words left to be written to or read from FIFO
   * @param  None
   * @retval Remaining number of words.
   */
@@ -445,32 +446,38 @@ void sdio_clear_flag(sdio_dev *dev, uint32 flag) {
   * @brief  Checks whether the specified SDIO interrupt has occurred or not.
   * @param  SDIO_IT: specifies the SDIO interrupt source to check. 
   *   This parameter can be one of the following values:
-  *     @arg SDIO_IT_CEATAEND: CE-ATA command completion signal received for CMD61 interrupt
-  *     @arg SDIO_IT_SDIOIT:   SD I/O interrupt received interrupt
-  *     @arg SDIO_IT_RXDAVL:   Data available in receive FIFO interrupt
-  *     @arg SDIO_IT_TXDAVL:   Data available in transmit FIFO interrupt
-  *     @arg SDIO_IT_RXFIFOE:  Receive FIFO empty interrupt
-  *     @arg SDIO_IT_TXFIFOE:  Transmit FIFO empty interrupt
-  *     @arg SDIO_IT_RXFIFOF:  Receive FIFO full interrupt
-  *     @arg SDIO_IT_TXFIFOF:  Transmit FIFO full interrupt
-  *     @arg SDIO_IT_RXFIFOHF: Receive FIFO Half Full interrupt
-  *     @arg SDIO_IT_TXFIFOHE: Transmit FIFO Half Empty interrupt
-  *     @arg SDIO_IT_RXACT:    Data receive in progress interrupt
-  *     @arg SDIO_IT_TXACT:    Data transmit in progress interrupt
-  *     @arg SDIO_IT_CMDACT:   Command transfer in progress interrupt
-  *     @arg SDIO_IT_DBCKEND:  Data block sent/received (CRC check passed) interrupt
-  *     @arg SDIO_IT_STBITERR: Start bit not detected on all data signals in wide 
-  *                            bus mode interrupt
-  *     @arg SDIO_IT_DATAEND:  Data end (data counter, SDIDCOUNT, is zero) interrupt
-  *     @arg SDIO_IT_CMDSENT:  Command sent (no response required) interrupt
-  *     @arg SDIO_IT_CMDREND:  Command response received (CRC check passed) interrupt
-  *     @arg SDIO_IT_RXOVERR:  Received FIFO overrun error interrupt
-  *     @arg SDIO_IT_TXUNDERR: Transmit FIFO underrun error interrupt
-  *     @arg SDIO_IT_DTIMEOUT: Data timeout interrupt
-  *     @arg SDIO_IT_CTIMEOUT: Command response timeout interrupt
-  *     @arg SDIO_IT_DCRCFAIL: Data block sent/received (CRC check failed) interrupt
-  *     @arg SDIO_IT_CCRCFAIL: Command response received (CRC check failed) interrupt
-  * @retval The new state of SDIO_IT (SET or RESET).
+  *   @arg SDIO_IT_CEATAEND: CE-ATA command completion signal received for
+  *                          CMD61 interrupt
+  *   @arg SDIO_IT_SDIOIT:   SD I/O interrupt received interrupt
+  *   @arg SDIO_IT_RXDAVL:   Data available in receive FIFO interrupt
+  *   @arg SDIO_IT_TXDAVL:   Data available in transmit FIFO interrupt
+  *   @arg SDIO_IT_RXFIFOE:  Receive FIFO empty interrupt
+  *   @arg SDIO_IT_TXFIFOE:  Transmit FIFO empty interrupt
+  *   @arg SDIO_IT_RXFIFOF:  Receive FIFO full interrupt
+  *   @arg SDIO_IT_TXFIFOF:  Transmit FIFO full interrupt
+  *   @arg SDIO_IT_RXFIFOHF: Receive FIFO Half Full interrupt
+  *   @arg SDIO_IT_TXFIFOHE: Transmit FIFO Half Empty interrupt
+  *   @arg SDIO_IT_RXACT:    Data receive in progress interrupt
+  *   @arg SDIO_IT_TXACT:    Data transmit in progress interrupt
+  *   @arg SDIO_IT_CMDACT:   Command transfer in progress interrupt
+  *   @arg SDIO_IT_DBCKEND:  Data block sent/received (CRC check passed)
+  *                          interrupt
+  *   @arg SDIO_IT_STBITERR: Start bit not detected on all data signals in wide 
+  *                          bus mode interrupt
+  *   @arg SDIO_IT_DATAEND:  Data end (data counter, SDIDCOUNT, is zero)
+  *                          interrupt
+  *   @arg SDIO_IT_CMDSENT:  Command sent (no response required) interrupt
+  *   @arg SDIO_IT_CMDREND:  Command response received (CRC check passed)
+  *                          interrupt
+  *   @arg SDIO_IT_RXOVERR:  Received FIFO overrun error interrupt
+  *   @arg SDIO_IT_TXUNDERR: Transmit FIFO underrun error interrupt
+  *   @arg SDIO_IT_DTIMEOUT: Data timeout interrupt
+  *   @arg SDIO_IT_CTIMEOUT: Command response timeout interrupt
+  *   @arg SDIO_IT_DCRCFAIL: Data block sent/received (CRC check failed)
+  *                          interrupt
+  *   @arg SDIO_IT_CCRCFAIL: Command response received (CRC check failed)
+  *                          interrupt
+  * @retval status of the interrupt
   */
 uint8 sdio_get_status(sdio_dev *dev, uint32 rupt) { 
     uint8 status;
@@ -485,19 +492,24 @@ uint8 sdio_get_status(sdio_dev *dev, uint32 rupt) {
   * @brief  Clears the SDIO's interrupt pending bits.
   * @param  pend: specifies the interrupt pending bit to clear. 
   *   This parameter can be one or a combination of the following values:
-  *     @arg SDIO_ICR_CEATAENDC: CE-ATA command completion signal received for CMD61
-  *     @arg SDIO_ICR_SDIOITC:   SD I/O interrupt received interrupt
-  *     @arg SDIO_ICR_STBITERRC: Start bit not detected on all data signals in wide 
-  *                              bus mode interrupt
-  *     @arg SDIO_ICR_DATAENDC:  Data end (data counter, SDIDCOUNT, is zero) interrupt
-  *     @arg SDIO_ICR_CMDSENTC:  Command sent (no response required) interrupt
-  *     @arg SDIO_ICR_CMDRENDC:  Command response received (CRC check passed) interrupt
-  *     @arg SDIO_ICR_RXOVERRC:  Received FIFO overrun error interrupt
-  *     @arg SDIO_ICR_TXUNDERRC: Transmit FIFO underrun error interrupt
-  *     @arg SDIO_ICR_DTIMEOUTC: Data timeout interrupt
-  *     @arg SDIO_ICR_CTIMEOUTC: Command response timeout interrupt
-  *     @arg SDIO_ICR_DCRCFAILC: Data block sent/received (CRC check failed) interrupt
-  *     @arg SDIO_IT_CCRCFAILC:  Command response received (CRC check failed) interrupt
+  *   @arg SDIO_ICR_CEATAENDC: CE-ATA command completion signal received for
+  *                            CMD61
+  *   @arg SDIO_ICR_SDIOITC:   SD I/O interrupt received interrupt
+  *   @arg SDIO_ICR_STBITERRC: Start bit not detected on all data signals in
+  *                            wide bus mode interrupt
+  *   @arg SDIO_ICR_DATAENDC:  Data end (data counter, SDIDCOUNT, is zero)
+  *                            interrupt
+  *   @arg SDIO_ICR_CMDSENTC:  Command sent (no response required) interrupt
+  *   @arg SDIO_ICR_CMDRENDC:  Command response received (CRC check passed)
+  *                            interrupt
+  *   @arg SDIO_ICR_RXOVERRC:  Received FIFO overrun error interrupt
+  *   @arg SDIO_ICR_TXUNDERRC: Transmit FIFO underrun error interrupt
+  *   @arg SDIO_ICR_DTIMEOUTC: Data timeout interrupt
+  *   @arg SDIO_ICR_CTIMEOUTC: Command response timeout interrupt
+  *   @arg SDIO_ICR_DCRCFAILC: Data block sent/received (CRC check failed)
+  *                            interrupt
+  *   @arg SDIO_IT_CCRCFAILC:  Command response received (CRC check failed)
+  *                            interrupt
   * @retval None
   */
 void sdio_clear_pending(sdio_dev *dev, uint32 pend) {
