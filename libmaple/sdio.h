@@ -76,9 +76,6 @@ typedef struct sdio_reg_map {
 /* Power Control Register */
 #define SDIO_POWER_RESERVED         0xFFFFFFFC
 #define SDIO_POWER_PWRCTRL          0x3
-
-#define SDIO_POWER_OFF				0x0
-#define SDIO_POWER_ON				0x3
 	
 /* Clock Control Register */
 #define SDIO_CLKCR_HWFC_EN_BIT      14
@@ -357,10 +354,6 @@ void sdio_send_cmd(sdio_dev *dev, uint8 cmd);
 uint8 sdio_get_cmd(sdio_dev *dev);
 uint32 sdio_get_resp_short(sdio_dev *dev);
 void sdio_get_resp_long(sdio_dev *dev, uint32 *buf);
-void sdio_broadcast_cmd(sdio_dev *dev, uint8 cmd);
-void sdio_broadcast_cmd_wresponse(sdio_dev *dev, uint8 cmd);
-void sdio_addr_cmd(sdio_dev *dev, uint8 cmd);
-void sdio_addr_data_xfer_cmd(sdio_dev *dev, uint8 cmd);
 // SDIO status functions
 uint32 sdio_is_rx_data_aval(sdio_dev *dev);
 uint32 sdio_is_tx_data_aval(sdio_dev *dev);

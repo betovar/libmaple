@@ -61,7 +61,6 @@ sdio_dev *SDIO = &sdio;
 void sdio_init(sdio_dev *dev) {
     rcc_clk_enable(dev->clk_id);
     rcc_reset_dev(dev->clk_id);
-    dev->regs->POWER = SDIO_POWER_ON;
 }
 
 /**
@@ -285,37 +284,6 @@ void sdio_get_resp_long(sdio_dev *dev, uint32 *buf) {
      buf[1] = dev->regs->RESP2;
      buf[2] = dev->regs->RESP3;
      buf[3] = dev->regs->RESP4;
-}
-
-/**
- * @brief Post a Broadcast Command to all SDIO cards
- * @param dev SDIO Device
- */
-void sdio_broadcast_cmd(sdio_dev *dev, uint8 cmd) {
-    dev->regs->CMD &= ~SDIO_CMD_CMDINDEX;
-    dev->regs->CMD |= (uint32)cmd;
-    //bb_peri_set_bit(&dev->regs->CMD, SDIO_CMD_CMDEN, 1);
-}
-
-/**
- * @brief Broadcast Command with Response to all SDIO cards
- * @param dev SDIO Device
- */
-void sdio_broadcast_cmd_wresponse(sdio_dev *dev, uint8 cmd) {   
-}
-
-/**
- * @brief Addressed Command to the SDIO card
- * @param dev SDIO Device
- */
-void sdio_addr_cmd(sdio_dev *dev, uint8 cmd) {
-}
-
-/**
- * @brief Addressed Data Transfer Command to the SDIO card
- * @param dev SDIO Device
- */
-void sdio_addr_data_xfer_cmd(sdio_dev *dev, uint8 cmd) {
 }
 
 /*

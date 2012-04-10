@@ -8,9 +8,9 @@ BUILDDIRS += $(BUILD_PATH)/$(d)
 CFLAGS_$(d) := $(WIRISH_INCLUDES) $(LIBMAPLE_INCLUDES)
 
 # Local rules and targets
-cSRCS_$(d) :=
+cSRCS_$(d) := 
 
-cppSRCS_$(d) := cardSecureDigital.cpp
+cppSRCS_$(d) := SecureDigitalMemoryCard.cpp
 
 cFILES_$(d) := $(cSRCS_$(d):%=$(d)/%)
 cppFILES_$(d) := $(cppSRCS_$(d):%=$(d)/%)

@@ -42,17 +42,24 @@
  * Types
  */
 
-typedef enum SDIOPower {
+typedef enum SDIOPowerState {
     SDIO_POWER_OFF = 0,
     // Reserved    = 1,
     SDIO_POWER_UP  = 2,
-    SDIO_POWER_ON  = 3,
+    SDIO_POWER_ON  = 3
 } SDIOPowerState;
+
+typedef enum SDIOWaitResp {
+    SDIO_NO_RESP   = 0,
+    SDIO_SHRT_RESP = 1,
+    //SDIO_NO_2_RESP = 2,
+    SDIO_LONG_RESP = 3
+} SDIOWaitResp;
 
 typedef enum SDIODataBusWidth {
     SDIO_DBW_0 = 0, // SDIO initialization default
     SDIO_DBW_4 = 1,
-    SDIO_DBW_8 = 2, // MultiMedia Cards only
+    SDIO_DBW_8 = 2  // MultiMedia Cards only
 } SDIODataBusWidth;
 
 typedef enum SDIOFrequency {
@@ -67,7 +74,7 @@ typedef enum SDIOFrequency {
     SDIO_500_KHZ = 142,
     SDIO_400_KHZ = 178,
     SDIO_300_KHZ = 238,
-    SDIO_INIT_FREQ = 254, // 281,250 Hz
+    SDIO_INIT_FREQ = 254 // 281,250 Hz
 } SDIOFrequency;
 
 typedef enum SDIODataBlockSize {
@@ -85,14 +92,14 @@ typedef enum SDIODataBlockSize {
     SDIO_DBSZ_2048  = 11,
     SDIO_DBSZ_4096  = 12,
     SDIO_DBSZ_8192  = 13,
-    SDIO_DBSZ_16384 = 14,
+    SDIO_DBSZ_16384 = 14
 } SDIODataBlockSize;
 
 /**
  * @brief Wirish SDIO interface
  */
 class HardwareSDIO {
-public:
+  public:
     /**
      * @brief SDIO class constructor
      * @param 
@@ -120,57 +127,12 @@ public:
      */
     void end(void);
 
-
-/*
- * I/O
- */
-
-    /**
-     * @brief 
-     * @param 
-     */
-    void readData(uint8 *buffer, uint32 length);
-
-    /**
-     * @brief 
-     * @param 
-     */
-    void writeData(const uint8 *buffer, uint32 length);
-
-    
-    void wide_bus_selection(void); // ACMD6
-    void card_reset(void);
-    void card_initialization(void); // ACMD41
-    void card_identification_process(void);
-    void operating_voltage_validation(void);
-    void card_status_register(void);
-    void sd_status_register(void);
-    
-    void protect(void); // write protect
-    void passwordSet(void);
-    void passwordReset(void);
-    void cardLock(void);
-    void cardUnlock(void);
-
-    void readBlock(void);
-    void writeBlock(void);
-    void stop(void); // CMD12
-    void erase(void);
-    void eraseForce(void);
-/** functions for UHS cards
-void voltageSwitchSequence(void); // CMD11
-*/
-
-private:
-    sdio_dev *sdio_d;
     uint32 command(uint8);
-    void dmaConfig(void);
-      /**
-     * @brief 
-     * @param 
-     */
-    void busWidth(uint8 width);
+    //void dmaConfig(void);
+    void power(SDIOPowerState);
+    
+  protected:
+    sdio_dev *sdio_d;
 };
 
 #endif
-

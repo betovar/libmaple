@@ -1,8 +1,37 @@
+/******************************************************************************
+ * The MIT License
+ *
+ * Copyright (c) 2012 LeafLabs, LLC
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *****************************************************************************/
+
 /** @file Structures.h
  *  @breif These typedefs define card register data and properities
  *         Most of this information is taken from the Part 1 Physical Layer
  *         Specification Verson 3.01
 */
+
+#ifndef _SD_STRUCTURES_H_
+#define _SD_STRUCTURES_H_
 
 //OperationConditionsRegister
 typedef struct OperationConditionsRegister {
@@ -19,7 +48,7 @@ typedef struct OperationConditionsRegister {
     /** Card power up status bit: This bit is set to LOW if
      *  the card has not finished the power up routine. */
     unsigned BUSY                   :1;
-} OCR;
+} ocr;
 
 typedef struct product_revision {
     unsigned N                      :4;
@@ -44,7 +73,7 @@ typedef struct CardIdentificationRegister {
    * The "n" is the most significant nibble and "m" is the least
    * significant nibble */
   prod_revn PRV; // Product Revision Number
-  /** The Serial Number is 32 bits of binary number */
+  /** The Serial Number is 32 bits of a binary number */
   uint32 PSN;  // Product Serial Number
   /** The manufacturing date is composed of two hexadecimal digits, one
    * is 8 bits representing the year(y) and the other is 4 bits representing
@@ -54,15 +83,19 @@ typedef struct CardIdentificationRegister {
   /** CRC7 checksum (7 bits), the  zeroth bit is always 1 */
   unsigned CRC                      :7; // CRC7 Checksum
   unsigned Always1                  :1;
-} CID;
+} cid;
 
 #ifndef SD_SPI_BUS_PROTOCOL
 //RelativeCardAddress
-typedef uint16 RCA;
+typedef struct RelativeCardAddress {
+    uint16 RCA;
+    uint8 Reserved1;
+    uint8 Reserved2;
+} rca;
 #endif
 
 // DriverStageRegister
-typedef uint16 DSR; // Default is 0x0404
+typedef uint16 dsr; // Optional
 
 typedef struct CardSpecificDataV1 {
     unsigned CSD_STRUCTURE          :2;
@@ -100,9 +133,9 @@ typedef struct CardSpecificDataV1 {
     unsigned Reserved5              :2;
     unsigned CRC                    :7;
     unsigned Always1                :1;
-} V1;
+} csdV1;
 
-typedef struct CardSpecificDataV1 {
+typedef struct CardSpecificDataV2 {
     unsigned CSD_STRUCTURE          :2;
     unsigned Reserved1              :6;
     uint8 TAAC;
@@ -134,12 +167,12 @@ typedef struct CardSpecificDataV1 {
     unsigned Reserved6              :2;
     unsigned CRC                    :7;
     unsigned Always1                :1;
-} V2;
+} csdV2;
 
 typedef union CardSpecificData {
-    V1;
-    V2;
-} CSD;
+    csdV1 V1;
+    csdV2 V2;
+} csd;
 
 typedef struct SdConfigurationRegister {
     /** value 0 is for physical layer spec 1.01-3.01 */
@@ -160,7 +193,7 @@ typedef struct SdConfigurationRegister {
     /** new command support for newer cards */
     unsigned CMD_SUPPORT            :2;
     unsigned Reserved2              :32;
-} SCR;
+} scr;
 
 //CardStatusRegister
 typedef struct CardStatusRegister {
@@ -189,7 +222,7 @@ typedef struct CardStatusRegister {
     unsigned Reserved3              :1;
     unsigned AKE_SEQ_ERROR          :1;
     unsigned Reserved4              :3;
-} CSR;
+} csr;
 
 //SdStatusRegister
 typedef struct SdStatusRegister {
@@ -208,6 +241,8 @@ typedef struct SdStatusRegister {
     unsigned ERASE_OFFSET           :2;
     unsigned UHS_SPEED_GRADE        :4;
     unsigned UHS_AU_SIZE            :4;
-    unsigned Reserved4              :80;
-    unsigned Reserved5              :312
-} SSR
+    uint8 Reserved4[10];
+    uint8 Reserved5[39];
+} ssr;
+
+#endif
