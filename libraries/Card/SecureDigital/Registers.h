@@ -24,14 +24,14 @@
  * SOFTWARE.
  *****************************************************************************/
 
-/** @file Structures.h
+/** @file Registers.h
  *  @breif These typedefs define card register data and properities
  *         Most of this information is taken from the Part 1 Physical Layer
  *         Specification Verson 3.01
 */
 
-#ifndef _SD_STRUCTURES_H_
-#define _SD_STRUCTURES_H_
+#ifndef _SD_REGISTERS_H_
+#define _SD_REGISTERS_H_
 
 //OperationConditionsRegister
 typedef struct OperationConditionsRegister {
@@ -192,11 +192,11 @@ typedef struct SdConfigurationRegister {
     unsigned Reserved1              :9;
     /** new command support for newer cards */
     unsigned CMD_SUPPORT            :2;
-    unsigned Reserved2              :32;
+    uint32 Reserved2;
 } scr;
 
-//CardStatusRegister
-typedef struct CardStatusRegister {
+//CardStatusResponse
+typedef struct CardStatusResponse {
     unsigned OUT_OF_RANGE           :1;
     unsigned ADDRESS_ERROR          :1;
     unsigned BLOCK_LEN_ERROR        :1;
@@ -210,33 +210,35 @@ typedef struct CardStatusRegister {
     unsigned CARD_ECC_FAILED        :1;
     unsigned CC_ERROR               :1;
     unsigned ERROR                  :1;
-    unsigned Reserved1              :2;
+    unsigned Reserved1              :1;
+    unsigned Reserved2              :1;
     unsigned CSD_OVERWRITE          :1;
     unsigned WP_ERASE_SKIP          :1;
     unsigned CARD_ECC_DISABLED      :1;
     unsigned ERASE_RESET            :1;
     unsigned CURRENT_STATE          :4;
     unsigned READY_FOR_DATA         :1;
-    unsigned Reserved2              :2;
+    unsigned Reserved3              :2;
     unsigned APP_CMD                :1;
-    unsigned Reserved3              :1;
+    unsigned Reserved4              :1;
     unsigned AKE_SEQ_ERROR          :1;
-    unsigned Reserved4              :3;
+    unsigned Reserved5              :1;
+    unsigned Reserved6              :2;
 } csr;
 
-//SdStatusRegister
-typedef struct SdStatusRegister {
+//SdStatusResponse
+typedef struct SdStatusResponse {
     unsigned DAT_BUS_WIDTH          :2;
     unsigned SECURED_MODE           :1;
     unsigned Reserved1              :7;
     unsigned Reserved2              :6;
-    unsigned SD_CARD_TYPE           :16;
-    unsigned SIZE_OF_PROTECTED_AREA :32;
-    unsigned SPEED_CLASS            :8;
-    unsigned PERFORMANCE_MOVE       :8;
+    uint16 SD_CARD_TYPE;
+    uint32 SIZE_OF_PROTECTED_AREA;
+    uint8 SPEED_CLASS;
+    uint8 PERFORMANCE_MOVE;
     unsigned AU_SIZE                :4;
     unsigned Reserved3              :4;
-    unsigned ERASE_SIZE             :16;
+    uint16 ERASE_SIZE;
     unsigned ERASE_TIMEOUT          :6;
     unsigned ERASE_OFFSET           :2;
     unsigned UHS_SPEED_GRADE        :4;
@@ -244,5 +246,12 @@ typedef struct SdStatusRegister {
     uint8 Reserved4[10];
     uint8 Reserved5[39];
 } ssr;
+
+//InterfaceConditionResponse
+typedef struct InterfaceConditionResponse {
+    unsigned Reserved1              :20;
+    unsigned VOLTAGE_ACCEPTED       :4;
+    unsigned CHECK_PATTERN          :8;
+} icr;
 
 #endif

@@ -30,10 +30,8 @@
  * @brief SDIO class
  */
 
-
-#include "libmaple_types.h"
 #include "sdio.h"
-//#include "boards.h"
+#include "libmaple_types.h"
 
 #ifndef _HARDWARESDIO_H_
 #define _HARDWARESDIO_H_
@@ -43,27 +41,27 @@
  */
 
 typedef enum SDIOPowerState {
-    SDIO_POWER_OFF = 0,
-    // Reserved    = 1,
-    SDIO_POWER_UP  = 2,
-    SDIO_POWER_ON  = 3
+    SDIO_PWR_OFF = 0,
+    // Reserved  = 1,
+    SDIO_PWR_UP  = 2,
+    SDIO_PWR_ON  = 3
 } SDIOPowerState;
 
 typedef enum SDIOWaitResp {
-    SDIO_NO_RESP   = 0,
-    SDIO_SHRT_RESP = 1,
-    //SDIO_NO_2_RESP = 2,
-    SDIO_LONG_RESP = 3
+    SDIO_WRSP_NONE     = 0,
+    SDIO_WRSP_SHRT     = 1,
+    //SDIO_WRSP_NONE_2 = 2,
+    SDIO_WRSP_LONG     = 3
 } SDIOWaitResp;
 
 typedef enum SDIODataBusWidth {
-    SDIO_DBW_0 = 0, // SDIO initialization default
+    SDIO_DBW_1 = 0, // SDIO initialization default
     SDIO_DBW_4 = 1,
     SDIO_DBW_8 = 2  // MultiMedia Cards only
 } SDIODataBusWidth;
 
 typedef enum SDIOFrequency {
-    SDIO_36_MHZ  = 0, // not supported for UHS_OM_DS
+    SDIO_36_MHZ  = 0, // not supported for SD cards
     SDIO_24_MHZ  = 1,
     SDIO_18_MHZ  = 2,
     SDIO_12_MHZ  = 4,
@@ -95,44 +93,59 @@ typedef enum SDIODataBlockSize {
     SDIO_DBSZ_16384 = 14
 } SDIODataBlockSize;
 
+typedef enum SDIOInterruptFlag {
+    SDIO_FLAG_CCRCFAIL = 0,
+    SDIO_FLAG_DCRCFAIL = 1,
+    SDIO_FLAG_CTIMEOUT = 2,
+    SDIO_FLAG_DTIMEOUT = 3,
+    SDIO_FLAG_TXUNDERR = 4,
+    SDIO_FLAG_RXOVERR  = 5,
+    SDIO_FLAG_CMDREND  = 6,
+    SDIO_FLAG_CMDSENT  = 7,
+    SDIO_FLAG_DATAEND  = 8,
+    SDIO_FLAG_STBITERR = 9,
+    SDIO_FLAG_DBCKEND  = 10,
+    SDIO_FLAG_CMDACT   = 11,
+    SDIO_FLAG_TXACT    = 12,
+    SDIO_FLAG_RXACT    = 13,
+    SDIO_FLAG_TXFIFOHE = 14,
+    SDIO_FLAG_RXFIFOHF = 15,
+    SDIO_FLAG_TXFIFOF  = 16,
+    SDIO_FLAG_RXFIFOF  = 17,
+    SDIO_FLAG_TXFIFOE  = 18,
+    SDIO_FLAG_RXFIFOE  = 19,
+    SDIO_FLAG_TXDAVL   = 20,
+    SDIO_FLAG_RXDAVL   = 21,
+    SDIO_FLAG_SDIOIT   = 22,
+    SDIO_FLAG_CEATAEND = 23
+} SDIOInterruptFlag;
 /**
  * @brief Wirish SDIO interface
  */
 class HardwareSDIO {
   public:
-    /**
-     * @brief SDIO class constructor
-     * @param 
-     */
     HardwareSDIO(void);
 
-    /**
-     * @brief 
-     * @param freq
-     * @param width 
-     * @param mode
-     */
     void begin(void);
-
-    /**
-     * @brief 
-     * @param freq
-     * @param width 
-     * @param mode
-     */
-    void begin(SDIOFrequency freq, SDIODataBusWidth width);
-
-    /**
-     * @brief Disables the SDIO port, but leaves its GPIO pin modes unchanged.
-     */
+    void begin(SDIOFrequency, SDIODataBusWidth);
     void end(void);
 
-    uint32 command(uint8);
-    //void dmaConfig(void);
-    void power(SDIOPowerState);
-    
+    uint32 read(void);
+  //read(uint8*, uint32)
+    void write(uint32);
+  //write(const uint8*, uint32)
+    void send(uint8);
+    void send(uint8, uint32);
+    void send(uint8, uint32, void*);
+
   protected:
     sdio_dev *sdio_d;
+
+    void power(SDIOPowerState);
+    void freq(SDIOFrequency);
+    void bus(SDIODataBusWidth);
+    //void dmaConfig(void);
+    
 };
 
 #endif

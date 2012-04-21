@@ -1,6 +1,5 @@
 build/
 doxygen/
-main.cpp
 libmaple.layout
 tags
 TAGS

@@ -31,13 +31,9 @@
  */
 
 #include "HardwareSDIO.h"
-
-#include "sdio.h"
+#include "wirish.h"
 #include "util.h"
 #include "rcc.h"
-
-#include "wirish.h"
-//#include "boards.h"
 
 #if CYCLES_PER_MICROSECOND != 72
 /* TODO [0.2.0?] something smarter than this */
@@ -61,28 +57,114 @@ HardwareSDIO::HardwareSDIO(void) {
  * @param 
  */
 void HardwareSDIO::begin(void) {
-    this->begin(SDIO_INIT_FREQ, SDIO_DBW_0);
+    this->begin(SDIO_INIT_FREQ, SDIO_DBW_1);
 }
 
 /**
- * @brief 
- * @param freq
- * @param width
- * @param mode
+ * @brief Begin SDIO clock and configure pins
+ * @param freq Frequency to set SDIO_CLK
+ * @param width Bus width to configure pins for
  */
 void HardwareSDIO::begin(SDIOFrequency freq,
                          SDIODataBusWidth width) {
-    sdio_cfg_clock(this->sdio_d, (uint8)freq);
-    sdio_cfg_bus(this->sdio_d, (uint8)width);
-    //sdio_set_ccr(this->sdio_d, SDIO_CLKCR_CLKEN, 
-    //(0x1 << SDIO_CLKCR_CLKEN_BIT));
+    this->freq(freq);
+    this->bus(width);
+    uint32 widbus = ((uint32)width << SDIO_CLKCR_WIDBUS_BIT);
+    sdio_cfg_clkcr(this->sdio_d, SDIO_CLKCR_WIDBUS, widbus);
     sdio_peripheral_enable(this->sdio_d);
+    this->power(SDIO_PWR_ON);
 }
 
 void HardwareSDIO::end(void) {
     sdio_reset(this->sdio_d);
 }
 
-void HardwareSDIO::power(SDIOPowerState pow) {
-    this->sdio_d->regs->POWER = (uint32)pow;
+void HardwareSDIO::power(SDIOPowerState pwr) {
+    switch (pwr) {
+    case SDIO_PWR_ON:
+        sdio_power(this->sdio_d, SDIO_POWER_ON);
+        break;
+    case SDIO_PWR_OFF:
+        sdio_power(this->sdio_d, SDIO_POWER_OFF);
+        break;
+    default:
+        ASSERT(0);
+    }//end of switch
+    //block-until/wait-for power on
+    uint32 timeout = 1000;
+    while (this->sdio_d->regs->POWER == SDIO_POWER_ON) {
+        if (!timeout) {
+            timeout--;
+        } else {
+            break;
+        }
+    };
+}
+
+void HardwareSDIO::freq(SDIOFrequency freq) {
+    sdio_cfg_clock(this->sdio_d, (uint8)freq);
+}
+
+void HardwareSDIO::bus(SDIODataBusWidth width) {
+    sdio_cfg_gpio(this->sdio_d, (uint8)width);
+}
+
+/**
+ * @brief Command (without response nor argument) to send to card
+ * @param idx Command to send
+ */
+void HardwareSDIO::send(uint8 idx) {
+    this->send(idx, 0, NULL);
+}
+
+/**
+ * @brief Command (without response) to send to card
+ * @param idx Command to send
+ * @param arg Argument to send to card
+ */
+void HardwareSDIO::send(uint8 idx, uint32 arg) {
+    this->send(idx, arg, NULL);
+}
+
+/**
+ * @brief Command (with response) to send to card
+ * @param idx Command Index to send
+ * @param arg Argument to send
+ * @param rsp Buffer to store response
+ */
+void HardwareSDIO::send(uint8 idx,
+                        uint32 arg,
+                        void *resp) {
+    sdio_load_arg(this->sdio_d, arg);
+    sdio_send_cmd(this->sdio_d, idx);
+    sdio_get_resp_long(this->sdio_d, (uint32*)resp);
+}
+
+/**
+ * @brief Read next word from FIFO 
+ * @retval Data that was read from FIFO
+ */
+uint32 HardwareSDIO::read(void) {
+    return sdio_read_data(this->sdio_d);
+/**
+    uint32 rxed = 0;
+    while (rxed < len) {
+        while (!spi_is_rx_nonempty(this->spi_d))
+            buf[rxed++] = (uint8)spi_rx_reg(this->spi_d);
+    }
+    */
+}
+
+/**
+ * @brief Write next word into FIFO
+ * @param word Data to write to FIFO
+ */
+void HardwareSDIO::write(const uint32 word) {
+    sdio_write_data(this->sdio_d, word);
+/**
+    uint32 txed = 0;
+    while (txed < length) {
+        txed += spi_tx(this->spi_d, data + txed, length - txed);
+    }
+    */
 }

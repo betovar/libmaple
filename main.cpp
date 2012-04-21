@@ -9,7 +9,7 @@
  */
 
 #include "wirish.h"
-#include "libraries/Card/SecureDigital/SecureDigitalMemoryCard.h"
+#include "libraries/Card/SecureDigital/SDMC.h"
 
 SecureDigitalMemoryCard SDMC;
 
@@ -20,8 +20,12 @@ void setup() {
 
 void loop() {
     waitForButtonPress();
-
-     SerialUSB.println("*** Running SDMC test...");
+    toggleLED();
+    SerialUSB.println("*** Running SDMC test...");
+    SDMC.begin();
+    SDMC.init();
+    SerialUSB.println(SDMC.CID.PSN, DEC);
+    SDMC.end();
 }
 
 // Force init to be called *first*, i.e. before static object allocation.

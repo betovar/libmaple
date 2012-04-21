@@ -76,6 +76,9 @@ typedef struct sdio_reg_map {
 /* Power Control Register */
 #define SDIO_POWER_RESERVED         0xFFFFFFFC
 #define SDIO_POWER_PWRCTRL          0x3
+
+#define SDIO_POWER_OFF              0x0
+#define SDIO_POWER_ON               0x3
 	
 /* Clock Control Register */
 #define SDIO_CLKCR_HWFC_EN_BIT      14
@@ -101,7 +104,7 @@ typedef struct sdio_reg_map {
 #define SDIO_ARG_CMDARG             0xFFFFFFFF
 	
 /* Command Register */
-#define SDIO_CMD_ATACMD_BIT         14
+#define SDIO_CMD_CEATACMD_BIT       14
 #define SDIO_CMD_IEN_BIT            13
 #define SDIO_CMD_ENCMD_BIT          12
 #define SDIO_CMD_SDIOS_BIT          11
@@ -111,7 +114,7 @@ typedef struct sdio_reg_map {
 #define SDIO_CMD_WAITRESP_BIT       6
 
 #define SDIO_CMD_RESERVED           0xFFFF8000
-#define SDIO_CMD_ATACMD             BIT(SDIO_CMD_ATACMD_BIT)
+#define SDIO_CMD_CEATACMD           BIT(SDIO_CMD_CEATACMD_BIT)
 #define SDIO_CMD_IEN                BIT(SDIO_CMD_IEN_BIT)
 #define SDIO_CMD_ENCMD              BIT(SDIO_CMD_ENCMD_BIT)
 #define SDIO_CMD_SDIOS              BIT(SDIO_CMD_SDIOS_BIT)
@@ -335,13 +338,11 @@ extern sdio_dev *SDIO;
 // SDIO configure functions
 void sdio_init(sdio_dev *dev);
 void sdio_reset(sdio_dev *dev);
-void sdio_set_ccr(sdio_dev *dev, uint32 ccr);
-void sdio_cfg_cpsm(sdio_dev *dev, uint32 spc, uint32 val);
-void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div);
-void sdio_cfg_bus(sdio_dev *dev, uint8 width);
-//void sdio_set_bus(sdio_dev *dev, uint8 width);
-void sdio_set_dcr(sdio_dev *dev, uint32 dcr);
-void sdio_cfg_dpsm(sdio_dev *dev, uint32 dcr);
+void sdio_power(sdio_dev *dev, uint32 pwr);
+// SDIO clock and bus functions
+void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val);
+void sdio_cfg_clock(sdio_dev *dev, uint8 div);
+void sdio_cfg_gpio(sdio_dev *dev, uint8 width);
 // SDIO hardware functions
 void sdio_peripheral_enable(sdio_dev *dev);
 void sdio_peripheral_disable(sdio_dev *dev);
@@ -359,17 +360,18 @@ uint32 sdio_is_rx_data_aval(sdio_dev *dev);
 uint32 sdio_is_tx_data_aval(sdio_dev *dev);
 uint32 sdio_is_rx_act(sdio_dev *dev);
 uint32 sdio_is_tx_act(sdio_dev *dev);
-uint32 sdio_is_xfer_in_prog(sdio_dev *dev);
-// SDIO auxiliary functions
-uint32 sdio_read_data(sdio_dev *dev);
-void sdio_write_data(sdio_dev *dev, uint32 data);
+uint32 sdio_xfer_in_prog(sdio_dev *dev);
+// SDIO data functions
+void sdio_cfg_dcr(sdio_dev *dev, uint32 spc, uint32 val);
 void sdio_set_timeout(sdio_dev *dev, uint32 timeout);
 uint32 sdio_get_data_count(sdio_dev *dev);
 uint32 sdio_get_fifo_count(sdio_dev *dev);
+uint32 sdio_read_data(sdio_dev *dev);
+void sdio_write_data(sdio_dev *dev, uint32 data);
 // SDIO interrupt functions
-void sdio_clear_flag(sdio_dev *dev, uint32 flag);
 uint8 sdio_get_status(sdio_dev *dev, uint32 rupt);
-void sdio_clear_pending(sdio_dev *dev, uint32 pend);
+void sdio_clear_interrupt(sdio_dev *dev, uint32 flag);
+void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask, uint8 state);
 
 #ifdef __cplusplus
 }

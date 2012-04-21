@@ -31,12 +31,12 @@
  */
 
 #include "libmaple_types.h"
-#include "Structures.h"
-#include "Commands.h"
 #include "HardwareSDIO.h"
+#include "Registers.h"
+#include "Commands.h"
 
-#ifndef _SECUREDIGITALMEMORYCARD_H_
-#define _SECUREDIGITALMEMORYCARD_H_
+#ifndef _SDMC_H_
+#define _SDMC_H_
  /**
  * @brief Wirish SecureDigitalMemoryCard interface
  */
@@ -48,60 +48,44 @@ class SecureDigitalMemoryCard : public HardwareSDIO {
     dsr DSR; // Default is 0x0404
     csd CSD;
     scr SCR;
-    csr CSR;
-    ssr SSR;
 
     SecureDigitalMemoryCard();
-
-/*
- * I/O
- */
-
-    /**
-     * @brief 
-     * @param 
-     */
-    void readData(uint8 *buffer, uint32 length);
-
-    /**
-     * @brief 
-     * @param 
-     */
-    void writeData(const uint8 *buffer, uint32 length);
-
+    // common functions
+    void init(void); // ACMD41
+    void bus(SDIODataBusWidth); // ACMD6
+    void stop(void); // CMD12
+    void cmd(SDIOCmdIndex);
+    void cmd(SDIOCmdIndex, uint32);
+    void cmd(SDIOCmdIndex, uint32, SDIOWaitResp, uint32*);
+    void acmd(SDIOAppCmdIndex);
+    void acmd(SDIOAppCmdIndex, uint32);
+    void acmd(SDIOAppCmdIndex, uint32, SDIOWaitResp, uint32*);
+    // read and write data functions
+    void readData(uint8*, uint32);
+    void writeData(const uint8*, uint32);
     void readBlock(void);
     void writeBlock(void);
 
   private:
-    void busWidth(uint8 width);
-
+    //void getOCR(void);
     void getCID(void);
     void getCSD(void);
+    void getSCR(void);
     void getCSR(void);
     void getSSR(void);
 
-    //void broadcast_cmd(uint8 cmd);
-    //void broadcast_cmd_wresponse(uint8 cmd);
-    //void addr_cmd(uint8 cmd);
-    //void addr_data_xfer_cmd(uint8 cmd);
-    
-    void wide_bus_selection(void); // ACMD6
-    void host_reset(void);
-    void card_initialization(void); // ACMD41
-    void card_identification_process(void);
-    //void operating_voltage_validation(void);
-
+    void reset(void);
+    void identify(void);
     void protect(void); // write protect
     void passwordSet(void);
     void passwordReset(void);
     void cardLock(void);
     void cardUnlock(void);
-    void stop(void); // CMD12
     void erase(void);
-
 
     /** functions for UHS cards
     void voltageSwitchSequence(void); // CMD11
+    void operating_voltage_validation(void);
     */
 };
 

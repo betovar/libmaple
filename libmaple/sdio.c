@@ -34,7 +34,6 @@
 #include "gpio.h"
 #include "bitband.h"
 
-
 /*
  * SDIO device
  */
@@ -80,49 +79,51 @@ void sdio_reset(sdio_dev *dev) {
 }
 
 /**
- * @brief Set the Clock Control Register
+ * @brief Power an SDIO Device
  * @param dev SDIO Device
- * @param ccr Clock Control Register Data
- * @note you should know what you're doing to use this
+ * @param pwr Power state, on or off
+ * @note At least seven HCLK clock periods are needed between two write
+ *       accesses to this register.
  */
-void sdio_set_ccr(sdio_dev *dev, uint32 ccr) {
-    // Elminate stray bits in the reserved space
-    dev->regs->CLKCR = (~SDIO_CLKCR_RESERVED & ccr);
+void sdio_power(sdio_dev *dev, uint32 pwr) {
+    dev->regs->POWER = (~SDIO_POWER_RESERVED & pwr);
 }
 
 /**
  * @brief Configure the Command Path State Machine
  * @param dev SDIO Device
  * @param spc Register space to clear
- * @param val value to set in register
+ * @param val Value of Clock Control Register data to load into spc
  */
-void sdio_cfg_cpsm(sdio_dev *dev, uint32 spc, uint32 val) {
-    dev->regs->CLKCR &= ~spc;
-    // Elminate stray bits in the reserved space
-    dev->regs->CLKCR |= (~SDIO_CLKCR_RESERVED & (spc & val));
+void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val) {
+    spc = (~SDIO_CLKCR_RESERVED & spc);
+    uint32 temp = dev->regs->CLKCR;
+    temp &= ~spc;
+    dev->regs->CLKCR |= (spc & val);
 }
 
 /**
  * @brief Set Clock Divisor in the Clock Control Register
  * @param dev SDIO
- * @param clk_div clock divider factor to set the sdio_ck frequency
+ * @param div clock divider factor to set the sdio_ck frequency
+ * @note This assumes you're on a LeafLabs-style board
+ *       (CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
  */
-void sdio_cfg_clock(sdio_dev *dev, uint8 clk_div) {
-
+void sdio_cfg_clock(sdio_dev *dev, uint8 div) {
     /* CLKDIV: Set Clock Divider SDIOCLK/[CLKDIV+2]. */
-    dev->regs->CLKCR &= ~SDIO_CLKCR_CLKDIV;
-    dev->regs->CLKCR |= (uint32)clk_div;
+    uint32 temp =dev->regs->CLKCR;
+    temp &= ~SDIO_CLKCR_CLKDIV;
+    temp |= (uint32)div;
+    dev->regs->CLKCR = temp;
 }
 
 /**
  * @brief Configure GPIO bit modes for use as an SDIO port's pins
- * @param width WIDBUS tag to configure pins for use as an SDIO card
+ * @param width Bus width to configure pins for use as an SDIO card
  * @note 8-bit data bus width is only allowed for UHS-I cards
- * @note This assumes you're on a LeafLabs-style board
- *       (CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
  */
-void sdio_cfg_bus(sdio_dev *dev, uint8 width) {
-    switch (width) { //These gpios should be constant for the F1 line
+void sdio_cfg_gpio(sdio_dev *dev, uint8 width) {
+    switch (width) { //These gpios are constant for the F1 line
     case 2:
         gpio_set_mode(GPIOC, 7, //SDIO_D7
                       GPIO_OUTPUT_PP);
@@ -148,38 +149,8 @@ void sdio_cfg_bus(sdio_dev *dev, uint8 width) {
                       GPIO_OUTPUT_PP);
         break;
     default:
-        ASSERT(0);
-    } //end of switch case
-    if (width <= 1) {
-        sdio_cfg_cpsm(dev, SDIO_CLKCR_WIDBUS, 
-                      (width << SDIO_CLKCR_WIDBUS_BIT) );
-    } else {
         ASSERT(0); //TODO[0.2.0] add support for UHS cards
-    }
-}
-
-/**
- * @brief Set the Data Control Register
- * @param dev SDIO Device
- * @param dcr Data Control Register Data
- * @note you should know what you're doing to use this
- */
-void sdio_set_dcr(sdio_dev *dev, uint32 dcr) {
-    dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & dcr);
-}
-
-/**
- * @brief Configure the Data Path State Machine through the 
- *        Data Control Register
- * @param dev SDIO Device 
- * @param dcr Data Control Register Data
- * @note  A data transfer must be written to the data timer register
- *        and the data length register before being written to the
- *        data control register.
- */
-void sdio_cfg_dpsm(sdio_dev *dev, uint32 dcr) {
-    dev->regs->DLEN = 1; //FIXME
-    dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & dcr);
+    } //end of switch case
 }
 
 /*
@@ -250,6 +221,7 @@ void sdio_send_cmd(sdio_dev *dev, uint8 cmd) {
     uint32 temp = dev->regs->CMD;
     // clear cmd space
     temp &= !(SDIO_CMD_WAITRESP & SDIO_CMD_CMDINDEX);
+    // add new command data
     temp |= (uint32)cmd;
     // load command register
     dev->regs->CMD = temp;
@@ -319,37 +291,31 @@ uint32 sdio_is_rx_act(sdio_dev *dev) {
  * @param dev SDIO Device
  */
 uint32 sdio_is_tx_act(sdio_dev *dev) {
-    return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_TXACT);
+    return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_TXACT_BIT);
 }
 
 /**
  * @brief 
  * @param dev SDIO Device
  */
-uint32 sdio_is_xfer_in_prog(sdio_dev *dev) {
-    return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_CMDACT);
+uint32 sdio_xfer_in_prog(sdio_dev *dev) {
+    return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_CMDACT_BIT);
 }
 
 /*
- * SDIO auxiliary functions
+ * SDIO data functions
  */
 
 /**
-  * @brief  Read one data word from Rx FIFO.
-  * @param  None
-  * @retval Data received
-  */
-uint32 sdio_read_data(sdio_dev *dev) {
-    return dev->regs->FIFO;
-}
-
-/**
-  * @brief  Write one data word to Tx FIFO.
-  * @param  Data: 32-bit data word to write.
-  * @retval None
-  */
-void sdio_write_data(sdio_dev *dev, uint32 data) {
-    dev->regs->FIFO = data;
+ * @brief Configure the Data Control Register
+ * @param dev SDIO Device
+ * @param spc Register space to clear
+ * @param val Value of Data Control Register data to load into spc
+ */
+void sdio_cfg_dcr(sdio_dev *dev, uint32 spc, uint32 val) {
+    uint32 temp = dev->regs->DCTRL;
+    temp &= ~spc;
+    dev->regs->DCTRL |= (~SDIO_DCTRL_RESERVED & (spc & val));
 }
 
 /**
@@ -382,104 +348,148 @@ uint32 sdio_get_fifo_count(sdio_dev *dev) {
     return dev->regs->FIFOCNT;
 }
 
+/**
+  * @brief  Read one data word from Rx FIFO.
+  * @param  None
+  * @retval Data received
+  */
+uint32 sdio_read_data(sdio_dev *dev) {
+    return dev->regs->FIFO;
+}
+
+/**
+  * @brief  Write one data word to Tx FIFO.
+  * @param  Data: 32-bit data word to write.
+  * @retval None
+  */
+void sdio_write_data(sdio_dev *dev, uint32 data) {
+    dev->regs->FIFO = data;
+}
+
 /*
  * SDIO interrupt functions
  */
 
 /**
-  * @brief  Clears the SDIO's pending flags.
-  * @param  SDIO_FLAG: specifies the flag to clear.  
-  *   This parameter can be one or a combination of the following values:
-  *     @arg SDIO_FLAG_CCRCFAIL: Command response received (CRC check failed)
-  *     @arg SDIO_FLAG_DCRCFAIL: Data block sent/received (CRC check failed)
-  *     @arg SDIO_FLAG_CTIMEOUT: Command response timeout
-  *     @arg SDIO_FLAG_DTIMEOUT: Data timeout
-  *     @arg SDIO_FLAG_TXUNDERR: Transmit FIFO underrun error
-  *     @arg SDIO_FLAG_RXOVERR:  Received FIFO overrun error
-  *     @arg SDIO_FLAG_CMDREND:  Command response received (CRC check passed)
-  *     @arg SDIO_FLAG_CMDSENT:  Command sent (no response required)
-  *     @arg SDIO_FLAG_DATAEND:  Data end (data counter, SDIDCOUNT, is zero)
-  *     @arg SDIO_FLAG_STBITERR: Start bit not detected on all data signals in wide 
-  *                              bus mode
-  *     @arg SDIO_FLAG_DBCKEND:  Data block sent/received (CRC check passed)
-  *     @arg SDIO_FLAG_SDIOIT:   SD I/O interrupt received
-  *     @arg SDIO_FLAG_CEATAEND: CE-ATA command completion signal received for CMD61
-  * @retval None
+  * @brief Checks whether the specified SDIO interrupt has occurred or not
+  * @param rupt Specifies the SDIO interrupt source to check
+  *   This parameter should be only one of the following values:
+  *   @arg SDIO_STA_CEATAEND: CE-ATA command completion signal received for
+  *                           CMD61 interrupt status
+  *   @arg SDIO_STA_SDIOIT:   SD I/O interrupt received interrupt status
+  *   @arg SDIO_STA_RXDAVL:   Data available in receive FIFO interrupt status
+  *   @arg SDIO_STA_TXDAVL:   Data available in transmit FIFO interrupt status
+  *   @arg SDIO_STA_RXFIFOE:  Receive FIFO empty interrupt status
+  *   @arg SDIO_STA_TXFIFOE:  Transmit FIFO empty interrupt status
+  *   @arg SDIO_STA_RXFIFOF:  Receive FIFO full interrupt status
+  *   @arg SDIO_STA_TXFIFOF:  Transmit FIFO full interrupt status
+  *   @arg SDIO_STA_RXFIFOHF: Receive FIFO Half Full interrupt status
+  *   @arg SDIO_STA_TXFIFOHE: Transmit FIFO Half Empty interrupt status
+  *   @arg SDIO_STA_RXACT:    Data receive in progress interrupt status
+  *   @arg SDIO_STA_TXACT:    Data transmit in progress interrupt status
+  *   @arg SDIO_STA_CMDACT:   Command transfer in progress interrupt status
+  *   @arg SDIO_STA_DBCKEND:  Data block sent/received (CRC check passed)
+  *                           interrupt status
+  *   @arg SDIO_STA_STBITERR: Start bit not detected on all data signals in
+  *                           wide bus mode interrupt status
+  *   @arg SDIO_STA_DATAEND:  Data end (data counter, SDIO_DCOUNT, is zero)
+  *                           interrupt status
+  *   @arg SDIO_STA_CMDSENT:  Command sent (no response required) interrupt
+  *                           status
+  *   @arg SDIO_STA_CMDREND:  Command response received (CRC check passed)
+  *                           interrupt status
+  *   @arg SDIO_STA_RXOVERR:  Received FIFO overrun error interrupt status
+  *   @arg SDIO_STA_TXUNDERR: Transmit FIFO underrun error interrupt status
+  *   @arg SDIO_STA_DTIMEOUT: Data timeout interrupt status
+  *   @arg SDIO_STA_CTIMEOUT: Command response timeout interrupt status
+  *   @arg SDIO_STA_DCRCFAIL: Data block sent/received (CRC check failed)
+  *                           interrupt status
+  *   @arg SDIO_STA_CCRCFAIL: Command response received (CRC check failed)
+  *                           interrupt status
+  * @retval Status of the interrupt, asserted: 1, deasserted: 0
   */
-void sdio_clear_flag(sdio_dev *dev, uint32 flag) { 
-    dev->regs->ICR |= flag;
+uint8 sdio_get_status(sdio_dev *dev, uint32 rupt) { 
+    if (dev->regs->STA & rupt) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 /**
-  * @brief  Checks whether the specified SDIO interrupt has occurred or not.
-  * @param  SDIO_IT: specifies the SDIO interrupt source to check. 
-  *   This parameter can be one of the following values:
-  *   @arg SDIO_IT_CEATAEND: CE-ATA command completion signal received for
-  *                          CMD61 interrupt
-  *   @arg SDIO_IT_SDIOIT:   SD I/O interrupt received interrupt
-  *   @arg SDIO_IT_RXDAVL:   Data available in receive FIFO interrupt
-  *   @arg SDIO_IT_TXDAVL:   Data available in transmit FIFO interrupt
-  *   @arg SDIO_IT_RXFIFOE:  Receive FIFO empty interrupt
-  *   @arg SDIO_IT_TXFIFOE:  Transmit FIFO empty interrupt
-  *   @arg SDIO_IT_RXFIFOF:  Receive FIFO full interrupt
-  *   @arg SDIO_IT_TXFIFOF:  Transmit FIFO full interrupt
-  *   @arg SDIO_IT_RXFIFOHF: Receive FIFO Half Full interrupt
-  *   @arg SDIO_IT_TXFIFOHE: Transmit FIFO Half Empty interrupt
-  *   @arg SDIO_IT_RXACT:    Data receive in progress interrupt
-  *   @arg SDIO_IT_TXACT:    Data transmit in progress interrupt
-  *   @arg SDIO_IT_CMDACT:   Command transfer in progress interrupt
-  *   @arg SDIO_IT_DBCKEND:  Data block sent/received (CRC check passed)
-  *                          interrupt
-  *   @arg SDIO_IT_STBITERR: Start bit not detected on all data signals in wide 
-  *                          bus mode interrupt
-  *   @arg SDIO_IT_DATAEND:  Data end (data counter, SDIDCOUNT, is zero)
-  *                          interrupt
-  *   @arg SDIO_IT_CMDSENT:  Command sent (no response required) interrupt
-  *   @arg SDIO_IT_CMDREND:  Command response received (CRC check passed)
-  *                          interrupt
-  *   @arg SDIO_IT_RXOVERR:  Received FIFO overrun error interrupt
-  *   @arg SDIO_IT_TXUNDERR: Transmit FIFO underrun error interrupt
-  *   @arg SDIO_IT_DTIMEOUT: Data timeout interrupt
-  *   @arg SDIO_IT_CTIMEOUT: Command response timeout interrupt
-  *   @arg SDIO_IT_DCRCFAIL: Data block sent/received (CRC check failed)
-  *                          interrupt
-  *   @arg SDIO_IT_CCRCFAIL: Command response received (CRC check failed)
-  *                          interrupt
-  * @retval status of the interrupt
-  */
-uint8 sdio_get_status(sdio_dev *dev, uint32 rupt) { 
-    uint8 status;
-    if (dev->regs->STA & rupt) {
-        status = 1;
-    } else {
-        status = 0;
-    }
-    return status;
+ * @brief Clears the SDIO's pending flags
+ * @param flag Specifies the flag to clear  
+ *   This parameter can be one or a combination of the following values:
+ *   @arg SDIO_ICR_CEATAENDC: CE-ATA command completion signal received for
+ *                            CMD61 interrupt clear
+ *   @arg SDIO_ICR_SDIOITC:   SD I/O interrupt received interrupt clear
+ *   @arg SDIO_ICR_DBCKENDC:  Data block sent/recieved (CRC check passed)
+ *                            interrupt clear
+ *   @arg SDIO_ICR_STBITERRC: Start bit not detected on all data signals in
+ *                            wide bus mode interrupt clear
+ *   @arg SDIO_ICR_DATAENDC:  Data end (data counter, SDIO_DCOUNT, is zero)
+ *                            interrupt clear
+ *   @arg SDIO_ICR_CMDSENTC:  Command sent (no response required) interrupt
+ *                            clear
+ *   @arg SDIO_ICR_CMDRENDC:  Command response received (CRC check passed)
+ *                            interrupt clear
+ *   @arg SDIO_ICR_RXOVERRC:  Received FIFO overrun error interrupt clear
+ *   @arg SDIO_ICR_TXUNDERRC: Transmit FIFO underrun error interrupt clear
+ *   @arg SDIO_ICR_DTIMEOUTC: Data timeout interrupt clear
+ *   @arg SDIO_ICR_CTIMEOUTC: Command response timeout interrupt clear
+ *   @arg SDIO_ICR_DCRCFAILC: Data block sent/received (CRC check failed)
+ *                            interrupt clear
+ *   @arg SDIO_ICR_CCRCFAILC: Command response received (CRC check failed)
+ *                            interrupt clear
+ */
+void sdio_clear_interrupt(sdio_dev *dev, uint32 flag) { 
+    dev->regs->ICR = flag;
 }
+
 /**
-  * @brief  Clears the SDIO's interrupt pending bits.
-  * @param  pend: specifies the interrupt pending bit to clear. 
-  *   This parameter can be one or a combination of the following values:
-  *   @arg SDIO_ICR_CEATAENDC: CE-ATA command completion signal received for
-  *                            CMD61
-  *   @arg SDIO_ICR_SDIOITC:   SD I/O interrupt received interrupt
-  *   @arg SDIO_ICR_STBITERRC: Start bit not detected on all data signals in
-  *                            wide bus mode interrupt
-  *   @arg SDIO_ICR_DATAENDC:  Data end (data counter, SDIDCOUNT, is zero)
-  *                            interrupt
-  *   @arg SDIO_ICR_CMDSENTC:  Command sent (no response required) interrupt
-  *   @arg SDIO_ICR_CMDRENDC:  Command response received (CRC check passed)
-  *                            interrupt
-  *   @arg SDIO_ICR_RXOVERRC:  Received FIFO overrun error interrupt
-  *   @arg SDIO_ICR_TXUNDERRC: Transmit FIFO underrun error interrupt
-  *   @arg SDIO_ICR_DTIMEOUTC: Data timeout interrupt
-  *   @arg SDIO_ICR_CTIMEOUTC: Command response timeout interrupt
-  *   @arg SDIO_ICR_DCRCFAILC: Data block sent/received (CRC check failed)
-  *                            interrupt
-  *   @arg SDIO_IT_CCRCFAILC:  Command response received (CRC check failed)
-  *                            interrupt
-  * @retval None
-  */
-void sdio_clear_pending(sdio_dev *dev, uint32 pend) {
-    dev->regs->ICR = pend;
+ * @brief Determines which interrupt flags generate an interrupt request
+ * @param mask Interrupt sources to enable or disable
+ *   This parameter can be one or a combination of the following values:
+ *   @arg SDIO_MASK_CEATAENDIE: CE-ATA command completion signal received for
+ *                              CMD61 interrupt enable
+ *   @arg SDIO_MASK_SDIOITIE:   SD I/O interrupt received interrupt enable
+ *   @arg SDIO_MASK_RXDAVLIE:   Data available in Rx FIFO interrupt enable
+ *   @arg SDIO_MASK_TXDAVLIE:   Data available in Tx FIFO interrupt enable
+ *   @arg SDIO_MASK_RXFIFOEIE:  Rx FIFO empty interrupt enable
+ *   @arg SDIO_MASK_TXFIFOEIE:  Tx FIFO empty interrupt enable
+ *   @arg SDIO_MASK_RXFIFOFIE:  Rx FIFO full interrupt enable
+ *   @arg SDIO_MASK_TXFIFOFIE:  Tx FIFO full interrupt enable
+ *   @arg SDIO_MASK_RXFIFOHFIE: Rx FIFO half full interrupt enable
+ *   @arg SDIO_MASK_TXFIFOHFIE: Tx FIFO half empty interrupt enable
+ *   @arg SDIO_MASK_RXACTIE:    Data recieve active interrupt enable
+ *   @arg SDIO_MASK_TXACTIE:    Data transmit active interrup enable
+ *   @arg SDIO_MASK_CMDACTIE:   Command active interrupt enable
+ *   @arg SDIO_MASK_DBCKENDIE:  Data block sent/recieved (CRC check passed)
+ *                              interrupt enable
+ *   @arg SDIO_MASK_STBITERRIE: Start bit not detected on all data signals in
+ *                              wide bus mode interrupt enable
+ *   @arg SDIO_MASK_DATAENDIE:  Data end (data counter, SDIO_DCOUNT, is zero)
+ *                              interrupt enable
+ *   @arg SDIO_MASK_CMDSENTIE:  Command sent (no response required) interrupt
+                                enable
+ *   @arg SDIO_MASK_CMDRENDIE:  Command response received (CRC check passed)
+ *                              interrupt enable
+ *   @arg SDIO_MASK_RXOVERRIE:  Received FIFO overrun error interrupt enable
+ *   @arg SDIO_MASK_TXUNDERRIE: Transmit FIFO underrun error interrupt enable
+ *   @arg SDIO_MASK_DTIMEOUTIE: Data timeout interrupt enable
+ *   @arg SDIO_MASK_CTIMEOUTIE: Command response timeout interrupt enable
+ *   @arg SDIO_MASK_DCRCFAILIE: Data block sent/received (CRC check failed)
+ *                              interrupt enable
+ *   @arg SDIO_MASK_CCRCFAILIE: Command response received (CRC check failed)
+ *                              interrupt enable
+ * @param state The new state of the specified SDIO interrupts
+ */
+void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask, uint8 state) {
+    if (state == 0) {
+    /* Disable the SDIO interrupts */
+        dev->regs->MASK &= ~mask;
+    } else {
+    /* Enable the SDIO interrupts */
+        dev->regs->MASK |= mask;
+    } 
 }
