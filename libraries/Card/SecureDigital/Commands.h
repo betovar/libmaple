@@ -31,7 +31,7 @@
 #ifndef _SD_COMMANDS_H_
 #define _SD_COMMANDS_H_
 
-typedef enum SDIOCmdIndex {
+typedef enum SDIOCommand {
 // Basic Commands (class 0)
 	/** CMD0 - Resets all cards to idle state */
 	GO_IDLE_STATE           = 0,
@@ -161,9 +161,9 @@ typedef enum SDIOCmdIndex {
   //CMD50                   = 50,
 	/** CMD57 -  */
   //CMD57                   = 57,
-} SDIOCmdIndex;
+} SDIOCommand;
 
-typedef enum SDIOAppCmdIndex {
+typedef enum SDIOAppCommand {
 // Application Specific Commands used/reserved by SD Memory Card (class n/a)
 	/** ACMD1-5 - Reserved */
 	/** ACMD6 -  */
@@ -184,6 +184,6 @@ typedef enum SDIOAppCmdIndex {
 	/** ACMD51 -  */
 	SEND_SCR                = 51
 	/** ACMD52-59 - Reserved */
-} SDIOAppCmdIndex;
+} SDIOAppCommand;
 
 #endif

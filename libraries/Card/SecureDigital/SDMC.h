@@ -54,12 +54,12 @@ class SecureDigitalMemoryCard : public HardwareSDIO {
     void init(void); // ACMD41
     void bus(SDIODataBusWidth); // ACMD6
     void stop(void); // CMD12
-    void cmd(SDIOCmdIndex);
-    void cmd(SDIOCmdIndex, uint32);
-    void cmd(SDIOCmdIndex, uint32, SDIOWaitResp, uint32*);
-    void acmd(SDIOAppCmdIndex);
-    void acmd(SDIOAppCmdIndex, uint32);
-    void acmd(SDIOAppCmdIndex, uint32, SDIOWaitResp, uint32*);
+    void cmd(SDIOCommand);
+    void cmd(SDIOCommand, uint32);
+    void cmd(SDIOCommand, uint32, SDIOWaitResp, uint32*);
+    void acmd(SDIOAppCommand);
+    void acmd(SDIOAppCommand, uint32);
+    void acmd(SDIOAppCommand, uint32, SDIOWaitResp, uint32*);
     // read and write data functions
     void readData(uint8*, uint32);
     void writeData(const uint8*, uint32);

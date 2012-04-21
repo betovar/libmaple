@@ -44,9 +44,9 @@ SecureDigitalMemoryCard::SecureDigitalMemoryCard() {
  */
 void SecureDigitalMemoryCard::init(void) {
     this->cmd(GO_IDLE_STATE);
-    icr respR7;
-    this->cmd(SEND_IF_COND, 0x01AA, SDIO_WRSP_SHRT, (uint32*)&respR7);
-    if (respR7.VOLTAGE_ACCEPTED !=  0x1) {
+    icr R7;
+    this->cmd(SEND_IF_COND, 0x01AA, SDIO_WRSP_SHRT, (uint32*)&R7);
+    if (R7.VOLTAGE_ACCEPTED !=  0x1) {
         ASSERT(0);
     }
     this->acmd(SD_SEND_OP_COND, 0, SDIO_WRSP_SHRT, (uint32*)&this->OCR);
@@ -73,73 +73,72 @@ void SecureDigitalMemoryCard::bus(SDIODataBusWidth width) {
 
 /**
  * @brief Command (without response nor argument) to send to card
- * @param idx Command index to send
+ * @param cmd Command index to send
  */
-void SecureDigitalMemoryCard::cmd(SDIOCmdIndex idx) {
-    this->cmd(idx, 0, SDIO_WRSP_NONE, NULL);
+void SecureDigitalMemoryCard::cmd(SDIOCommand cmd) {
+    this->cmd(cmd, 0, SDIO_WRSP_NONE, NULL);
 }
 
 /**
  * @brief Command (without response) to send to card
- * @param idx Command index to send
+ * @param cmd Command index to send
  * @param arg Argument to send
  */
-void SecureDigitalMemoryCard::cmd(SDIOCmdIndex idx, uint32 arg) {
-    this->cmd(idx, arg, SDIO_WRSP_NONE, NULL);
+void SecureDigitalMemoryCard::cmd(SDIOCommand cmd, uint32 arg) {
+    this->cmd(cmd, arg, SDIO_WRSP_NONE, NULL);
 }
 
 /**
  * @brief Command (with response) to send to card
- * @param idx Command index to send
+ * @param cmd Command index to send
  * @param arg Argument to send
  * @param wrsp Wait for response tag 
  * @param resp Buffer to store response
  */
-void SecureDigitalMemoryCard::cmd(SDIOCmdIndex idx,
+void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
                                   uint32 arg,
                                   SDIOWaitResp wrsp,
                                   uint32 *resp) {
-    uint8 temp = ((uint8)wrsp << 6) || (uint8)idx;
-    this->send(temp, arg, resp);
+    uint8 indx = ((uint8)wrsp << 6) || (uint8)cmd;
+    this->send(indx, arg, resp);
 }
 
 /**
- * @brief Application Specific Command (without response) to send to card
- * @param idx Command to send
+ * @brief Application Command (without response nor argument) to send to card
+ * @param acmd Application Command to send
  */
-void SecureDigitalMemoryCard::acmd(SDIOAppCmdIndex idx) {
-    this->acmd(idx, 0, SDIO_WRSP_NONE, NULL);
+void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd) {
+    this->acmd(acmd, 0, SDIO_WRSP_NONE, NULL);
 }
 
 /**
- * @brief Application Specific Command (without response) to send to card
- * @param idx Command to send
+ * @brief Application Command (without response) to send to card
+ * @param acmd Command to send
  * @param arg Argument to send
  */
-void SecureDigitalMemoryCard::acmd(SDIOAppCmdIndex idx,
+void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd,
                                    uint32 arg) {
-    this->acmd(idx, arg, SDIO_WRSP_NONE, NULL);
+    this->acmd(acmd, arg, SDIO_WRSP_NONE, NULL);
 }
 
 /**
- * @brief Application Specific Command (with response) to send to card
- * @param idx Command to send
+ * @brief Application Command (with response) to send to card
+ * @param acmd Application Command to send
  * @param arg Argument to send
  * @param wrsp Wait for response tag 
  * @param resp Buffer to store response
  */
-void SecureDigitalMemoryCard::acmd(SDIOAppCmdIndex idx,
+void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd,
                                    uint32 arg,
                                    SDIOWaitResp wrsp,
                                    uint32 *resp) {
-    uint8 temp = ((uint8)wrsp << 6) || (uint8)idx;
+    uint8 indx = ((uint8)wrsp << 6) || (uint8)acmd;
     csr R1;
-    uint32 targ = RCA.RCA << 16;
-    this->cmd(APP_CMD, targ, SDIO_WRSP_SHRT, (uint32*)&R1);
+    this->cmd(APP_CMD, (RCA.RCA << 16), SDIO_WRSP_SHRT, (uint32*)&R1);
     if (R1.APP_CMD != 0) {
         ASSERT(0);
     } else {
-        this->send(temp, arg, resp);
+        this->send(indx, arg, resp);
     }
 }
 
@@ -179,7 +178,7 @@ void SecureDigitalMemoryCard::getSCR(void) {
  * @brief Load the 
  */
 void SecureDigitalMemoryCard::getCSR(void) {
-    //this->command(APP_CMD, this.RCA, );
+    //this->acmd(APP_CMD, this.RCA, );
 }
 
 /**
