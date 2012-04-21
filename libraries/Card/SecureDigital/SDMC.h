@@ -32,7 +32,7 @@
 
 #include "libmaple_types.h"
 #include "HardwareSDIO.h"
-#include "Registers.h"
+#include "Structures.h"
 #include "Commands.h"
 
 #ifndef _SDMC_H_

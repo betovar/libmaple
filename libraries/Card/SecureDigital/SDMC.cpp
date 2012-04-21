@@ -59,16 +59,23 @@ void SecureDigitalMemoryCard::init(void) {
  * @param width WIDBUS value to set
  */
 void SecureDigitalMemoryCard::bus(SDIODataBusWidth width) {
+    //note: card bus can only be changed when card is unlocked
+    //add check scr for available bus widths
     sdio_cfg_gpio(this->sdio_d, (uint8)width);
-    /* WIDBUS: width of data bus is set */
     if (width <= 1) {
         sdio_cfg_clkcr(this->sdio_d, SDIO_CLKCR_WIDBUS, 
                       (width << SDIO_CLKCR_WIDBUS_BIT) );
     } else {
-        ASSERT(0); //TODO[0.2.0] add support for UHS cards
+        ASSERT(0); //TODO: add support for UHS-II cards
     }
-    // send command to set bus width in card: ACMD6 or (SDIO)CMD52
-    this->acmd(SET_BUS_WIDTH, 0, SDIO_WRSP_SHRT, NULL);//FIXME
+    /** send command to set bus width in card: ACMD6 or (SDIO)CMD52 */
+    csr status;
+    this->acmd(SET_BUS_WIDTH, (uint32)width, SDIO_WRSP_SHRT, (uint32*)&status);
+    if (status.CARD_IS_LOCKED != 0) {
+        ASSERT(0);
+    } else {
+        
+    }
 }
 
 /**
@@ -143,7 +150,7 @@ void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd,
 }
 
 /**
- * @brief Stop 
+ * @brief Stop transmission to/from card
  */
 void SecureDigitalMemoryCard::stop(void) {
     this->cmd(STOP_TRANSMISSION);
@@ -188,12 +195,6 @@ void SecureDigitalMemoryCard::getSSR(void) {
 
 }
 
-/*
- * Card convenience functions
- */
-
-
  /*
  * I/O
  */
-

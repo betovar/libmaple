@@ -30,8 +30,12 @@
  *         Specification Verson 3.01
 */
 
-#ifndef _SD_REGISTERS_H_
-#define _SD_REGISTERS_H_
+#ifndef _SD_STRUCTURES_H_
+#define _SD_STRUCTURES_H_
+
+/**
+    Register Structures
+*/
 
 //OperationConditionsRegister
 typedef struct OperationConditionsRegister {
@@ -194,6 +198,10 @@ typedef struct SdConfigurationRegister {
     unsigned CMD_SUPPORT            :2;
     uint32 Reserved2;
 } scr;
+
+/**
+    Response Structures
+*/
 
 //CardStatusResponse
 typedef struct CardStatusResponse {
