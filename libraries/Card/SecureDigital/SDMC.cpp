@@ -43,40 +43,104 @@ SecureDigitalMemoryCard::SecureDigitalMemoryCard() {
  * @brief Initialize the card
  */
 void SecureDigitalMemoryCard::init(void) {
-    this->cmd(GO_IDLE_STATE);
+    this->power(SDIO_PWR_ON);
+    this->cmd(GO_IDLE_STATE); //CMD0
     icr R7;
-    this->cmd(SEND_IF_COND, 0x01AA, SDIO_WRSP_SHRT, (uint32*)&R7);
-    if (R7.VOLTAGE_ACCEPTED !=  0x1) {
-        ASSERT(0);
+    this->cmd(SEND_IF_COND, //CMD8
+              (SDIO_HOST_SUPPLY_VOLTAGE << 8) || SDIO_CHECK_PATTERN,
+              SDIO_WRSP_SHRT,
+              (uint32*)&R7);
+    uint32 arg;
+    while (sdio_get_cmd() != (uint8)SEND_IF_COND) {
+
     }
-    this->acmd(SD_SEND_OP_COND, 0, SDIO_WRSP_SHRT, (uint32*)&this->OCR);
-    this->cmd(ALL_SEND_CID, 0, SDIO_WRSP_SHRT, (uint32*)&this->CID);
-    this->cmd(SEND_RELATIVE_ADDR, 0, SDIO_WRSP_SHRT, (uint32*)&this->RCA);
+    if (R7 != 0) {
+        if ( (R7.CHECK_PATTERN != SDIO_CHECK_PATTERN) ||
+            (R7.VOLTAGE_ACCEPTED != SDIO_HOST_SUPPLY_VOLTAGE) ) {
+            SerialUSB.println("SDIO_ERR: Unusuable Card");
+            return;
+        }
+        arg = SDIO_HOST_CAPACITY_SUPPORT;
+    } else {
+    /** the host should set HCS to 0 if the card returns no response to CMD8 */
+        arg = 0;
+    }
+    this->acmd(SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
+               arg,
+               SDIO_WRSP_SHRT,
+               (uint32*)&this->OCR);
+    if (OCR != 0) {
+
+    } else {
+        SerialUSB.println("SDIO_ERR: Not SD Card");
+    }
+    uint32 timeout = 1000;
+    while (OCR.BUSY != 0) {
+        this->getOCR(); //ACMD41: first ACMD41
+        if (OCR.VOLTAGE_WINDOW || (0x3 << 20)) {
+            break;
+        } else {
+            timeout--;
+        }
+        if (timeout == 0) {
+            SerialUSB.println("SDIO_ERR: Unusuable Card");
+            return;
+        }
+    }
+    this->cmd(ALL_SEND_CID, 0, //CMD2
+              SDIO_WRSP_SHRT, (uint32*)&this->CID);
+    this->cmd(SEND_RELATIVE_ADDR, 0, //CMD3
+              SDIO_WRSP_SHRT, (uint32*)&this->RCA); 
 }
 
 /**
- * @brief Configure bus in clock control register and send command to card
+ * @brief Configure clock in clock control register and send command to card
+ * @param freq 
+ */
+void SecureDigitalMemoryCard::freq(SDIOFrequency freq) {
+    sdio_cfg_clock(this->sdio_d, (uint8)freq);
+    //FIXME
+}
+
+/**
+ * @brief Change bus width in host and card
  * @param width WIDBUS value to set
  */
 void SecureDigitalMemoryCard::bus(SDIODataBusWidth width) {
     //note: card bus can only be changed when card is unlocked
-    //add check scr for available bus widths
-    sdio_cfg_gpio(this->sdio_d, (uint8)width);
-    if (width <= 1) {
-        sdio_cfg_clkcr(this->sdio_d, SDIO_CLKCR_WIDBUS, 
-                      (width << SDIO_CLKCR_WIDBUS_BIT) );
-    } else {
-        ASSERT(0); //TODO: add support for UHS-II cards
+    switch (width){
+      case SDIO_DBW_1:
+      case SDIO_DBW_4:
+        sdio_cfg_clkcr(this->sdio_d,
+                       SDIO_CLKCR_WIDBUS, 
+                       ((uint8)width << SDIO_CLKCR_WIDBUS_BIT));
+        sdio_cfg_gpio(this->sdio_d, (uint8)width);
+        /** send command to set bus width in card: ACMD6 or (SDIO)CMD52 */
+        csr status;
+        this->acmd(SET_BUS_WIDTH,
+                   (uint32)width,
+                   SDIO_WRSP_SHRT,
+                   (uint32*)&status);
+        break;
+      default:
+        ASSERT(0); //TODO: add support for UHS cards
     }
-    /** send command to set bus width in card: ACMD6 or (SDIO)CMD52 */
-    csr status;
-    this->acmd(SET_BUS_WIDTH, (uint32)width, SDIO_WRSP_SHRT, (uint32*)&status);
+    
     if (status.CARD_IS_LOCKED != 0) {
-        ASSERT(0);
-    } else {
-        
+        SerialUSB.println("SDIO_ERR: Card is locked");
     }
 }
+
+/**
+ * @brief Stop transmission to/from card
+ */
+void SecureDigitalMemoryCard::stop(void) {
+    this->cmd(STOP_TRANSMISSION);
+}
+
+/**
+    Command and App Command wrapper functions
+*/
 
 /**
  * @brief Command (without response nor argument) to send to card
@@ -142,18 +206,11 @@ void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd,
     uint8 indx = ((uint8)wrsp << 6) || (uint8)acmd;
     csr R1;
     this->cmd(APP_CMD, (RCA.RCA << 16), SDIO_WRSP_SHRT, (uint32*)&R1);
-    if (R1.APP_CMD != 0) {
-        ASSERT(0);
-    } else {
-        this->send(indx, arg, resp);
+    uint32 timeout = 100;
+    while (R1.APP_CMD == 0) { //FIXME
+        timeout--;
     }
-}
-
-/**
- * @brief Stop transmission to/from card
- */
-void SecureDigitalMemoryCard::stop(void) {
-    this->cmd(STOP_TRANSMISSION);
+    this->send(indx, arg, resp);
 }
 
 /*
@@ -163,36 +220,46 @@ void SecureDigitalMemoryCard::stop(void) {
 /**
  * @brief Load the Card IDentification Number into memory
  */
+void SecureDigitalMemoryCard::getOCR(void) {
+    this->acmd(SD_SEND_OP_COND,
+               (uint32)OCR || SDIO_HOST_CAPACITY_SUPPORT,
+               SDIO_WRSP_SHRT,
+               (uint32*)&this->OCR);
+}
+
+/**
+ * @brief Load the Card IDentification Number into memory
+ */
 void SecureDigitalMemoryCard::getCID(void) {
-    //this->cmd(SEND_CID, this.RCA, SDIO_WRSP_LONG, (void*)&this->CID);
+    //this->cmd(SEND_CID, this.RCA, SDIO_WRSP_LONG, (uint32*)&this->CID);
 }
 
 /**
  * @brief Load the Card Specific Data into memory 
  */
 void SecureDigitalMemoryCard::getCSD(void) {
-    //this->cmd(SEND_CSD, this.RCA, SDIO_WRSP_LONG, (void*)&this->CSD);
+    //this->cmd(SEND_CSD, this.RCA, SDIO_WRSP_LONG, (uint32*)&this->CSD);
 }
 
 /**
  * @brief Load the 
  */
 void SecureDigitalMemoryCard::getSCR(void) {
-    //this->cmd(SD_STATUS, 0, SDIO_WRSP_SHRT, (void*)&this->SCR);
-}
-
-/**
- * @brief Load the 
- */
-void SecureDigitalMemoryCard::getCSR(void) {
-    //this->acmd(APP_CMD, this.RCA, );
+    //this->acmd(SEND_SCR, 0, SDIO_WRSP_SHRT, (uint32*)&this->SCR);
 }
 
 /**
  * @brief Load the 
  */
 void SecureDigitalMemoryCard::getSSR(void) {
+    this->acmd(SD_STATUS, 0, SDIO_WRSP_SHRT, (uint32*)&this->SSR);
+}
 
+/**
+ * @brief Load the 
+ */
+void SecureDigitalMemoryCard::setDSR(void) {
+    this->cmd(SET_DSR, ((uint32)DSR << 16));
 }
 
  /*

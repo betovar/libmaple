@@ -149,7 +149,7 @@ void sdio_cfg_gpio(sdio_dev *dev, uint8 width) {
                       GPIO_OUTPUT_PP);
         break;
     default:
-        ASSERT(0); //TODO[0.2.0] add support for UHS cards
+        ASSERT(0); //TODO add support for UHS cards
     } //end of switch case
 }
 

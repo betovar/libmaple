@@ -57,7 +57,7 @@ typedef enum SDIOCommand {
 	 * on the CMD line */
 	SEND_CID                = 10,
 	/** CMD11 - Switch to 1.8V bus signaling level */
-	VOLTAGE_SWITCH          = 11,
+  //VOLTAGE_SWITCH          = 11,
 	/** CMD12 - Forces the card to stop transmission */
 	STOP_TRANSMISSION       = 12,
 	/** CMD13 - Addressed card sends its status register */

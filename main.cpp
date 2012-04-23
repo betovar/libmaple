@@ -8,6 +8,7 @@
  * Author: Brian E Tovar <betovar@leaflabs.com>
  */
 
+#define SD_SD_BUS_PROTOCOL
 #include "wirish.h"
 #include "libraries/Card/SecureDigital/SDMC.h"
 
@@ -24,6 +25,7 @@ void loop() {
     SerialUSB.println("*** Running SDMC test...");
     SDMC.begin();
     SDMC.init();
+    SerialUSB.print("Serial Number: ");
     SerialUSB.println(SDMC.CID.PSN, DEC);
     SDMC.end();
 }

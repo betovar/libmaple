@@ -54,25 +54,13 @@ HardwareSDIO::HardwareSDIO(void) {
 
 /**
  * @brief 
- * @param 
  */
 void HardwareSDIO::begin(void) {
-    this->begin(SDIO_INIT_FREQ, SDIO_DBW_1);
-}
-
-/**
- * @brief Begin SDIO clock and configure pins
- * @param freq Frequency to set SDIO_CLK
- * @param width Bus width to configure pins for
- */
-void HardwareSDIO::begin(SDIOFrequency freq,
-                         SDIODataBusWidth width) {
-    this->freq(freq);
-    this->bus(width);
+    this->freq(SDIO_INIT_FREQ);
+    this->bus(SDIO_DBW_1);
     uint32 widbus = ((uint32)width << SDIO_CLKCR_WIDBUS_BIT);
     sdio_cfg_clkcr(this->sdio_d, SDIO_CLKCR_WIDBUS, widbus);
     sdio_peripheral_enable(this->sdio_d);
-    this->power(SDIO_PWR_ON);
 }
 
 void HardwareSDIO::end(void) {
@@ -99,14 +87,6 @@ void HardwareSDIO::power(SDIOPowerState pwr) {
             break;
         }
     };
-}
-
-void HardwareSDIO::freq(SDIOFrequency freq) {
-    sdio_cfg_clock(this->sdio_d, (uint8)freq);
-}
-
-void HardwareSDIO::bus(SDIODataBusWidth width) {
-    sdio_cfg_gpio(this->sdio_d, (uint8)width);
 }
 
 /**

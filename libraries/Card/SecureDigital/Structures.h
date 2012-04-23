@@ -39,19 +39,18 @@
 
 //OperationConditionsRegister
 typedef struct OperationConditionsRegister {
-    unsigned Reserved1              :4;
-    /** VDD Voltage Window: 2.7v - 3.6v */
-    unsigned VOLTAGE_WINDOW         :20;
-    /** Switch to 1.8v Accepted:
-     *  Only UHS-I card supports this bit */
-    unsigned S18A                   :1;
-    unsigned Reserved2              :5;
-    /** Card Capacity Status: This bit is valid only when
-     *  the card power up status bit is set. */
-    unsigned CCS                    :1;
     /** Card power up status bit: This bit is set to LOW if
      *  the card has not finished the power up routine. */
     unsigned BUSY                   :1;
+    /** Card Capacity Status: This bit is valid only when
+     *  the card power up status bit is set. */
+    unsigned CCS                    :1;
+    unsigned Reserved1              :5;
+    /** Switch to 1.8v Accepted:
+     *  Only UHS-I card supports this bit */
+    unsigned S18A                   :1;
+    /** VDD Voltage Window: 2.7v - 3.6v */
+    unsigned VOLTAGE_WINDOW         :24;
 } ocr;
 
 typedef struct product_revision {
@@ -89,7 +88,7 @@ typedef struct CardIdentificationRegister {
   unsigned Always1                  :1;
 } cid;
 
-#ifndef SD_SPI_BUS_PROTOCOL
+#ifdef SD_SD_BUS_PROTOCOL
 //RelativeCardAddress
 typedef struct RelativeCardAddress {
     uint16 RCA;
@@ -205,8 +204,8 @@ typedef struct SdConfigurationRegister {
 
 //CardStatusResponse
 typedef struct CardStatusResponse {
-    unsigned OUT_OF_RANGE           :1;
-    unsigned ADDRESS_ERROR          :1;
+    unsigned ADDRESS_OUT_OF_RANGE   :1;
+    unsigned ADDRESS_MISALIGN       :1;
     unsigned BLOCK_LEN_ERROR        :1;
     unsigned ERASE_SEQ_ERROR        :1;
     unsigned ERASE_PARAM            :1;

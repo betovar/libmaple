@@ -127,7 +127,6 @@ class HardwareSDIO {
     HardwareSDIO(void);
 
     void begin(void);
-    void begin(SDIOFrequency, SDIODataBusWidth);
     void end(void);
 
     uint32 read(void);
@@ -142,8 +141,6 @@ class HardwareSDIO {
     sdio_dev *sdio_d;
 
     void power(SDIOPowerState);
-    void freq(SDIOFrequency);
-    void bus(SDIODataBusWidth);
     //void dmaConfig(void);
     
 };

@@ -37,6 +37,14 @@
 
 #ifndef _SDMC_H_
 #define _SDMC_H_
+
+ #define SDIO_HOST_CAPACITY_SUPPORT (0x1 << 30)
+ #define SDIO_FAST_BOOT             (0x1 << 29) //Reserved or eSD cards
+ #define SDIO_SDXC_POWER_CONTROL    (0x1 << 28)
+ #define SDIO_SWITCH_1V8_REQUEST    (0x1 << 24)
+ #define SDIO_CHECK_PATTERN         0xAA
+ #define SDIO_HOST_SUPPLY_VOLTAGE   0x1
+
  /**
  * @brief Wirish SecureDigitalMemoryCard interface
  */
@@ -51,9 +59,10 @@ class SecureDigitalMemoryCard : public HardwareSDIO {
 
     SecureDigitalMemoryCard();
     // common functions
-    void init(void); // ACMD41
-    void bus(SDIODataBusWidth); // ACMD6
-    void stop(void); // CMD12
+    void init(void);
+    void freq(SDIOFrequency);
+    void bus(SDIODataBusWidth);
+    void stop(void);
     void cmd(SDIOCommand);
     void cmd(SDIOCommand, uint32);
     void cmd(SDIOCommand, uint32, SDIOWaitResp, uint32*);
@@ -67,13 +76,14 @@ class SecureDigitalMemoryCard : public HardwareSDIO {
     void writeBlock(void);
 
   private:
-    //void getOCR(void);
+    void getOCR(void);
     void getCID(void);
     void getCSD(void);
     void getSCR(void);
-    void getCSR(void);
     void getSSR(void);
-
+    void setDSR(void);
+    
+    /** other functions to be developed
     void reset(void);
     void identify(void);
     void protect(void); // write protect
@@ -82,10 +92,11 @@ class SecureDigitalMemoryCard : public HardwareSDIO {
     void cardLock(void);
     void cardUnlock(void);
     void erase(void);
+    */
 
     /** functions for UHS cards
     void voltageSwitchSequence(void); // CMD11
-    void operating_voltage_validation(void);
+    void operatingVoltageValidation(void);
     */
 };
 
