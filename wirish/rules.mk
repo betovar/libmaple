@@ -23,7 +23,6 @@ cppSRCS_$(d) := wirish_math.cpp		 \
                 boards/maple_RET6.cpp	 \
                 boards/olimex_stm32_h103.cpp \
                 comm/HardwareSerial.cpp	 \
-                comm/HardwareSDIO.cpp	 \
                 comm/HardwareSPI.cpp	 \
 		HardwareTimer.cpp	 \
                 usb_serial.cpp		 \

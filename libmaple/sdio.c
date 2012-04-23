@@ -99,7 +99,8 @@ void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val) {
     spc = (~SDIO_CLKCR_RESERVED & spc);
     uint32 temp = dev->regs->CLKCR;
     temp &= ~spc;
-    dev->regs->CLKCR |= (spc & val);
+    temp |= (spc & val);
+    dev->regs->CLKCR = temp;
 }
 
 /**
@@ -158,23 +159,71 @@ void sdio_cfg_gpio(sdio_dev *dev, uint8 width) {
  */
 
 /**
- * @brief Enable an SDIO peripheral
+ * @brief Enable SDIO Command Path State Machine
  * @param dev SDIO Device
  */
-void sdio_peripheral_enable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_SDIOEN_BIT, 1);
+void sdio_cpsm_enable(sdio_dev *dev) {
+    bb_peri_set_bit(&dev->regs->CMD, SDIO_CMD_CPSMEN_BIT, 1);
 }
 
 /**
- * @brief Disable an SDIO peripheral
+ * @brief Disable SDIO Command Path State Machine
  * @param dev SDIO Device
  */
-void sdio_peripheral_disable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_SDIOEN_BIT, 0);
+void sdio_cpsm_disable(sdio_dev *dev) {
+    bb_peri_set_bit(&dev->regs->CMD, SDIO_CMD_CPSMEN_BIT, 0);
 }
 
 /**
- * @brief Enable DMA requests whenever the transmit buffer is empty
+ * @brief Enable SDIO HardWare Flow Control
+ * @param dev SDIO Device
+ */
+void sdio_hwfc_enable(sdio_dev *dev) {
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_HWFC_EN_BIT, 1);
+}
+
+/**
+ * @brief Disable SDIO HardWare Flow Control
+ * @param dev SDIO Device
+ */
+void sdio_hwfc_disable(sdio_dev *dev) {
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_HWFC_EN_BIT, 0);
+}
+
+/**
+ * @brief Enable SDIO Data Transfer
+ * @param dev SDIO Device
+ */
+void sdio_dt_enable(sdio_dev *dev) {
+    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 1);
+}
+
+/**
+ * @brief Disable SDIO Data Transfer
+ * @param dev SDIO Device
+ */
+void sdio_dt_disable(sdio_dev *dev) {
+    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 0);
+}
+
+/**
+ * @brief Enable SDIO peripheral clock
+ * @param dev SDIO Device
+ */
+void sdio_clock_enable(sdio_dev *dev) {
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 1);
+}
+
+/**
+ * @brief Disable SDIO peripheral clock
+ * @param dev SDIO Device
+ */
+void sdio_clock_disable(sdio_dev *dev) {
+    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 0);
+}
+
+/**
+ * @brief Enable DMA requests
  * @param dev SDIO device
  */
 void sdio_dma_enable(sdio_dev *dev) {
@@ -182,7 +231,7 @@ void sdio_dma_enable(sdio_dev *dev) {
 }
 
 /**
- * @brief Disable DMA requests whenever the transmit buffer is empty
+ * @brief Disable DMA requests
  * @param dev SDIO device
  */
 void sdio_dma_disable(sdio_dev *dev) {
@@ -190,7 +239,7 @@ void sdio_dma_disable(sdio_dev *dev) {
 }
 
 /**
- * @brief 
+ * @brief Configure DMA
  * @param dev SDIO device
  */
 void sdio_cfg_dma(sdio_dev *dev) {

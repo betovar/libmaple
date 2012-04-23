@@ -24,9 +24,10 @@
  * SOFTWARE.
  *****************************************************************************/
 
-/** @file Commands.h
- *  @breif List of card commands for all SecureDigital and MultiMedia cards
-*/
+/** 
+ * @file Commands.h
+ * @breif List of card commands for all SecureDigital and MultiMedia cards
+ */
 
 #ifndef _SD_COMMANDS_H_
 #define _SD_COMMANDS_H_

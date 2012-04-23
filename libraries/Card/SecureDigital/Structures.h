@@ -24,18 +24,19 @@
  * SOFTWARE.
  *****************************************************************************/
 
-/** @file Registers.h
- *  @breif These typedefs define card register data and properities
- *         Most of this information is taken from the Part 1 Physical Layer
- *         Specification Verson 3.01
-*/
+/** 
+ * @file Registers.h
+ * @breif These typedefs define card register data and properities
+ *        Most of this information is taken from the Part 1 Physical Layer
+ *        Specification Verson 3.01
+ */
 
 #ifndef _SD_STRUCTURES_H_
 #define _SD_STRUCTURES_H_
 
 /**
-    Register Structures
-*/
+ * Register Structures
+ */
 
 //OperationConditionsRegister
 typedef struct OperationConditionsRegister {
@@ -199,8 +200,8 @@ typedef struct SdConfigurationRegister {
 } scr;
 
 /**
-    Response Structures
-*/
+ * Response Structures
+ */
 
 //CardStatusResponse
 typedef struct CardStatusResponse {

@@ -344,8 +344,14 @@ void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val);
 void sdio_cfg_clock(sdio_dev *dev, uint8 div);
 void sdio_cfg_gpio(sdio_dev *dev, uint8 width);
 // SDIO hardware functions
-void sdio_peripheral_enable(sdio_dev *dev);
-void sdio_peripheral_disable(sdio_dev *dev);
+void sdio_cpsm_enable(sdio_dev *dev);
+void sdio_cpsm_disable(sdio_dev *dev);
+void sdio_hwfc_enable(sdio_dev *dev);
+void sdio_hwfc_disable(sdio_dev *dev);
+void sdio_dt_enable(sdio_dev *dev);
+void sdio_dt_disable(sdio_dev *dev);
+void sdio_clock_enable(sdio_dev *dev);
+void sdio_clock_disable(sdio_dev *dev);
 void sdio_dma_enable(sdio_dev *dev);
 void sdio_dma_disable(sdio_dev *dev);
 void sdio_cfg_dma(sdio_dev *dev);
