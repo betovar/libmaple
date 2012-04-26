@@ -1,14 +1,16 @@
 /**
  * SDMC test will try to initialize a memory card and read it's registers.
  * 
- * Instructions: Plug a micro SD card into the slot on a Maple Native board.
+ * Instructions: Plug any working micro SD card into the slot on the
+ *               Maple Native board. Listen on SerialUSB, and press the 
+ *               on-board button to begin the test.
  *
  * This file is released into the public domain.
  *
  * Author: Brian E Tovar <betovar@leaflabs.com>
  */
 
-#define SD_SD_BUS_PROTOCOL
+#define SDMC_SD_BUS_PROTOCOL // not currently being used yet
 #include "wirish.h"
 #include "libraries/Card/SecureDigital/SDMC.h"
 
@@ -27,7 +29,19 @@ void loop() {
     SDMC.init();
     SerialUSB.print("Serial Number: ");
     SerialUSB.println(SDMC.CID.PSN, DEC);
+    SerialUSB.print("SD Version Number: ");
+    switch (SDMC.CSD.version) {
+    case 1:
+        SerialUSB.println(SDMC.CSD.V1.CSD_STRUCTURE + 1, DEC);
+        break;
+    case 2:
+        SerialUSB.println(SDMC.CSD.V2.CSD_STRUCTURE + 1, DEC);
+        break;
+    default:
+        SerialUSB.println("CMD8 error");
+    }
     SDMC.end();
+    toggleLED();
 }
 
 // Force init to be called *first*, i.e. before static object allocation.

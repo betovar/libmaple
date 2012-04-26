@@ -89,14 +89,12 @@ typedef struct CardIdentificationRegister {
   unsigned Always1                  :1;
 } cid;
 
-#ifdef SD_SD_BUS_PROTOCOL
 //RelativeCardAddress
 typedef struct RelativeCardAddress {
     uint16 RCA;
     uint8 Reserved1;
     uint8 Reserved2;
 } rca;
-#endif
 
 // DriverStageRegister
 typedef uint16 dsr; // Optional
@@ -176,6 +174,7 @@ typedef struct CardSpecificDataV2 {
 typedef union CardSpecificData {
     csdV1 V1;
     csdV2 V2;
+    uint32 version;
 } csd;
 
 typedef struct SdConfigurationRegister {
@@ -263,3 +262,18 @@ typedef struct InterfaceConditionResponse {
 } icr;
 
 #endif
+
+/** SDIO Card Structures, TBD
+
+//CardCommonControlRegister
+typedef struct CardCommonControlRegister {} cccr;
+
+//FunctionBasicRegister
+typedef struct FunctionBasicRegister {} fbr;
+
+//CardInformationStructure
+typedef struct CardInformationStructure {} cis;
+
+/CodeStorageArea
+typedef struct CodeStorageArea {} csa;
+*/

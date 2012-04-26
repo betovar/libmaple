@@ -290,8 +290,8 @@ uint8 sdio_get_cmd(sdio_dev *dev) {
  * @param dev SDIO Device
  * @retval The 32-bit short response
  */
-uint32 sdio_get_resp_short(sdio_dev *dev) {
-    return dev->regs->RESP1;
+void sdio_get_resp_short(sdio_dev *dev, uint32 *buf) {
+    buf[0] = dev->regs->RESP1;
 }
 
 /**

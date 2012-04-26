@@ -33,6 +33,7 @@
 #include "libmaple_types.h"
 #include "Structures.h"
 #include "Commands.h"
+#include "sdio.h"
 
 #ifndef _SDMC_H_
 #define _SDMC_H_
@@ -121,7 +122,7 @@ typedef enum SDIOInterruptFlag {
     SDIO_FLAG_CEATAEND = 23
 } SDIOInterruptFlag;
 
-class SecureDigitalMemoryCard : public HardwareSDIO {
+class SecureDigitalMemoryCard {
   public:
     ocr OCR;
     cid CID;
@@ -145,6 +146,8 @@ class SecureDigitalMemoryCard : public HardwareSDIO {
     void acmd(SDIOAppCommand, uint32);
     void acmd(SDIOAppCommand, uint32, SDIOWaitResp, uint32*);
     // read and write data functions
+    uint8 read(void);
+    void write(const uint32);
     void readData(uint8*, uint32);
     void writeData(const uint8*, uint32);
     void readBlock(void);
@@ -153,6 +156,7 @@ class SecureDigitalMemoryCard : public HardwareSDIO {
   private:
     sdio_dev *sdio_d;
 
+    void wait(SDIOInterruptFlag);
     void power(SDIOPowerState);
     void getOCR(void);
     void getCID(void);
