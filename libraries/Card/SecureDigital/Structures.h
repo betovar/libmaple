@@ -38,7 +38,6 @@
  * Register Structures
  */
 
-//OperationConditionsRegister
 typedef struct OperationConditionsRegister {
     /** Card power up status bit: This bit is set to LOW if
      *  the card has not finished the power up routine. */
@@ -52,18 +51,18 @@ typedef struct OperationConditionsRegister {
     unsigned S18A                   :1;
     /** VDD Voltage Window: 2.7v - 3.6v */
     unsigned VOLTAGE_WINDOW         :24;
-} ocr;
+}__attribute__((packed)) ocr;
 
 typedef struct product_revision {
     unsigned N                      :4;
     unsigned M                      :4;
-} prod_revn;
+}__attribute__((packed)) prod_revn;
 
 typedef struct manufacturing_date {
     unsigned Rerserved1             :4;
     unsigned YEAR                   :8;
     unsigned MONTH                  :4;
-} manu_date;
+}__attribute__((packed)) manu_date;
 
 typedef struct CardIdentificationRegister {
   /** An 8-bit binary number that identifies the card manufacturer */
@@ -76,7 +75,7 @@ typedef struct CardIdentificationRegister {
    * digits, four bits each, repre- senting an "n.m" revision number.
    * The "n" is the most significant nibble and "m" is the least
    * significant nibble */
-  prod_revn PRV; // Product Revision Number
+  prod_revn PRN; // Product Revision Number
   /** The Serial Number is 32 bits of a binary number */
   uint32 PSN;  // Product Serial Number
   /** The manufacturing date is composed of two hexadecimal digits, one
@@ -87,14 +86,14 @@ typedef struct CardIdentificationRegister {
   /** CRC7 checksum (7 bits), the  zeroth bit is always 1 */
   unsigned CRC                      :7; // CRC7 Checksum
   unsigned Always1                  :1;
-} cid;
+}__attribute__((packed)) cid;
 
 //RelativeCardAddress
 typedef struct RelativeCardAddress {
     uint16 RCA;
     uint8 Reserved1;
     uint8 Reserved2;
-} rca;
+}__attribute__((packed)) rca;
 
 // DriverStageRegister
 typedef uint16 dsr; // Optional
@@ -135,7 +134,7 @@ typedef struct CardSpecificDataV1 {
     unsigned Reserved5              :2;
     unsigned CRC                    :7;
     unsigned Always1                :1;
-} csdV1;
+}__attribute__((packed)) csdV1;
 
 typedef struct CardSpecificDataV2 {
     unsigned CSD_STRUCTURE          :2;
@@ -169,13 +168,13 @@ typedef struct CardSpecificDataV2 {
     unsigned Reserved6              :2;
     unsigned CRC                    :7;
     unsigned Always1                :1;
-} csdV2;
+}__attribute__((packed)) csdV2;
 
 typedef union CardSpecificData {
     csdV1 V1;
     csdV2 V2;
     uint32 version;
-} csd;
+}__attribute__((packed)) csd;
 
 typedef struct SdConfigurationRegister {
     /** value 0 is for physical layer spec 1.01-3.01 */
@@ -196,13 +195,12 @@ typedef struct SdConfigurationRegister {
     /** new command support for newer cards */
     unsigned CMD_SUPPORT            :2;
     uint32 Reserved2;
-} scr;
+}__attribute__((packed)) scr;
 
 /**
  * Response Structures
  */
 
-//CardStatusResponse
 typedef struct CardStatusResponse {
     unsigned ADDRESS_OUT_OF_RANGE   :1;
     unsigned ADDRESS_MISALIGN       :1;
@@ -231,9 +229,8 @@ typedef struct CardStatusResponse {
     unsigned AKE_SEQ_ERROR          :1;
     unsigned Reserved5              :1;
     unsigned Reserved6              :2;
-} csr;
+}__attribute__((packed)) csr;
 
-//SdStatusResponse
 typedef struct SdStatusResponse {
     unsigned DAT_BUS_WIDTH          :2;
     unsigned SECURED_MODE           :1;
@@ -252,14 +249,13 @@ typedef struct SdStatusResponse {
     unsigned UHS_AU_SIZE            :4;
     uint8 Reserved4[10];
     uint8 Reserved5[39];
-} ssr;
+}__attribute__((packed)) ssr;
 
-//InterfaceConditionResponse
 typedef struct InterfaceConditionResponse {
     unsigned Reserved1              :20;
     unsigned VOLTAGE_ACCEPTED       :4;
     unsigned CHECK_PATTERN          :8;
-} icr;
+}__attribute__((packed)) icr;
 
 #endif
 

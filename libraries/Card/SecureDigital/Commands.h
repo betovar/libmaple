@@ -98,17 +98,17 @@ typedef enum SDIOCommand {
     /** CMD25 -  */
     WRITE_MULTIPLE_BLOCK    = 25,
     /** CMD26 - Reserved for manufacturer */
-  //CMD26                   = 26,
+  //PROGRAM_CID             = 26,
     /** CMD27 -  */
     PROGRAM_CSD             = 27,
 
 // Block Oriented Write Protection Commands (class 6)
-    /** CMD28 -  */
-    SET_WRITE_PROTECT       = 28,
-    /** CMD29 -  */
-    CLR_WRITE_PROTECT       = 29,
-    /** CMD30 -  */
-    SEND_WRITE_PROTECT      = 30,
+    /** CMD28 - Set Write Protect */
+    SET_WRITE_PROT          = 28,
+    /** CMD29 - Clear Write Protect */
+    CLR_WRITE_PROT          = 29,
+    /** CMD30 - Send Write Protect */
+    SEND_WRITE_PROT         = 30,
     /** CMD31 - Reserved */
   //CMD31                   = 31,
 

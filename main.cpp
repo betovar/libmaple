@@ -19,6 +19,17 @@ SecureDigitalMemoryCard SDMC;
 void setup() {
     pinMode(BOARD_LED_PIN, OUTPUT);
     SerialUSB.read();
+    toggleLED();
+    waitForButtonPress();
+    SerialUSB.print("OCR: ");
+    SerialUSB.println(sizeof(SDMC.OCR)*8, DEC);
+    SerialUSB.print("SCR: ");
+    SerialUSB.println(sizeof(SDMC.SCR)*8, DEC);
+    SerialUSB.print("CID: ");
+    SerialUSB.println(sizeof(SDMC.CID)*8, DEC);
+    SerialUSB.print("CSD: ");
+    SerialUSB.println(sizeof(SDMC.CSD)*8, DEC);
+
 }
 
 void loop() {
@@ -26,7 +37,9 @@ void loop() {
     toggleLED();
     SerialUSB.println("*** Running SDMC test...");
     SDMC.begin();
+    SerialUSB.println("*** Initializing card...");
     SDMC.init();
+    SerialUSB.println("SDIO_DBG: finished init statement");
     SerialUSB.print("Serial Number: ");
     SerialUSB.println(SDMC.CID.PSN, DEC);
     SerialUSB.print("SD Version Number: ");
@@ -38,7 +51,7 @@ void loop() {
         SerialUSB.println(SDMC.CSD.V2.CSD_STRUCTURE + 1, DEC);
         break;
     default:
-        SerialUSB.println("CMD8 error");
+        SerialUSB.println("Possible CMD8 error");
     }
     SDMC.end();
     toggleLED();
