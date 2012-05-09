@@ -71,38 +71,33 @@ void SecureDigitalMemoryCard::end(void) {
 }
 
 /**
- * @brief Card Initialization and Identification Flow (SD mode)
+ * @brief Card detect and debug function
  */
-void SecureDigitalMemoryCard::test(void) {
+void SecureDigitalMemoryCard::cardDetect(void) {
     if (sdio_card_detect()) {
         SerialUSB.println("SDIO_DBG: Card detected");
     } else {
         SerialUSB.println("SDIO_DBG: Card not detected");
     }
 }
+
 /**
  * @brief Card Initialization and Identification Flow (SD mode)
  */
 void SecureDigitalMemoryCard::init(void) {
-    if (sdio_card_detect()) {
-        SerialUSB.println("SDIO_DBG: Card detected");
-    } else {
-        SerialUSB.println("SDIO_DBG: Card not detected");
-    }
+    this->cardDetect();
     sdio_power_on(this->sdio_d);
-    sdio_clock_enable(this->sdio_d);
     SerialUSB.println("SDIO_DBG: Powered on");
     delay(1);
     this->cmd(GO_IDLE_STATE); //CMD0
-    sdio_clear_interrupt(this->sdio_d, ~SDIO_ICR_RESERVED);
-    SerialUSB.println("SDIO_DBG: Idle state reached");
+    //sdio_clear_interrupt(this->sdio_d, ~SDIO_ICR_RESERVED);
+    SerialUSB.println("SDIO_DBG: Card in idle state");
     icr R7;
     CSD.version = CSD_UNDEFINED;
     this->cmd(SEND_IF_COND, //CMD8
               SDIO_HOST_SUPPLY_VOLTAGE | SDIO_CHECK_PATTERN,
               SDIO_WRSP_SHRT,
               (uint32*)&R7);
-    SerialUSB.println("SDIO_DBG: Interface condition checked");
     uint32 arg;
     if (sdio_get_status(this->sdio_d, SDIO_STA_CMDREND)) {
         if ((R7.CHECK_PATTERN != SDIO_CHECK_PATTERN) |
@@ -110,6 +105,7 @@ void SecureDigitalMemoryCard::init(void) {
             SerialUSB.println("SDIO_ERR: Unusuable Card");
             return;
         }
+        SerialUSB.println("SDIO_DBG: Interface condition check passed");
         arg = SDIO_HOST_CAPACITY_SUPPORT;
     } else {
     /** the host should set HCS to 0 if the card returns no response to CMD8 */
@@ -222,16 +218,16 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
                        SDIO_MASK_CMDSENTIE | SDIO_MASK_CMDRENDIE |
                        SDIO_MASK_CTIMEOUTIE | SDIO_MASK_CCRCFAILIE, 2);
     sdio_load_arg(this->sdio_d, arg);
+    sdio_clock_enable(this->sdio_d);
     sdio_send_cmd(this->sdio_d, (wrsp << SDIO_CMD_WAITRESP_BIT) | cmd |
                   SDIO_CMD_CPSMEN | SDIO_CMD_IEN);
-    if (sdio_get_status(this->sdio_d, SDIO_STA_CMDACT)) {
+    if (sdio_is_cmd_act(this->sdio_d)) {
         SerialUSB.println("SDIO_DBG: Command active");
-    } else {
-        SerialUSB.println("SDIO_DBG: Command inactive");
     }
     switch (wrsp) {
     case SDIO_WRSP_NONE:
         //check cmdsent
+        SerialUSB.println("SDIO_DBG: Waiting for CMDSENT...");
         this->wait(SDIO_FLAG_CMDSENT);
         SerialUSB.println("SDIO_DBG: Command sent");
         //sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDSENTC);
@@ -239,6 +235,7 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
     case SDIO_WRSP_SHRT:
     case SDIO_WRSP_LONG:
         //wait for resp
+        SerialUSB.println("SDIO_DBG: Waiting for CMDREND...");
         this->wait(SDIO_FLAG_CMDREND);
         SerialUSB.println("SDIO_DBG: Command response recieved");
         //sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);

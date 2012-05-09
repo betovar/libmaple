@@ -73,7 +73,8 @@ typedef enum SDIOClockFrequency {
     SDIO_500_KHZ  = 142,
     SDIO_400_KHZ  = 178,
     SDIO_300_KHZ  = 238,
-    SDIO_CLK_INIT = SDIO_400_KHZ
+    SDIO_CLK_INIT = SDIO_400_KHZ,
+    SDIO_CLK_DATA = SDIO_24_MHZ
 } SDIOClockFrequency;
 
 typedef enum SDIOBlockSize {
@@ -201,6 +202,7 @@ class SecureDigitalMemoryCard {
     void test(void);
     void end(void);
     // convenience functions
+    void cardDetect(void);
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
     void blockSize(SDIOBlockSize);
