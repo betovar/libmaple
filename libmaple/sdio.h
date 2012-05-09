@@ -33,10 +33,10 @@
 #ifndef _SDIO_H_
 #define _SDIO_H_
 
-#include "libmaple_types.h"
 #include "rcc.h"
 #include "nvic.h"
 #include "util.h"
+#include "libmaple_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -314,7 +314,18 @@ typedef struct sdio_reg_map {
 /* FIFO Register */
 #define SDIO_FIFO_FIFODATA          0xFFFFFFFF
 
-	
+/* GPIO defines */
+#define SDIO_GPIO_INIT              0x0
+#define SDIO_GPIO_CMD_INPUT         0x1
+#define SDIO_GPIO_CMD_OUTPUT        0x2
+#define SDIO_GPIO_1B_DATA_INPUT     0x3
+#define SDIO_GPIO_1B_DATA_OUTPUT    0x4
+#define SDIO_GPIO_4B_DATA_INPUT     0x5
+#define SDIO_GPIO_4B_DATA_OUTPUT    0x6
+#define SDIO_GPIO_8B_DATA_INPUT     0x7
+#define SDIO_GPIO_8B_DATA_OUTPUT    0x8
+#define SDIO_GPIO_CARD_DETECT       0x9
+
 /*
  * SDIO Device
  */
@@ -338,15 +349,14 @@ extern sdio_dev *SDIO;
 // SDIO configure functions
 void sdio_init(sdio_dev *dev);
 void sdio_reset(sdio_dev *dev);
-void sdio_power(sdio_dev *dev, uint32 pwr);
+void sdio_power_on(sdio_dev *dev);
+void sdio_power_off(sdio_dev *dev);
 // SDIO clock and bus functions
 void sdio_set_clkcr(sdio_dev *dev, uint32 val);
 void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val);
 void sdio_cfg_clock(sdio_dev *dev, uint8 div);
-void sdio_cfg_gpio(sdio_dev *dev, uint8 width);
+void sdio_cfg_gpio(uint8 width);
 // SDIO hardware functions
-void sdio_hwfc_enable(sdio_dev *dev);
-void sdio_hwfc_disable(sdio_dev *dev);
 void sdio_dt_enable(sdio_dev *dev);
 void sdio_dt_disable(sdio_dev *dev);
 void sdio_clock_enable(sdio_dev *dev);
@@ -357,16 +367,17 @@ void sdio_cfg_dma(sdio_dev *dev);
 // SDIO command functions
 void sdio_load_arg(sdio_dev *dev, uint32 arg);
 void sdio_send_cmd(sdio_dev *dev, uint32 cmd);
-uint8 sdio_get_cmd(sdio_dev *dev);
+uint32 sdio_get_cmd(sdio_dev *dev);
 void sdio_get_resp_short(sdio_dev *dev, uint32 *buf);
 void sdio_get_resp_long(sdio_dev *dev, uint32 *buf);
 // SDIO status functions
+uint32 sdio_card_detect(void);
 uint32 sdio_is_power(sdio_dev *dev);
 uint32 sdio_is_rx_data_aval(sdio_dev *dev);
 uint32 sdio_is_tx_data_aval(sdio_dev *dev);
 uint32 sdio_is_rx_act(sdio_dev *dev);
 uint32 sdio_is_tx_act(sdio_dev *dev);
-uint32 sdio_xfer_in_prog(sdio_dev *dev);
+uint32 sdio_is_cmd_act(sdio_dev *dev);
 // SDIO data functions
 void sdio_cfg_dcr(sdio_dev *dev, uint32 spc, uint32 val);
 void sdio_set_timeout(sdio_dev *dev, uint32 timeout);
@@ -375,10 +386,9 @@ uint32 sdio_get_fifo_count(sdio_dev *dev);
 uint32 sdio_read_data(sdio_dev *dev);
 void sdio_write_data(sdio_dev *dev, uint32 data);
 // SDIO interrupt functions
-uint8 sdio_get_status(sdio_dev *dev, uint32 flag);
+uint32 sdio_get_status(sdio_dev *dev, uint32 flag);
 void sdio_clear_interrupt(sdio_dev *dev, uint32 flag);
 void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask, uint8 state);
-
 #ifdef __cplusplus
 }
 #endif

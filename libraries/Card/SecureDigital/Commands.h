@@ -26,6 +26,7 @@
 
 /** 
  * @file Commands.h
+ * @author Brian E Tovar <betovar@leaflabs.com>
  * @breif List of card commands for all SecureDigital and MultiMedia cards
  */
 

@@ -26,6 +26,7 @@
 
 /** 
  * @file Registers.h
+ * @author Brian E Tovar <betovar@leaflabs.com>
  * @breif These typedefs define card register data and properities
  *        Most of this information is taken from the Part 1 Physical Layer
  *        Specification Verson 3.01
@@ -170,10 +171,18 @@ typedef struct CardSpecificDataV2 {
     unsigned Always1                :1;
 }__attribute__((packed)) csdV2;
 
-typedef union CardSpecificData {
-    csdV1 V1;
-    csdV2 V2;
-    uint32 version;
+typedef enum CsdType {
+    CSD_UNDEFINED = 0,
+    CSD_VERSION1  = 1,
+    CSD_VERSION2  = 2
+} CsdType;
+
+typedef struct CardSpecificData {
+    union {
+        csdV1 V1;
+        csdV2 V2;
+    };
+    CsdType version;
 }__attribute__((packed)) csd;
 
 typedef struct SdConfigurationRegister {

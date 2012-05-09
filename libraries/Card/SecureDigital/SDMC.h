@@ -30,10 +30,10 @@
  * @brief Wirish SD Memory Card implementation
  */
 
-#include "libmaple_types.h"
+#include "sdio.h"
 #include "Structures.h"
 #include "Commands.h"
-#include "sdio.h"
+#include "libmaple_types.h"
 
 #ifndef _SDMC_H_
 #define _SDMC_H_
@@ -42,13 +42,6 @@
  * SDIO Enumerations
  */
 
-typedef enum SDIOPowerState {
-    SDIO_PWR_OFF = 0,
-    // Reserved  = 1,
-    SDIO_PWR_UP  = 2,
-    SDIO_PWR_ON  = 3
-} SDIOPowerState;
-
 typedef enum SDIOWaitResp {
     SDIO_WRSP_NONE     = 0,
     SDIO_WRSP_SHRT     = 1,
@@ -56,44 +49,50 @@ typedef enum SDIOWaitResp {
     SDIO_WRSP_LONG     = 3
 } SDIOWaitResp;
 
-typedef enum SDIODataBusWidth {
-    SDIO_DBW_1 = 0, // SDIO initialization default
-    SDIO_DBW_4 = 1,
-    SDIO_DBW_8 = 2  // MultiMedia Cards only
-} SDIODataBusWidth;
+typedef enum SDIOBusMode {
+    SDIO_BUS_INIT     = SDIO_GPIO_INIT,
+    SDIO_BUS_RESPIN   = SDIO_GPIO_CMD_INPUT,
+    SDIO_BUS_CMDOUT   = SDIO_GPIO_CMD_OUTPUT,
+    SDIO_BUS_DAT1_IN  = SDIO_GPIO_1B_DATA_INPUT,
+    SDIO_BUS_DAT1_OUT = SDIO_GPIO_1B_DATA_OUTPUT,
+    SDIO_BUS_DAT4_IN  = SDIO_GPIO_4B_DATA_INPUT,
+    SDIO_BUS_DAT4_OUT = SDIO_GPIO_4B_DATA_OUTPUT
+  //SDIO_BUS_DAT8_IN  = SDIO_GPIO_8B_DATA_INPUT,
+  //SDIO_BUS_DAT8_OUT = SDIO_GPIO_8B_DATA_OUTPUT
+} SDIOBusMode;
 
-typedef enum SDIOFrequency {
-    SDIO_36_MHZ  = 0, // not supported for SD cards
-    SDIO_24_MHZ  = 1,
-    SDIO_18_MHZ  = 2,
-    SDIO_12_MHZ  = 4,
-    SDIO_6_MHZ   = 10,
-    SDIO_3_MHZ   = 22,
-    SDIO_2_MHZ   = 34,
-    SDIO_1_MHZ   = 70,
-    SDIO_500_KHZ = 142,
-    SDIO_400_KHZ = 178,
-    SDIO_300_KHZ = 238,
-    SDIO_INIT_FREQ = 254 // 281.250 kHz
-} SDIOFrequency;
+typedef enum SDIOClockFrequency {
+  //SDIO_36_MHZ   = 0, // not supported for SD cards
+    SDIO_24_MHZ   = 1,
+    SDIO_18_MHZ   = 2,
+    SDIO_12_MHZ   = 4,
+    SDIO_6_MHZ    = 10,
+    SDIO_3_MHZ    = 22,
+    SDIO_2_MHZ    = 34,
+    SDIO_1_MHZ    = 70,
+    SDIO_500_KHZ  = 142,
+    SDIO_400_KHZ  = 178,
+    SDIO_300_KHZ  = 238,
+    SDIO_CLK_INIT = SDIO_400_KHZ
+} SDIOClockFrequency;
 
-typedef enum SDIODataBlockSize {
-    SDIO_DBSZ_1     = 0,
-    SDIO_DBSZ_2     = 1,
-    SDIO_DBSZ_4     = 2,
-    SDIO_DBSZ_8     = 3,
-    SDIO_DBSZ_16    = 4,
-    SDIO_DBSZ_32    = 5,
-    SDIO_DBSZ_64    = 6,
-    SDIO_DBSZ_128   = 7,
-    SDIO_DBSZ_256   = 8,
-    SDIO_DBSZ_512   = 9,
-    SDIO_DBSZ_1024  = 10,
-    SDIO_DBSZ_2048  = 11,
-    SDIO_DBSZ_4096  = 12,
-    SDIO_DBSZ_8192  = 13,
-    SDIO_DBSZ_16384 = 14
-} SDIODataBlockSize;
+typedef enum SDIOBlockSize {
+    SDIO_BKSZ_1     = 0,
+    SDIO_BKSZ_2     = 1,
+    SDIO_BKSZ_4     = 2,
+    SDIO_BKSZ_8     = 3,
+    SDIO_BKSZ_16    = 4,
+    SDIO_BKSZ_32    = 5,
+    SDIO_BKSZ_64    = 6,
+    SDIO_BKSZ_128   = 7,
+    SDIO_BKSZ_256   = 8,
+    SDIO_BKSZ_512   = 9,
+    SDIO_BKSZ_1024  = 10,
+    SDIO_BKSZ_2048  = 11,
+    SDIO_BKSZ_4096  = 12,
+    SDIO_BKSZ_8192  = 13,
+    SDIO_BKSZ_16384 = 14
+} SDIOBlockSize;
 
 typedef enum SDIOInterruptFlag {
     SDIO_FLAG_CCRCFAIL = 0,
@@ -119,12 +118,13 @@ typedef enum SDIOInterruptFlag {
     SDIO_FLAG_TXDAVL   = 20,
     SDIO_FLAG_RXDAVL   = 21,
     SDIO_FLAG_SDIOIT   = 22,
-    SDIO_FLAG_CEATAEND = 23,
-    SDIO_FLAG_DYNAMIC  = 12584959,
-    SDIO_FLAG_STATIC   = 4192256,
-    SDIO_FLAG_COMMAND  = 0,
-    SDIO_FLAG_DATA     = 0,
-    SDIO_FLAG_ALL      = 16777215
+    SDIO_FLAG_CEATAEND = 23
+    //Convenience Flags
+  //SDIO_FLAG_DYNAMIC  = 33,
+  //SDIO_FLAG_STATIC   = 34,
+  //SDIO_FLAG_COMMAND  = 35,
+  //SDIO_FLAG_DATA     = 36,
+  //SDIO_FLAG_ALL      = 37
 } SDIOInterruptFlag;
 
 typedef enum SDIOStatusResponseTag {
@@ -188,21 +188,22 @@ typedef enum SDIOStatusResponseTag {
 class SecureDigitalMemoryCard {
   public:
     ocr OCR;
+    scr SCR;
     cid CID;
+    csd CSD;
     rca RCA;
     dsr DSR; // Default is 0x0404
-    csd CSD;
-    scr SCR;
 
     SecureDigitalMemoryCard();
     // startup.. functions
     void begin(void);
     void init(void);
+    void test(void);
     void end(void);
     // convenience functions
-    void clockFreq(SDIOFrequency);
-    void busWidth(SDIODataBusWidth);
-    void blockSize(SDIODataBlockSize);
+    void clockFreq(SDIOClockFrequency);
+    void busMode(SDIOBusMode);
+    void blockSize(SDIOBlockSize);
     // command functions
     void cmd(SDIOCommand);
     void cmd(SDIOCommand, uint32);
@@ -210,20 +211,21 @@ class SecureDigitalMemoryCard {
     void acmd(SDIOAppCommand);
     void acmd(SDIOAppCommand, uint32);
     void acmd(SDIOAppCommand, uint32, SDIOWaitResp, uint32*);
-    // data functions
+    // general data functions
     void stop(void);
     void read(uint32, uint32*, uint32);
     void write(uint32, const uint32*, uint32);
-    void readBlock(uint32, uint32*);
-    void writeBlock(uint32, const uint32*);
 
   private:
     sdio_dev *sdio_d;
-    void power(SDIOPowerState);
+    // basic data functions
+    void readBlock(uint32, uint32*);
+    void writeBlock(uint32, const uint32*);
     // interrupt functions
     void enable(SDIOInterruptFlag);
     void disable(SDIOInterruptFlag);
     void clear(SDIOInterruptFlag);
+    void wait(SDIOInterruptFlag);
     void check(SDIOInterruptFlag);
     // card register access functions
     void getOCR(void);
@@ -241,11 +243,6 @@ class SecureDigitalMemoryCard {
     void cardLock(void);
     void cardUnlock(void);
     void erase(void);
-    */
-
-    /** functions for UHS cards
-    void voltageSwitchSequence(void); // CMD11
-    void operatingVoltageValidation(void);
     */
 };
 

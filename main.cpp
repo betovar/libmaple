@@ -18,43 +18,12 @@ SecureDigitalMemoryCard SDMC;
 
 void setup() {
     pinMode(BOARD_LED_PIN, OUTPUT);
-    SerialUSB.read();
-    toggleLED();
-    waitForButtonPress();
-    SerialUSB.print("OCR: ");
-    SerialUSB.println(sizeof(SDMC.OCR)*8, DEC);
-    SerialUSB.print("SCR: ");
-    SerialUSB.println(sizeof(SDMC.SCR)*8, DEC);
-    SerialUSB.print("CID: ");
-    SerialUSB.println(sizeof(SDMC.CID)*8, DEC);
-    SerialUSB.print("CSD: ");
-    SerialUSB.println(sizeof(SDMC.CSD)*8, DEC);
-
+    digitalWrite(BOARD_LED_PIN, HIGH);
 }
 
 void loop() {
     waitForButtonPress();
-    toggleLED();
-    SerialUSB.println("*** Running SDMC test...");
-    SDMC.begin();
-    SerialUSB.println("*** Initializing card...");
-    SDMC.init();
-    SerialUSB.println("SDIO_DBG: finished init statement");
-    SerialUSB.print("Serial Number: ");
-    SerialUSB.println(SDMC.CID.PSN, DEC);
-    SerialUSB.print("SD Version Number: ");
-    switch (SDMC.CSD.version) {
-    case 1:
-        SerialUSB.println(SDMC.CSD.V1.CSD_STRUCTURE + 1, DEC);
-        break;
-    case 2:
-        SerialUSB.println(SDMC.CSD.V2.CSD_STRUCTURE + 1, DEC);
-        break;
-    default:
-        SerialUSB.println("Possible CMD8 error");
-    }
-    SDMC.end();
-    toggleLED();
+    SDMC.test();
 }
 
 // Force init to be called *first*, i.e. before static object allocation.
@@ -70,3 +39,14 @@ int main(void) {
     }
     return 0;
 }
+
+/**
+    toggleLED();
+    SerialUSB.println("SDIO_DBG: Running SDMC test");
+    SDMC.begin();
+    SerialUSB.println("SDIO_DBG: Initializing card");
+    SDMC.init();
+    SerialUSB.println("SDIO_DBG: Test complete");
+    SDMC.end();
+    toggleLED();
+*/

@@ -32,6 +32,8 @@
 
 #include "sdio.h"
 #include "gpio.h"
+#include "timer.h"
+#include "delay.h"
 #include "bitband.h"
 
 /*
@@ -48,7 +50,6 @@ static sdio_dev sdio = {
 sdio_dev *SDIO = &sdio;
 #endif
 
-
 /*
  * SDIO configure functions
  */
@@ -60,6 +61,51 @@ sdio_dev *SDIO = &sdio;
 void sdio_init(sdio_dev *dev) {
     rcc_clk_enable(dev->clk_id);
     rcc_reset_dev(dev->clk_id);
+    //nvic_irq_enable(dev->irg_num);
+/*
+  GPIO_InitTypeDef  GPIO_InitStructure;
+
+  // GPIOC and GPIOD Periph clock enable
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC | RCC_AHB1Periph_GPIOD |
+   SD_DETECT_GPIO_CLK, ENABLE);
+
+  GPIO_PinAFConfig(GPIOC, GPIO_PinSource8, GPIO_AF_SDIO);
+  GPIO_PinAFConfig(GPIOC, GPIO_PinSource9, GPIO_AF_SDIO);
+  GPIO_PinAFConfig(GPIOC, GPIO_PinSource10, GPIO_AF_SDIO);
+  GPIO_PinAFConfig(GPIOC, GPIO_PinSource11, GPIO_AF_SDIO);
+  GPIO_PinAFConfig(GPIOC, GPIO_PinSource12, GPIO_AF_SDIO);
+  GPIO_PinAFConfig(GPIOD, GPIO_PinSource2, GPIO_AF_SDIO);
+
+  // Configure PC.08, PC.09, PC.10, PC.11 pins: D0, D1, D2, D3 pins
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 |
+   GPIO_Pin_11;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+  GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+  // Configure PD.02 CMD line
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+  GPIO_Init(GPIOD, &GPIO_InitStructure);
+
+  // Configure PC.12 pin: CLK pin
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+  GPIO_Init(GPIOC, &GPIO_InitStructure);
+  
+  // Configure SD_SPI_DETECT_PIN pin: SD Card detect pin
+  GPIO_InitStructure.GPIO_Pin = SD_DETECT_PIN;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+  GPIO_Init(SD_DETECT_GPIO_PORT, &GPIO_InitStructure);
+
+  // Enable the SDIO APB2 Clock
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_SDIO, ENABLE);
+
+  // Enable the DMA2 Clock 
+  RCC_AHB1PeriphClockCmd(SD_SDIO_DMA_CLK, ENABLE);
+*/
 }
 
 /**
@@ -79,14 +125,23 @@ void sdio_reset(sdio_dev *dev) {
 }
 
 /**
- * @brief Power an SDIO Device
+ * @brief Power on the SDIO Device
  * @param dev SDIO Device
- * @param pwr Power state, on or off
  * @note At least seven HCLK clock periods are needed between two write
  *       accesses to this register.
  */
-void sdio_power(sdio_dev *dev, uint32 pwr) {
-    dev->regs->POWER = (~SDIO_POWER_RESERVED & pwr);
+void sdio_power_on(sdio_dev *dev) {
+    dev->regs->POWER = (~SDIO_POWER_RESERVED & SDIO_POWER_ON);
+}
+
+/**
+ * @brief Power off the SDIO Device
+ * @param dev SDIO Device
+ * @note At least seven HCLK clock periods are needed between two write
+ *       accesses to this register.
+ */
+void sdio_power_off(sdio_dev *dev) {
+    dev->regs->POWER = (~SDIO_POWER_RESERVED & SDIO_POWER_OFF);
 }
 
 /**
@@ -134,57 +189,50 @@ void sdio_cfg_clock(sdio_dev *dev, uint8 div) {
  * @param width Bus width to configure pins for use as an SDIO card
  * @note 8-bit data bus width is only allowed for UHS-I cards
  */
-void sdio_cfg_gpio(sdio_dev *dev, uint8 width) {
-    switch (width) { //These gpios are constant for the F1 line
-    case 2:
-        gpio_set_mode(GPIOC, 7, //SDIO_D7
-                      GPIO_OUTPUT_PP);
-        gpio_set_mode(GPIOC, 6, //SDIO_D6
-                      GPIO_OUTPUT_PP);
-        gpio_set_mode(GPIOB, 9, //SDIO_D5
-                      GPIO_OUTPUT_PP);
-        gpio_set_mode(GPIOB, 8, //SDIO_D4
-                      GPIO_OUTPUT_PP);
-    case 1:
-        gpio_set_mode(GPIOC, 11, //SDIO_D3
-                      GPIO_OUTPUT_PP);
-        gpio_set_mode(GPIOC, 10, //SDIO_D2
-                      GPIO_OUTPUT_PP);
-    case 0:
-        gpio_set_mode(GPIOC, 9, //SDIO_D1 
-                      GPIO_OUTPUT_PP);
-        gpio_set_mode(GPIOC, 8, //SDIO_D0
-                      GPIO_OUTPUT_PP);
-        gpio_set_mode(GPIOC, 12, //SDIO_CK
-                      GPIO_OUTPUT_OD);
-        gpio_set_mode(GPIOD, 2, //SDIO_CMD
-                      GPIO_OUTPUT_PP);
+void sdio_cfg_gpio(uint8 width) {
+    //timer_set_mode();
+    //These gpio pins are constant for the F1 line
+    switch (width) {
+    case SDIO_GPIO_CARD_DETECT:
+        gpio_set_mode(GPIOC, 11,       GPIO_INPUT_PD); //SDIO_D3
+        //delay_us(1000);
+        //gpio_read_bit(GPIOC, 11);
+    case SDIO_GPIO_INIT:
+        gpio_set_mode(GPIOC, 11, GPIO_INPUT_FLOATING); //SDIO_D3
+        gpio_set_mode(GPIOC, 10, GPIO_INPUT_FLOATING); //SDIO_D2
+        gpio_set_mode(GPIOC, 9,  GPIO_INPUT_FLOATING); //SDIO_D1
+        timer_set_mode(TIMER8, 4,     TIMER_DISABLED);
+        gpio_set_mode(GPIOC, 8,  GPIO_INPUT_FLOATING); //SDIO_D0
+        timer_set_mode(TIMER8, 3,     TIMER_DISABLED);
+        gpio_set_mode(GPIOC, 12,   GPIO_AF_OUTPUT_PP); //SDIO_CK
+    case SDIO_GPIO_CMD_OUTPUT:
+        gpio_set_mode(GPIOD, 2,    GPIO_AF_OUTPUT_PP); //SDIO_CMD
         break;
-    default:
-        ASSERT(0); //TODO add support for UHS cards
+    case SDIO_GPIO_CMD_INPUT:
+        gpio_set_mode(GPIOD, 2,  GPIO_INPUT_FLOATING); //SDIO_CMD
+        break;
+    case SDIO_GPIO_4B_DATA_INPUT:
+        gpio_set_mode(GPIOC, 11, GPIO_INPUT_FLOATING); //SDIO_D3
+        gpio_set_mode(GPIOC, 10, GPIO_INPUT_FLOATING); //SDIO_D2
+        gpio_set_mode(GPIOC, 9,  GPIO_INPUT_FLOATING); //SDIO_D1
+    case SDIO_GPIO_1B_DATA_INPUT:
+        gpio_set_mode(GPIOC, 8,  GPIO_INPUT_FLOATING); //SDIO_D0
+        break;
+    case SDIO_GPIO_4B_DATA_OUTPUT:
+        gpio_set_mode(GPIOC, 11,   GPIO_AF_OUTPUT_PP); //SDIO_D3
+        gpio_set_mode(GPIOC, 10,   GPIO_AF_OUTPUT_PP); //SDIO_D2
+        gpio_set_mode(GPIOC, 9,    GPIO_AF_OUTPUT_PP); //SDIO_D1
+    case SDIO_GPIO_1B_DATA_OUTPUT:
+        gpio_set_mode(GPIOC, 8,    GPIO_AF_OUTPUT_PP); //SDIO_D0
+        break;
+    default: // Error catch
+        ASSERT(0);
     } //end of switch case
 }
 
 /*
  * SDIO hardware functions
  */
-
-
-/**
- * @brief Enable SDIO HardWare Flow Control
- * @param dev SDIO Device
- */
-void sdio_hwfc_enable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_HWFC_EN_BIT, 1);
-}
-
-/**
- * @brief Disable SDIO HardWare Flow Control
- * @param dev SDIO Device
- */
-void sdio_hwfc_disable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_HWFC_EN_BIT, 0);
-}
 
 /**
  * @brief Enable SDIO Data Transfer
@@ -240,7 +288,7 @@ void sdio_dma_disable(sdio_dev *dev) {
  */
 void sdio_cfg_dma(sdio_dev *dev) {
     //other things go here
-    //b_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
+    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
 }
 
 /*
@@ -262,14 +310,14 @@ void sdio_load_arg(sdio_dev *dev, uint32 arg) {
  * @param cmd SDIO Command to send 
  */
 void sdio_send_cmd(sdio_dev *dev, uint32 cmd) {
-    dev->regs->CMD = cmd;
+    dev->regs->CMD = ~SDIO_CMD_RESERVED & cmd;
 }
 
 /**
  * @brief Get last command that recieved a response
  * @param dev SDIO Device 
  */
-uint8 sdio_get_cmd(sdio_dev *dev) {
+uint32 sdio_get_cmd(sdio_dev *dev) {
     uint32 resp = dev->regs->RESPCMD;
     return (uint8)(~SDIO_RESPCMD_RESERVED & resp);
 }
@@ -290,15 +338,27 @@ void sdio_get_resp_short(sdio_dev *dev, uint32 *buf) {
  * @retval None
  */
 void sdio_get_resp_long(sdio_dev *dev, uint32 *buf) {
-     buf[0] = dev->regs->RESP1;
-     buf[1] = dev->regs->RESP2;
-     buf[2] = dev->regs->RESP3;
-     buf[3] = dev->regs->RESP4;
+    buf[0] = dev->regs->RESP1;
+    buf[1] = dev->regs->RESP2;
+    buf[2] = dev->regs->RESP3;
+    buf[3] = dev->regs->RESP4;
 }
 
 /*
  * SDIO status functions
  */
+
+/**
+ * @brief Detects if card is inserted
+ */
+uint32 sdio_card_detect(void) {
+    sdio_cfg_gpio(SDIO_GPIO_CARD_DETECT);
+    delay_us(1000);
+    if (gpio_read_bit(GPIOC, 11)) {
+        return 1;
+    }
+    return 0;
+}
 
 uint32 sdio_is_power(sdio_dev *dev) {
     return dev->regs->POWER;
@@ -340,7 +400,7 @@ uint32 sdio_is_tx_act(sdio_dev *dev) {
  * @brief 
  * @param dev SDIO Device
  */
-uint32 sdio_xfer_in_prog(sdio_dev *dev) {
+uint32 sdio_is_cmd_act(sdio_dev *dev) {
     return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_CMDACT_BIT);
 }
 
@@ -383,16 +443,16 @@ uint32 sdio_get_data_count(sdio_dev *dev) {
 
 /**
   * @brief  Returns the number of words left to be written to or read from FIFO
-  * @param  None
-  * @retval Remaining number of words.
+  * @param dev SDIO Device
+  * @retval Remaining number of words
   */
 uint32 sdio_get_fifo_count(sdio_dev *dev) {
     return dev->regs->FIFOCNT;
 }
 
 /**
-  * @brief  Read one data word from Rx FIFO.
-  * @param  None
+  * @brief  Read one data word from Rx FIFO
+  * @param dev SDIO Device
   * @retval Data received
   */
 uint32 sdio_read_data(sdio_dev *dev) {
@@ -400,8 +460,9 @@ uint32 sdio_read_data(sdio_dev *dev) {
 }
 
 /**
-  * @brief  Write one data word to Tx FIFO.
-  * @param  Data: 32-bit data word to write.
+  * @brief  Write one data word to Tx FIFO
+  * @param dev SDIO Device
+  * @param  data 32-bit data word to write
   * @retval None
   */
 void sdio_write_data(sdio_dev *dev, uint32 data) {
@@ -414,10 +475,11 @@ void sdio_write_data(sdio_dev *dev, uint32 data) {
 
 /**
   * @brief Checks whether the specified SDIO interrupt has occurred or not
+  * @param dev SDIO Device
   * @param rupt Specifies the SDIO interrupt source to check
   * @retval Status of the interrupt, asserted: 1, deasserted: 0
   */
-uint8 sdio_get_status(sdio_dev *dev, uint32 flag) { 
+uint32 sdio_get_status(sdio_dev *dev, uint32 flag) { 
     if (dev->regs->STA & flag) {
         return 1;
     } else {
@@ -427,14 +489,16 @@ uint8 sdio_get_status(sdio_dev *dev, uint32 flag) {
 
 /**
  * @brief Clears the SDIO's pending flags
- * @param flag Specifies the flag to clear  
+ * @param dev SDIO Device
+ * @param flag Specifies the flag to clear
  */
-void sdio_clear_interrupt(sdio_dev *dev, uint32 flag) { 
-    dev->regs->ICR = flag;
+void sdio_clear_interrupt(sdio_dev *dev, uint32 flag) {
+    dev->regs->ICR = ~SDIO_ICR_RESERVED & flag;
 }
 
 /**
  * @brief Determines which interrupt flags generate an interrupt request
+ * @param dev SDIO Device
  * @param mask Interrupt sources to enable or disable
  * @param state The new state of the specified SDIO interrupts
  */
@@ -449,6 +513,7 @@ void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask, uint8 state) {
         dev->regs->MASK |= mask;
         break;
     case 2:
+    /* Configure entire interrupt mask */
         dev->regs->MASK = mask;
         break;
     default:
