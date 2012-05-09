@@ -25,9 +25,7 @@ void loop() {
     waitForButtonPress();
     SerialUSB.println("SDIO_DBG: Starting SDMC test");
     SDMC.begin();
-    SerialUSB.println("SDIO_DBG: Initializing card");
     SDMC.init();
-    SerialUSB.println("SDIO_DBG: Initialization complete");
     SDMC.end();
     SerialUSB.println("SDIO_DBG: Test complete");
 }
