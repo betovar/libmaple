@@ -62,50 +62,6 @@ void sdio_init(sdio_dev *dev) {
     rcc_clk_enable(dev->clk_id);
     rcc_reset_dev(dev->clk_id);
     //nvic_irq_enable(dev->irg_num);
-/*
-  GPIO_InitTypeDef  GPIO_InitStructure;
-
-  // GPIOC and GPIOD Periph clock enable
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC | RCC_AHB1Periph_GPIOD |
-   SD_DETECT_GPIO_CLK, ENABLE);
-
-  GPIO_PinAFConfig(GPIOC, GPIO_PinSource8, GPIO_AF_SDIO);
-  GPIO_PinAFConfig(GPIOC, GPIO_PinSource9, GPIO_AF_SDIO);
-  GPIO_PinAFConfig(GPIOC, GPIO_PinSource10, GPIO_AF_SDIO);
-  GPIO_PinAFConfig(GPIOC, GPIO_PinSource11, GPIO_AF_SDIO);
-  GPIO_PinAFConfig(GPIOC, GPIO_PinSource12, GPIO_AF_SDIO);
-  GPIO_PinAFConfig(GPIOD, GPIO_PinSource2, GPIO_AF_SDIO);
-
-  // Configure PC.08, PC.09, PC.10, PC.11 pins: D0, D1, D2, D3 pins
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 |
-   GPIO_Pin_11;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-  GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-  // Configure PD.02 CMD line
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
-  GPIO_Init(GPIOD, &GPIO_InitStructure);
-
-  // Configure PC.12 pin: CLK pin
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOC, &GPIO_InitStructure);
-  
-  // Configure SD_SPI_DETECT_PIN pin: SD Card detect pin
-  GPIO_InitStructure.GPIO_Pin = SD_DETECT_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-  GPIO_Init(SD_DETECT_GPIO_PORT, &GPIO_InitStructure);
-
-  // Enable the SDIO APB2 Clock
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_SDIO, ENABLE);
-
-  // Enable the DMA2 Clock 
-  RCC_AHB1PeriphClockCmd(SD_SDIO_DMA_CLK, ENABLE);
-*/
 }
 
 /**

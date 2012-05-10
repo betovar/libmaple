@@ -261,9 +261,9 @@ typedef struct SdStatusResponse {
 }__attribute__((packed)) ssr;
 
 typedef struct InterfaceConditionResponse {
-    unsigned Reserved1              :20;
-    unsigned VOLTAGE_ACCEPTED       :4;
     unsigned CHECK_PATTERN          :8;
+    unsigned VOLTAGE_ACCEPTED       :4;
+    unsigned Reserved1              :20;
 }__attribute__((packed)) icr;
 
 #endif

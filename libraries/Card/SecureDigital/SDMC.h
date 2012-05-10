@@ -73,7 +73,7 @@ typedef enum SDIOClockFrequency {
     SDIO_500_KHZ  = 142,
     SDIO_400_KHZ  = 178,
     SDIO_300_KHZ  = 238,
-    SDIO_CLK_INIT = SDIO_400_KHZ,
+    SDIO_CLK_INIT = SDIO_400_KHZ, //254,
     SDIO_CLK_DATA = SDIO_24_MHZ
 } SDIOClockFrequency;
 
