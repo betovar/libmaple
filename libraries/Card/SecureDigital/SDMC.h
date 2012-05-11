@@ -62,7 +62,7 @@ typedef enum SDIOBusMode {
 } SDIOBusMode;
 
 typedef enum SDIOClockFrequency {
-  //SDIO_36_MHZ   = 0, // not supported for SD cards
+  //SDIO_36_MHZ   = 0, // High Speed Mode not supported as of May 2012
     SDIO_24_MHZ   = 1,
     SDIO_18_MHZ   = 2,
     SDIO_12_MHZ   = 4,
@@ -73,8 +73,7 @@ typedef enum SDIOClockFrequency {
     SDIO_500_KHZ  = 142,
     SDIO_400_KHZ  = 178,
     SDIO_300_KHZ  = 238,
-    SDIO_CLK_INIT = SDIO_400_KHZ, //254,
-    SDIO_CLK_DATA = SDIO_24_MHZ
+    SDIO_CLK_INIT = SDIO_400_KHZ
 } SDIOClockFrequency;
 
 typedef enum SDIOBlockSize {
@@ -151,9 +150,9 @@ class SecureDigitalMemoryCard {
     void cmd(SDIOCommand);
     void cmd(SDIOCommand, uint32);
     void cmd(SDIOCommand, uint32, SDIOWaitResp, uint32*);
-    void acmd(SDIOAppCommand);
-    void acmd(SDIOAppCommand, uint32);
-    void acmd(SDIOAppCommand, uint32, SDIOWaitResp, uint32*);
+    void cmd(SDIOAppCommand);
+    void cmd(SDIOAppCommand, uint32);
+    void cmd(SDIOAppCommand, uint32, SDIOWaitResp, uint32*);
     // general data functions
     void stop(void);
     void read(uint32, uint32*, uint32);

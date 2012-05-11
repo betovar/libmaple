@@ -10,7 +10,6 @@
  * Author: Brian E Tovar <betovar@leaflabs.com>
  */
 
-#define SDMC_SD_BUS_PROTOCOL // not currently being used yet
 #include "wirish.h"
 #include "libraries/Card/SecureDigital/SDMC.h"
 

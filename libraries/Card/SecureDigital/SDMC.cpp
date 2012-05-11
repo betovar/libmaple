@@ -40,6 +40,7 @@
 #define SDIO_CHECK_PATTERN          0xAA       //Recommended but not fixed
 #define SDIO_VOLTAGE_SUPPLIED       0x1
 #define SDIO_VOLTAGE_HOST_SUPPORT  (SDIO_VOLTAGE_SUPPLIED << 8)
+#define SDIO_VALID_VOLTAGE_WINDOW   0x300000
 
 #if CYCLES_PER_MICROSECOND != 72
 /* TODO [0.2.0?] something smarter than this */
@@ -118,27 +119,32 @@ void SecureDigitalMemoryCard::init(void) {
             SerialUSB.println("SDIO_DBG: Valid supplied voltage");
         }
         arg = SDIO_HOST_CAPACITY_SUPPORT;
-    } else {
+    } else if (sdio_get_status(this->sdio_d, SDIO_STA_CMDSENT)){
     // the host should set HCS to 0 if the card returns no response to CMD8
         arg = 0;
         //prob version 1.x memory card
         CSD.version = CSD_VERSION1;
     }
-/**
+    SerialUSB.println("SDIO_DBG: Interface condition check passed");
 // -------------------------------------------------------------------------
     SerialUSB.println("SDIO_DBG: Sending inquiry ACMD41");
-    this->acmd(SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
-               arg,
-               SDIO_WRSP_SHRT,
-               (uint32*)&this->OCR);
+    this->RCA.RCA = 0;
+    this->cmd(SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
+              arg,
+              SDIO_WRSP_SHRT,
+              (uint32*)&this->OCR);
     if (!sdio_get_status(this->sdio_d, SDIO_STA_CMDREND)) {
         SerialUSB.println("SDIO_ERR: Not SD Card");
         return;
     }
-    while (OCR.BUSY != 1) {
+    uint32* o = (uint32*)&this->OCR;
+    SerialUSB.print("SDIO_DBG: OCR is 0b");
+    SerialUSB.println(*o, BIN);
+
+    while (OCR.BUSY == 1) {
         this->getOCR(); //ACMD41: first ACMD41
     }
-    if ((OCR.VOLTAGE_WINDOW && 0x300000) != 0) {
+    if ((OCR.VOLTAGE_WINDOW && SDIO_VALID_VOLTAGE_WINDOW) != 0) {
         SerialUSB.println("SDIO_ERR: Unusuable Card");
         return;
     }
@@ -149,7 +155,8 @@ void SecureDigitalMemoryCard::init(void) {
         //version 2.00 or later High/Ext Capacity
         CSD.version = CSD_VERSION2;
     }
-    SerialUSB.println("SDIO_DBG: Interface condition check passed");
+    
+/**
 // -------------------------------------------------------------------------
     SerialUSB.println("SDIO_DBG: Sending CMD2");
     this->cmd(ALL_SEND_CID, //CMD2
@@ -239,7 +246,7 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
                                   SDIOWaitResp wrsp,
                                   uint32 *resp) {
     sdio_clear_interrupt(this->sdio_d, ~SDIO_ICR_RESERVED);
-    delay(10);
+    delay(1);
     sdio_cfg_interrupt(this->sdio_d, SDIO_MASK_CMDACTIE |
                        SDIO_MASK_CMDSENTIE | SDIO_MASK_CMDRENDIE |
                        SDIO_MASK_CTIMEOUTIE | SDIO_MASK_CCRCFAILIE, 2);
@@ -262,7 +269,6 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
         SerialUSB.println("SDIO_ERR: Invalid wait response");
         return;
     }
-
     if (sdio_get_status(this->sdio_d, SDIO_STA_CCRCFAIL) != 1) {
         switch (wrsp) {
         case SDIO_WRSP_SHRT:
@@ -271,7 +277,6 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
         case SDIO_WRSP_LONG:
             sdio_get_resp_long(this->sdio_d, (uint32*)resp);
             break;
-        case SDIO_WRSP_NONE:
         default:
             break;
         }
@@ -294,8 +299,8 @@ void SecureDigitalMemoryCard::stop(void) {
  * @brief Application Command (without response nor argument) to send to card
  * @param acmd Application Command to send
  */
-void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd) {
-    this->acmd(acmd, 0, SDIO_WRSP_NONE, NULL);
+void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd) {
+    this->cmd(acmd, 0, SDIO_WRSP_NONE, NULL);
 }
 
 /**
@@ -303,9 +308,9 @@ void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd) {
  * @param acmd Command to send
  * @param arg Argument to send
  */
-void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd,
+void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
                                    uint32 arg) {
-    this->acmd(acmd, arg, SDIO_WRSP_NONE, NULL);
+    this->cmd(acmd, arg, SDIO_WRSP_NONE, NULL);
 }
 
 /**
@@ -315,7 +320,7 @@ void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd,
  * @param wrsp Wait for response tag 
  * @param resp Buffer to store response
  */
-void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd,
+void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
                                    uint32 arg,
                                    SDIOWaitResp wrsp,
                                    uint32 *resp) {
@@ -325,10 +330,19 @@ void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd,
               SDIO_WRSP_SHRT,
               (uint32*)&status);
     if (status.APP_CMD == SDIO_CSR_APP_DISABLED) {
-        SerialUSB.println("SDIO_ERR: AppCommand failed to enable");
+        SerialUSB.println("SDIO_ERR: AppCommand not enabled");
+        return;
+    } else if (status.READY_FOR_DATA == SDIO_CSR_NOT_READY) {
+        SerialUSB.println("SDIO_ERR: AppCommand not ready for data");
+        return;
+    } else if (sdio_get_cmd(this->sdio_d) == APP_CMD) {
+        SerialUSB.println("SDIO_DBG: AppCommand enabled");
+    } else {
+        uint32* test = (uint32*)&status;
+        SerialUSB.print("SDIO_ERR: APP_CMD response 0x");
+        SerialUSB.println(*test, HEX);
         return;
     }
-    SerialUSB.println("SDIO_DBG: AppCommand enabled");
     this->cmd((SDIOCommand)acmd, arg, wrsp, resp);
 }
 
@@ -340,10 +354,10 @@ void SecureDigitalMemoryCard::acmd(SDIOAppCommand acmd,
  * @brief Load the Card IDentification Number into memory
  */
 void SecureDigitalMemoryCard::getOCR(void) {
-    this->acmd(SD_SEND_OP_COND,
-               SDIO_HOST_CAPACITY_SUPPORT | OCR.VOLTAGE_WINDOW,
-               SDIO_WRSP_SHRT,
-               (uint32*)&this->OCR);
+    this->cmd(SD_SEND_OP_COND,
+              SDIO_HOST_CAPACITY_SUPPORT | OCR.VOLTAGE_WINDOW,
+              SDIO_WRSP_SHRT,
+              (uint32*)&this->OCR);
 }
 
 /**
@@ -370,7 +384,10 @@ void SecureDigitalMemoryCard::getCSD(void) {
  * @brief Load the 
  */
 void SecureDigitalMemoryCard::getSCR(void) {
-    this->acmd(SEND_SCR, 0, SDIO_WRSP_SHRT, (uint32*)&this->SCR);
+    this->cmd(SEND_SCR,
+              0,
+              SDIO_WRSP_SHRT,
+              (uint32*)&this->SCR);
 }
 
 /**
@@ -525,9 +542,9 @@ void SecureDigitalMemoryCard::wait(SDIOInterruptFlag flag) {
     } else if (sdio_get_status(this->sdio_d, SDIO_STA_CMDREND)) {
         SerialUSB.println("Response recieved");
     } else {
-        SerialUSB.print("Unexpected interrupt triggered, 0x");
+        SerialUSB.print("Unexpected interrupt triggered, 0b");
         SerialUSB.println(sdio_d->regs->STA, BIN);
     }
-    SerialUSB.print("SDIO_DBG: Response command 0x");
-    SerialUSB.println(sdio_get_cmd(this->sdio_d), HEX);
+    SerialUSB.print("SDIO_DBG: Response CMD");
+    SerialUSB.println(sdio_get_cmd(this->sdio_d), DEC);
 }

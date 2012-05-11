@@ -40,18 +40,23 @@
  */
 
 typedef struct OperationConditionsRegister {
-    /** Card power up status bit: This bit is set to LOW if
-     *  the card has not finished the power up routine. */
-    unsigned BUSY                   :1;
-    /** Card Capacity Status: This bit is valid only when
-     *  the card power up status bit is set. */
-    unsigned CCS                    :1;
-    unsigned Reserved1              :5;
+    /** VDD Voltage Window: 2.7v - 3.6v */
+    unsigned VOLTAGE_WINDOW         :24;
     /** Switch to 1.8v Accepted:
      *  Only UHS-I card supports this bit */
     unsigned S18A                   :1;
-    /** VDD Voltage Window: 2.7v - 3.6v */
-    unsigned VOLTAGE_WINDOW         :24;
+    unsigned Reserved1              :5;
+    /** Card Capacity Status: This bit is valid only when
+     *  the card power up status bit is set. 
+     *  SDHC and SDXC use the 32-bit argument of memory access commands as
+     *  block address format. Block length is fixed to 512 bytes regardless
+     *  CMD16, SDSC uses the 32-bit argument of memory access commands as byte
+     *  address format. Block length is determined by CMD16
+     */
+    unsigned CCS                    :1;
+    /** Card power up status bit: This bit is set to LOW if
+     *  the card has not finished the power up routine. */
+    unsigned BUSY                   :1;
 }__attribute__((packed)) ocr;
 
 typedef struct product_revision {
@@ -91,9 +96,9 @@ typedef struct CardIdentificationRegister {
 
 //RelativeCardAddress
 typedef struct RelativeCardAddress {
-    uint16 RCA;
-    uint8 Reserved1;
     uint8 Reserved2;
+    uint8 Reserved1;
+    uint16 RCA;
 }__attribute__((packed)) rca;
 
 // DriverStageRegister
@@ -211,33 +216,33 @@ typedef struct SdConfigurationRegister {
  */
 
 typedef struct CardStatusResponse {
-    unsigned ADDRESS_OUT_OF_RANGE   :1;
-    unsigned ADDRESS_MISALIGN       :1;
-    unsigned BLOCK_LEN_ERROR        :1;
-    unsigned ERASE_SEQ_ERROR        :1;
-    unsigned ERASE_PARAM            :1;
-    unsigned WP_VIOLATION           :1;
-    unsigned CARD_IS_LOCKED         :1;
-    unsigned LOCK_UNLOCK_FAILED     :1;
-    unsigned COM_CRC_ERROR          :1;
-    unsigned ILLEGAL_COMMAND        :1;
-    unsigned CARD_ECC_FAILED        :1;
-    unsigned CC_ERROR               :1;
-    unsigned ERROR                  :1;
-    unsigned Reserved1              :1;
-    unsigned Reserved2              :1;
-    unsigned CSD_OVERWRITE          :1;
-    unsigned WP_ERASE_SKIP          :1;
-    unsigned CARD_ECC_DISABLED      :1;
-    unsigned ERASE_RESET            :1;
-    unsigned CURRENT_STATE          :4;
-    unsigned READY_FOR_DATA         :1;
-    unsigned Reserved3              :2;
-    unsigned APP_CMD                :1;
-    unsigned Reserved4              :1;
-    unsigned AKE_SEQ_ERROR          :1;
-    unsigned Reserved5              :1;
     unsigned Reserved6              :2;
+    unsigned Reserved5              :1;
+    unsigned AKE_SEQ_ERROR          :1;
+    unsigned Reserved4              :1;
+    unsigned APP_CMD                :1;
+    unsigned Reserved3              :2;
+    unsigned READY_FOR_DATA         :1;
+    unsigned CURRENT_STATE          :4;
+    unsigned ERASE_RESET            :1;
+    unsigned CARD_ECC_DISABLED      :1;
+    unsigned WP_ERASE_SKIP          :1;
+    unsigned CSD_OVERWRITE          :1;
+    unsigned Reserved2              :1;
+    unsigned Reserved1              :1;
+    unsigned ERROR                  :1;
+    unsigned CC_ERROR               :1;
+    unsigned CARD_ECC_FAILED        :1;
+    unsigned ILLEGAL_COMMAND        :1;
+    unsigned COM_CRC_ERROR          :1;
+    unsigned LOCK_UNLOCK_FAILED     :1;
+    unsigned CARD_IS_LOCKED         :1;
+    unsigned WP_VIOLATION           :1;
+    unsigned ERASE_PARAM            :1;
+    unsigned ERASE_SEQ_ERROR        :1;
+    unsigned BLOCK_LEN_ERROR        :1;
+    unsigned ADDRESS_MISALIGN       :1;
+    unsigned ADDRESS_OUT_OF_RANGE   :1;
 }__attribute__((packed)) csr;
 
 typedef struct SdStatusResponse {
