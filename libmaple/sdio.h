@@ -314,17 +314,22 @@ typedef struct sdio_reg_map {
 /* FIFO Register */
 #define SDIO_FIFO_FIFODATA          0xFFFFFFFF
 
-/* GPIO defines */
-#define SDIO_GPIO_INIT              0x0
-#define SDIO_GPIO_CMD_INPUT         0x1
-#define SDIO_GPIO_CMD_OUTPUT        0x2
-#define SDIO_GPIO_1B_DATA_INPUT     0x3
-#define SDIO_GPIO_1B_DATA_OUTPUT    0x4
-#define SDIO_GPIO_4B_DATA_INPUT     0x5
-#define SDIO_GPIO_4B_DATA_OUTPUT    0x6
-#define SDIO_GPIO_8B_DATA_INPUT     0x7
-#define SDIO_GPIO_8B_DATA_OUTPUT    0x8
-#define SDIO_GPIO_CARD_DETECT       0x9
+/* GPIO defines */ //FIXME this should prob be an enum
+#define SDIO_GPIO_CARD_DETECT       0x0
+#define SDIO_GPIO_INIT              0x1
+#define SDIO_GPIO_CMD_INPUT         0x2
+#define SDIO_GPIO_CMD_OUTPUT        0x3
+#define SDIO_GPIO_1B_DATA_INPUT     0x4
+#define SDIO_GPIO_1B_DATA_OUTPUT    0x5
+#define SDIO_GPIO_4B_DATA_INPUT     0x6
+#define SDIO_GPIO_4B_DATA_OUTPUT    0x7
+#define SDIO_GPIO_8B_DATA_INPUT     0x8
+#define SDIO_GPIO_8B_DATA_OUTPUT    0x9
+
+/* GPIO defines */ //FIXME this should prob be an enum
+#define SDIO_MASK_STATE_DISABLE     0x0
+#define SDIO_MASK_STATE_ENABLE      0x1
+#define SDIO_MASK_STATE_WRITE       0x2
 
 /*
  * SDIO Device

@@ -36,10 +36,85 @@
 #define _SD_STRUCTURES_H_
 
 /**
- * Register Structures
+ * SD Structure Specific Enumerations
  */
 
-typedef struct OperationConditionsRegister {
+typedef enum CsdCardVersion {
+    CSD_VER_UNDEF = 0,
+    CSD_VER_1     = 1,
+    CSD_VER_2   = 2
+} CsdCardVersion;
+
+typedef enum CsdCardCapacity {
+    CSD_CAP_UNDEF = 0,
+    CSD_CAP_SDSC  = 1,
+    CSD_CAP_SDHC  = 2,
+    CSD_CAP_SDXC  = 3
+} CsdCardCapacity;
+
+typedef enum SDIOStatusResponseTag {
+    //CardStatusResponse Tags
+    SDIO_CSR_NO_ERROR        = 0,
+    SDIO_CSR_ERROR           = 1,
+    SDIO_CSR_NOT_PROTECTED   = 0,
+    SDIO_CSR_PROTECTED       = 1,
+    SDIO_CSR_CARD_UNLOCKED   = 0,
+    SDIO_CSR_CARD_LOCKED     = 1,
+    SDIO_CSR_SUCCESS         = 0,
+    SDIO_CSR_FAILURE         = 1,
+    SDIO_CSR_ECC_ENABLED     = 0,
+    SDIO_CSR_ECC_DISABLED    = 1,
+    SDIO_CSR_CLEARED         = 0,
+    SDIO_CSR_SET             = 1,
+    SDIO_CSR_IDLE            = 0,
+    SDIO_CSR_NOT_READY       = 0,
+    SDIO_CSR_READY           = 1,
+    SDIO_CSR_IDENT           = 2,
+    SDIO_CSR_STBY            = 3,
+    SDIO_CSR_TRAN            = 4,
+    SDIO_CSR_DATA            = 5,
+    SDIO_CSR_RCV             = 6,
+    SDIO_CSR_PRG             = 7,
+    SDIO_CSR_DIS             = 8,
+    SDIO_CSR_IO_MODE         = 15,
+    SDIO_CSR_APP_DISABLED    = 0,
+    SDIO_CSR_APP_ENABLED     = 1,
+    //SdStatusResponse Tags
+    SDIO_SSR_1BIT_WIDTH      = 0,
+    SDIO_SSR_4BIT_WIDTH      = 2,
+    SDIO_SSR_NOT_SECURED     = 0,
+    SDIO_SSR_SECURED         = 1,
+    SDIO_SSR_REG_CARD        = 0,
+    SDIO_SSR_ROM_CARD        = 1,
+    SDIO_SSR_OTP_CARD        = 2,
+    SDIO_SSR_SPEED_CLASS_0   = 0,
+    SDIO_SSR_SPEED_CLASS_2   = 1,
+    SDIO_SSR_SPEED_CLASS_4   = 2,
+    SDIO_SSR_SPEED_CLASS_6   = 3,
+    SDIO_SSR_SPEED_CLASS_10  = 4,
+    SDIO_SSR_AU_SIZE_NOT_DEF = 0,
+    SDIO_SSR_AU_SIZE_16KB    = 1,
+    SDIO_SSR_AU_SIZE_32KB    = 2,
+    SDIO_SSR_AU_SIZE_64KB    = 3,
+    SDIO_SSR_AU_SIZE_128KB   = 4,
+    SDIO_SSR_AU_SIZE_256KB   = 5,
+    SDIO_SSR_AU_SIZE_512KB   = 6,
+    SDIO_SSR_AU_SIZE_1MB     = 7,
+    SDIO_SSR_AU_SIZE_2MB     = 8,
+    SDIO_SSR_AU_SIZE_4MB     = 9,
+    SDIO_SSR_AU_SIZE_8MB     = 10,
+    SDIO_SSR_AU_SIZE_12MB    = 11,
+    SDIO_SSR_AU_SIZE_16MB    = 12,
+    SDIO_SSR_AU_SIZE_24MB    = 13,
+    SDIO_SSR_AU_SIZE_32MB    = 14,
+    SDIO_SSR_AU_SIZE_64MB    = 15,
+} SDIOStatusResponseTag;
+
+/**
+ * SD Register Structures
+ */
+
+typedef struct OperationConditionsRegister {//litte endian
     /** VDD Voltage Window: 2.7v - 3.6v */
     unsigned VOLTAGE_WINDOW         :24;
     /** Switch to 1.8v Accepted:
@@ -95,7 +170,7 @@ typedef struct CardIdentificationRegister {
 }__attribute__((packed)) cid;
 
 //RelativeCardAddress
-typedef struct RelativeCardAddress {
+typedef struct RelativeCardAddress { //litte endian
     uint8 Reserved2;
     uint8 Reserved1;
     uint16 RCA;
@@ -176,18 +251,13 @@ typedef struct CardSpecificDataV2 {
     unsigned Always1                :1;
 }__attribute__((packed)) csdV2;
 
-typedef enum CsdType {
-    CSD_UNDEFINED = 0,
-    CSD_VERSION1  = 1,
-    CSD_VERSION2  = 2
-} CsdType;
-
 typedef struct CardSpecificData {
     union {
         csdV1 V1;
         csdV2 V2;
     };
-    CsdType version;
+    CsdCardVersion version;
+    CsdCardCapacity capacity;
 }__attribute__((packed)) csd;
 
 typedef struct SdConfigurationRegister {
@@ -215,18 +285,20 @@ typedef struct SdConfigurationRegister {
  * Response Structures
  */
 
-typedef struct CardStatusResponse {
+typedef struct CardStatusResponse { //litte endian
     unsigned Reserved6              :2;
     unsigned Reserved5              :1;
     unsigned AKE_SEQ_ERROR          :1;
     unsigned Reserved4              :1;
     unsigned APP_CMD                :1;
     unsigned Reserved3              :2;
+
     unsigned READY_FOR_DATA         :1;
     unsigned CURRENT_STATE          :4;
     unsigned ERASE_RESET            :1;
     unsigned CARD_ECC_DISABLED      :1;
     unsigned WP_ERASE_SKIP          :1;
+
     unsigned CSD_OVERWRITE          :1;
     unsigned Reserved2              :1;
     unsigned Reserved1              :1;
@@ -235,6 +307,7 @@ typedef struct CardStatusResponse {
     unsigned CARD_ECC_FAILED        :1;
     unsigned ILLEGAL_COMMAND        :1;
     unsigned COM_CRC_ERROR          :1;
+
     unsigned LOCK_UNLOCK_FAILED     :1;
     unsigned CARD_IS_LOCKED         :1;
     unsigned WP_VIOLATION           :1;
