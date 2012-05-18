@@ -349,7 +349,7 @@ void sdio_load_arg(sdio_dev *dev, uint32 arg) {
  * @param cmd SDIO Command to send 
  */
 void sdio_send_cmd(sdio_dev *dev, uint32 cmd) {
-    dev->regs->CMD = ~SDIO_CMD_RESERVED & cmd;
+    dev->regs->CMD = (~SDIO_CMD_RESERVED & cmd);
 }
 
 /**
@@ -358,7 +358,7 @@ void sdio_send_cmd(sdio_dev *dev, uint32 cmd) {
  */
 uint32 sdio_get_cmd(sdio_dev *dev) {
     uint32 resp = dev->regs->RESPCMD;
-    return (uint8)(~SDIO_RESPCMD_RESERVED & resp);
+    return (~SDIO_RESPCMD_RESERVED & resp);
 }
 
 /**
