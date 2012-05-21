@@ -10,38 +10,23 @@
  * Author: Brian E Tovar <betovar@leaflabs.com>
  */
 
-#include "sdio.h"
 #include "wirish.h"
+#include "libraries/Card/SecureDigital/SDMC.h"
+
+SecureDigitalMemoryCard SDMC;
 
 void setup() {
     pinMode(BOARD_LED_PIN, OUTPUT);
     digitalWrite(BOARD_LED_PIN, HIGH);
-
-    ASSERT(sdio_card_detect()); // also good for init gpios
-    uint32 clockCR = (253 & SDIO_CLKCR_CLKDIV);
-    sdio_set_clkcr(SDIO, clockCR);
-    (SDIO->regs->CLKCR == clockCR);
-    sdio_init(SDIO);
-
-    sdio_power_off(SDIO);
-    ASSERT(SDIO->regs->POWER == SDIO_POWER_OFF);
-    sdio_power_on(SDIO);
-    ASSERT(SDIO->regs->POWER == SDIO_POWER_ON);
-
-    sdio_clock_disable(SDIO);
-    ASSERT(SDIO->regs->CLKCR & ~SDIO_CLKCR_CLKEN);
-    sdio_clock_enable(SDIO);
-    ASSERT(SDIO->regs->CLKCR | SDIO_CLKCR_CLKEN);
-
-    uint32 arg = 0xFF00F0F0;
-    sdio_load_arg(SDIO, arg);
-    ASSERT(SDIO->regs->ARG == arg);
 }
 
 void loop() {
-    // LED blinks slowly for test complete without error
-    togglePin(BOARD_LED_PIN);
-    delay(1000);
+    waitForButtonPress();
+    SerialUSB.println("SDIO_DBG: Starting SDMC test");
+    SDMC.begin();
+    SDMC.init();
+    SDMC.end();
+    SerialUSB.println("SDIO_DBG: Test complete");
 }
 
 // Force init to be called *first*, i.e. before static object allocation.

@@ -349,7 +349,10 @@ void sdio_load_arg(sdio_dev *dev, uint32 arg) {
  * @param cmd SDIO Command to send 
  */
 void sdio_send_cmd(sdio_dev *dev, uint32 cmd) {
-    dev->regs->CMD = (~SDIO_CMD_RESERVED & cmd);
+    uint32 temp = dev->regs->CMD;
+    temp &= SDIO_CMD_RESERVED;
+    temp |= (~SDIO_CMD_RESERVED & cmd);
+    dev->regs->CMD = temp;
 }
 
 /**
@@ -364,17 +367,23 @@ uint32 sdio_get_cmd(sdio_dev *dev) {
 /**
  * @brief Get short response
  * @param dev SDIO Device
- * @retval The 32-bit short response
+ * @param buf Pointer to 32-bit response buffer
  */
 void sdio_get_resp_short(sdio_dev *dev, uint32 *buf) {
+    uint32 temp;
     buf[0] = dev->regs->RESP1;
+    temp   = dev->regs->RESP2;
+    ASSERT(temp == 0);
+    temp   = dev->regs->RESP3;
+    ASSERT(temp == 0);
+    temp   = dev->regs->RESP4;
+    ASSERT(temp == 0);
 }
 
 /**
  * @brief Get long response
  * @param dev SDIO Device 
  * @param buf Pointer to 32-bit response buffer
- * @retval None
  */
 void sdio_get_resp_long(sdio_dev *dev, uint32 *buf) {
     buf[0] = dev->regs->RESP1;
