@@ -169,7 +169,6 @@ class SecureDigitalMemoryCard {
     void enable(SDIOInterruptFlag);
     void disable(SDIOInterruptFlag);
     void clear(SDIOInterruptFlag);
-    void wait(SDIOInterruptFlag);
     void check(SDIOInterruptFlag);
     // card register access functions
     void getOCR(void);
