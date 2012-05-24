@@ -191,4 +191,43 @@ typedef enum SDIOAppCommand {
     /** ACMD52-59 - Reserved */
 } SDIOAppCommand;
 
+static inline uint32 sdio_resp_format(SDIOCommand cmd) {
+    switch ((uint16)cmd) {
+    case 3:
+        return 0xC81C00;
+    case 6:
+        return 0x2F81C00;
+    case 38:
+        return 0x1FF9FC20;
+    case 42:
+        return 0xFF9FC20;
+    case 55:
+        return 0xFF9FC21;
+    case 56:
+        return 0xFF9FC23;  
+    //0x1C00, 
+    default:
+        return 0xFFFFFFFF;
+    }
+}
+
+static inline uint32 sdio_resp_format(SDIOAppCommand acmd) {
+    switch ((uint16)acmd) {
+    case 6:
+        return 0x8FF9FC20;
+    case 13:
+        return 0xFF9FC20;
+    case 22:
+        return 0xFF9FC20;
+    case 23:
+        return 0xFF9FC20;
+    case 42:
+        return 0xFF9FC20;
+    case 51:
+        return 0xFF9FC20;
+    default:
+        return 0xFFFFFFFF;
+    }
+}
+
 #endif
