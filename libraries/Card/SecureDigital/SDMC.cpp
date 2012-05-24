@@ -52,7 +52,8 @@ static const uint32 SDIO_VALID_VOLTAGE_WINDOW  = 0x300000;
  */
 SecureDigitalMemoryCard::SecureDigitalMemoryCard() {
     this->sdio_d = SDIO;
-    this->RCA.RCA = 0x1;
+    this->RCA.RCA = 0x0;
+    this->CSD.version = CSD_VER_UNDEF;
 }
 
 /**
@@ -92,7 +93,6 @@ void SecureDigitalMemoryCard::init(void) {
     SerialUSB.println("SDIO_DBG: Card in idle state");
 // -------------------------------------------------------------------------
     icr status;
-    CSD.version = CSD_VER_UNDEF;
     this->cmd(SEND_IF_COND, //CMD8
               //SDIO_SDXC_POWER_CONTROL | 
               SDIO_VOLTAGE_HOST_SUPPORT | SDIO_CHECK_PATTERN,
@@ -133,25 +133,11 @@ void SecureDigitalMemoryCard::init(void) {
     }
 // -------------------------------------------------------------------------
     SerialUSB.println("SDIO_DBG: Sending inquiry ACMD41");
-    this->cmd(SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
+    csr status41;
+    this->cmd(SD_SEND_OP_COND,
               0,
               SDIO_WRSP_SHRT,
-              (uint32*)&this->OCR);
-    if (OCR.VOLTAGE_WINDOW & SDIO_VALID_VOLTAGE_WINDOW) {
-        SerialUSB.println("SDIO_DBG: Valid volatge window");
-    } else {
-        SerialUSB.println("SDIO_ERR: Invalid volatge window");
-    }
-    if (OCR.BUSY) {
-        SerialUSB.println("SDIO_DBG: Initialization complete");
-    } else {
-        SerialUSB.println("SDIO_DBG: On initialization");
-    }
-    if (OCR.CCS) {
-        SerialUSB.println("SDIO_DBG: SDHC or SDXC card");
-    } else {
-        SerialUSB.println("SDIO_DBG: SDSC card");
-    }
+              (uint32*)&status41);
     /**
     if (sdio_get_status(this->sdio_d, SDIO_STA_CMDREND)) {
         this->getOCR(); //ACMD41: first ACMD41
@@ -342,8 +328,12 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
                                    SDIOWaitResp wrsp,
                                    uint32 *resp) {
     csr status;
+    uint32 temp = 0;
+    //if (CSD.version != CSD_VER_UNDEF) {
+    //    (uint32)RCA.RCA << 16;
+    //}
     this->cmd(APP_CMD,
-              ((uint32)RCA.RCA << 16),
+              temp,
               SDIO_WRSP_SHRT,
               (uint32*)&status);
     if (status.COM_CRC_ERROR == SDIO_CSR_ERROR) {

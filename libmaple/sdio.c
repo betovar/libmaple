@@ -370,14 +370,7 @@ uint32 sdio_get_cmd(sdio_dev *dev) {
  * @param buf Pointer to 32-bit response buffer
  */
 void sdio_get_resp_short(sdio_dev *dev, uint32 *buf) {
-    uint32 temp;
     buf[0] = dev->regs->RESP1;
-    temp   = dev->regs->RESP2;
-    ASSERT(temp == 0);
-    temp   = dev->regs->RESP3;
-    ASSERT(temp == 0);
-    temp   = dev->regs->RESP4;
-    ASSERT(temp == 0);
 }
 
 /**
