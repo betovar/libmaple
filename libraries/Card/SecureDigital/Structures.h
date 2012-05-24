@@ -115,12 +115,15 @@ typedef enum SDIOStatusResponseTag {
  */
 
 typedef struct OperationConditionsRegister {//litte endian
+    unsigned Reserved4              :7;
+    unsigned Reserved3              :1; // For low voltage range
     /** VDD Voltage Window: 2.7v - 3.6v */
-    unsigned VOLTAGE_WINDOW         :24;
+    unsigned VOLTAGE_WINDOW         :16;
     /** Switch to 1.8v Accepted:
      *  Only UHS-I card supports this bit */
     unsigned S18A                   :1;
-    unsigned Reserved1              :5;
+    unsigned Reserved2              :4;
+    unsigned Reserved1              :1;
     /** Card Capacity Status: This bit is valid only when
      *  the card power up status bit is set. 
      *  SDHC and SDXC use the 32-bit argument of memory access commands as
