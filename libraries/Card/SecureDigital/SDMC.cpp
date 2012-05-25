@@ -147,26 +147,20 @@ void SecureDigitalMemoryCard::init(void) {
         }
     }
     //this->check(APP_CMD, status55);
-    csr status41;
-    uint32 *status41p = (uint32*)&status41;
     if (sdio_get_cmd(this->sdio_d) == APP_CMD) {
         SerialUSB.println("This is the inquiry ACMD41");
         this->cmd((SDIOCommand)41,//SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
                   0,
                   SDIO_RESP_SHRT,
-                  (uint32*)&status41);
-        SerialUSB.print("Response from ACMD41 0x");
-        SerialUSB.println(*status41p, HEX);
+                  (uint32*)&this->OCR);
+        //SerialUSB.print("SDIO_DBG: Response from ACMD41 0x");
+        //SerialUSB.println(*(uint32*)&this->OCR, HEX);
     }
-
-
     SerialUSB.println("This is the first ACMD41");
     this->cmd((SDIOCommand)41,//SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
-              0,
+              SDIO_HOST_CAPACITY_SUPPORT | (SDIO_VALID_VOLTAGE_WINDOW << 8),
               SDIO_RESP_SHRT,
-              (uint32*)&status41);
-    SerialUSB.print("Response from ACMD41 0x");
-    SerialUSB.println(*status41p, HEX);
+              (uint32*)&this->OCR);
     if (OCR.BUSY == 1) {
         SerialUSB.println("SDIO_DBG: OCR initialization complete");
     } else {
@@ -175,7 +169,7 @@ void SecureDigitalMemoryCard::init(void) {
 
     SerialUSB.print("SDIO_DBG: Volatge window 0x");
     SerialUSB.println((uint16)OCR.VOLTAGE_WINDOW, HEX);
-    if (OCR.VOLTAGE_WINDOW) { //& SDIO_VALID_VOLTAGE_WINDOW
+    if (OCR.VOLTAGE_WINDOW & SDIO_VALID_VOLTAGE_WINDOW) {
         SerialUSB.println("SDIO_DBG: Valid volatge window");
     } else {
         SerialUSB.println("SDIO_ERR: Unusuable Card");
@@ -316,11 +310,13 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
             switch ((uint8)cmd) {
             case 41:
                 SerialUSB.println("Ignoring CRC for ACMD41");
-                sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);      
-                return;
+                sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
+                sdio_get_resp_short(this->sdio_d, resp);
+                return;     
             case 52:
                 SerialUSB.println("Ignoring CRC for CMD52");
                 sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
+                sdio_get_resp_short(this->sdio_d, resp);
                 return;
             default:
                 SerialUSB.println("Command CRC failure");
