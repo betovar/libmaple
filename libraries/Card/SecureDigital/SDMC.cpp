@@ -130,45 +130,27 @@ void SecureDigitalMemoryCard::init(void) {
     SerialUSB.println("SDIO_DBG: Interface condition check passed");
 // -------------------------------------------------------------------------
     delay(1);
-    csr status55;
-    for (uint32 i = 1; i <= 4; i++) {
-        this->cmd(APP_CMD,
-                  0,//(uint32)RCA.RCA << 16,
-                  SDIO_RESP_SHRT,
-                  (uint32*)&status55);
-        this->check(APP_CMD, status55);
-        if (status55.APP_CMD == SDIO_CSR_DISABLED) {
-            SerialUSB.println("SDIO_ERR: AppCommand not enabled, try again");
-        } else if (status55.COM_CRC_ERROR == SDIO_CSR_ERROR) {
-            SerialUSB.println("SDIO_ERR: Try again");
-        } else {
-            SerialUSB.println("SDIO_DBG: AppCommand enabled");
-            break;
-        }
-    }
-    //this->check(APP_CMD, status55);
-    if (sdio_get_cmd(this->sdio_d) == APP_CMD) {
-        SerialUSB.println("This is the inquiry ACMD41");
-        this->cmd((SDIOCommand)41,//SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
-                  0,
-                  SDIO_RESP_SHRT,
-                  (uint32*)&this->OCR);
-        //SerialUSB.print("SDIO_DBG: Response from ACMD41 0x");
-        //SerialUSB.println(*(uint32*)&this->OCR, HEX);
-    }
+    SerialUSB.println("This is the inquiry ACMD41");
+    this->cmd((SDIOCommand)41, //ACMD41: inquiry ACMD41
+              0,
+              SDIO_RESP_SHRT,
+              (uint32*)&this->OCR);
+    SerialUSB.print("SDIO_DBG: Volatge window of the card 0x");
+    SerialUSB.println((uint16)OCR.VOLTAGE_WINDOW, HEX);
     SerialUSB.println("This is the first ACMD41");
-    this->cmd((SDIOCommand)41,//SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
+    this->cmd(SD_SEND_OP_COND,//ACMD41: first ACMD41
               SDIO_HOST_CAPACITY_SUPPORT | (SDIO_VALID_VOLTAGE_WINDOW << 8),
               SDIO_RESP_SHRT,
               (uint32*)&this->OCR);
-    if (OCR.BUSY == 1) {
-        SerialUSB.println("SDIO_DBG: OCR initialization complete");
-    } else {
-        SerialUSB.println("SDIO_DBG: OCR busy");
+    while (1) {
+        this->getOCR();
+        if (OCR.BUSY == 1) {
+            SerialUSB.println("SDIO_DBG: OCR initialization complete");
+            break;
+        } else {
+            SerialUSB.println("SDIO_DBG: OCR busy");
+        }
     }
-
-    SerialUSB.print("SDIO_DBG: Volatge window 0x");
-    SerialUSB.println((uint16)OCR.VOLTAGE_WINDOW, HEX);
     if (OCR.VOLTAGE_WINDOW & SDIO_VALID_VOLTAGE_WINDOW) {
         SerialUSB.println("SDIO_DBG: Valid volatge window");
     } else {
@@ -376,20 +358,30 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
                                    uint32 arg,
                                    SDIORespType type,
                                    uint32 *resp) {
-    csr status;
-    for (uint32 i = 1; i <= 2; i++) {
+    csr status55;
+    for (uint32 i = 1; i <= 4; i++) {
         this->cmd(APP_CMD,
-                  (uint32)RCA.RCA << 16,
+                  0,//(uint32)RCA.RCA << 16,
                   SDIO_RESP_SHRT,
-                  (uint32*)&status);
-        if (status.APP_CMD == SDIO_CSR_DISABLED) {
-            SerialUSB.println("SDIO_ERR: AppCommand not enabled");
+                  (uint32*)&status55);
+        this->check(APP_CMD, status55);
+        if (status55.APP_CMD == SDIO_CSR_DISABLED) {
+            SerialUSB.println("SDIO_ERR: AppCommand not enabled, try again");
+        } else if (status55.COM_CRC_ERROR == SDIO_CSR_ERROR) {
+            SerialUSB.println("SDIO_ERR: Try again");
         } else {
             SerialUSB.println("SDIO_DBG: AppCommand enabled");
             break;
         }
     }
-    this->check(APP_CMD, status);
+    if (sdio_get_cmd(this->sdio_d) == APP_CMD) {
+        this->cmd((SDIOCommand)acmd,
+                  arg,
+                  type,
+                  resp);
+        //SerialUSB.print("SDIO_DBG: Response from ACMD41 0x");
+        //SerialUSB.println(*(uint32*)&this->OCR, HEX);
+    }
     if (sdio_get_cmd(this->sdio_d) == APP_CMD) {
         this->cmd((SDIOCommand)acmd, arg, type, resp);
     }
@@ -510,6 +502,7 @@ void SecureDigitalMemoryCard::check(SDIOCommand cmd, csr status) {
 void SecureDigitalMemoryCard::getOCR(void) {
     this->cmd(SD_SEND_OP_COND,
               SDIO_HOST_CAPACITY_SUPPORT | (OCR.VOLTAGE_WINDOW << 8),
+              //SDIO_HOST_CAPACITY_SUPPORT | (SDIO_VALID_VOLTAGE_WINDOW << 8),
               SDIO_RESP_SHRT,
               (uint32*)&this->OCR);
 }
