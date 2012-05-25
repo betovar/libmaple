@@ -42,7 +42,7 @@
 typedef enum CsdCardVersion {
     CSD_VER_UNDEF = 0,
     CSD_VER_1     = 1,
-    CSD_VER_2   = 2
+    CSD_VER_2     = 2
 } CsdCardVersion;
 
 typedef enum CsdCardCapacity {
@@ -77,8 +77,8 @@ typedef enum SDIOStatusResponseTag {
     SDIO_CSR_PRG             = 7,
     SDIO_CSR_DIS             = 8,
     SDIO_CSR_IO_MODE         = 15,
-    SDIO_CSR_APP_DISABLED    = 0,
-    SDIO_CSR_APP_ENABLED     = 1,
+    SDIO_CSR_DISABLED        = 0,
+    SDIO_CSR_ENABLED         = 1,
     //SdStatusResponse Tags
     SDIO_SSR_1BIT_WIDTH      = 0,
     SDIO_SSR_4BIT_WIDTH      = 2,
@@ -114,7 +114,7 @@ typedef enum SDIOStatusResponseTag {
  * SD Register Structures
  */
 
-typedef struct OperationConditionsRegister {//litte endian
+typedef struct OperationConditionsRegister {//litte-endian
     unsigned Reserved4              :7;
     unsigned Reserved3              :1; // For low voltage range
     /** VDD Voltage Window: 2.7v - 3.6v */
@@ -173,7 +173,7 @@ typedef struct CardIdentificationRegister {
 }__attribute__((packed)) cid;
 
 //RelativeCardAddress
-typedef struct RelativeCardAddress { //litte endian
+typedef struct RelativeCardAddress { //litte-endian
     uint8 Reserved2;
     uint8 Reserved1;
     uint16 RCA;
@@ -288,7 +288,7 @@ typedef struct SdConfigurationRegister {
  * Response Structures
  */
 
-typedef struct CardStatusResponse { //litte endian
+typedef struct CardStatusResponse { //litte-endian
     unsigned Reserved6              :2;
     unsigned Reserved5              :1;
     unsigned AKE_SEQ_ERROR          :1;
@@ -317,8 +317,8 @@ typedef struct CardStatusResponse { //litte endian
     unsigned ERASE_PARAM            :1;
     unsigned ERASE_SEQ_ERROR        :1;
     unsigned BLOCK_LEN_ERROR        :1;
-    unsigned ADDRESS_MISALIGN       :1;
-    unsigned ADDRESS_OUT_OF_RANGE   :1;
+    unsigned ADDRESS_ERROR          :1;
+    unsigned OUT_OF_RANGE           :1;
 }__attribute__((packed)) csr;
 
 typedef struct SdStatusResponse {
@@ -341,7 +341,7 @@ typedef struct SdStatusResponse {
     uint8 Reserved5[39];
 }__attribute__((packed)) ssr;
 
-typedef struct InterfaceConditionResponse {
+typedef struct InterfaceConditionResponse { //litte-endian
     unsigned CHECK_PATTERN          :8;
     unsigned VOLTAGE_ACCEPTED       :4;
     unsigned Reserved1              :20;

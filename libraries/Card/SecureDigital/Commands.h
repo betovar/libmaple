@@ -38,7 +38,7 @@ typedef enum SDIOCommand {
     /** CMD0 - Resets all cards to idle state */
     GO_IDLE_STATE           = 0,
     /** CMD1 - reserved MMC */
-  //CMD1                    = 1,
+  //SEND_OP_COND            = 1,
     /** CMD2 - Asks any card to send the CID numbers on the CMD line */
     ALL_SEND_CID            = 2,
     /** CMD3 - Ask the card to publish a new relative address */
@@ -191,8 +191,11 @@ typedef enum SDIOAppCommand {
     /** ACMD52-59 - Reserved */
 } SDIOAppCommand;
 
+/**
+ * @brief 
+ */
 static inline uint32 sdio_resp_format(SDIOCommand cmd) {
-    switch ((uint16)cmd) {
+    switch ((uint8)cmd) {
     case 3:
         return 0xC81C00;
     case 6:
@@ -204,30 +207,25 @@ static inline uint32 sdio_resp_format(SDIOCommand cmd) {
     case 55:
         return 0xFF9FC21;
     case 56:
-        return 0xFF9FC23;  
-    //0x1C00, 
+        return 0xFF9FC23; 
     default:
         return 0xFFFFFFFF;
     }
 }
 
 static inline uint32 sdio_resp_format(SDIOAppCommand acmd) {
-    switch ((uint16)acmd) {
+    switch ((uint8)acmd) {
     case 6:
         return 0x8FF9FC20;
     case 13:
-        return 0xFF9FC20;
     case 22:
-        return 0xFF9FC20;
     case 23:
-        return 0xFF9FC20;
     case 42:
-        return 0xFF9FC20;
     case 51:
         return 0xFF9FC20;
     default:
         return 0xFFFFFFFF;
-    }
+    }    //0x1C00, 
 }
 
 #endif

@@ -42,11 +42,17 @@
  * SDIO Enumerations
  */
 
-typedef enum SDIOWaitResp {
-    SDIO_WRSP_NONE     = 0,
-    SDIO_WRSP_SHRT     = 1,
-  //SDIO_WRSP_NONE_2   = 2,
-    SDIO_WRSP_LONG     = 3
+typedef enum SDIORespType {
+    SDIO_RESP_NONE     = 0,
+    SDIO_RESP_SHRT     = 1,
+  //SDIO_RESP_NONE_2   = 2,
+    SDIO_RESP_LONG     = 3,
+    SDIO_RESP_TYPE1,
+    SDIO_RESP_TYPE1B,
+    SDIO_RESP_TYPE2,
+    SDIO_RESP_TYPE3,
+    SDIO_RESP_TYPE6,
+    SDIO_RESP_TYPE7
 } SDIOWaitResp;
 
 typedef enum SDIOBusMode {
@@ -151,10 +157,10 @@ class SecureDigitalMemoryCard {
     // command functions
     void cmd(SDIOCommand);
     void cmd(SDIOCommand, uint32);
-    void cmd(SDIOCommand, uint32, SDIOWaitResp, uint32*);
+    void cmd(SDIOCommand, uint32, SDIORespType, uint32*);
     void cmd(SDIOAppCommand);
     void cmd(SDIOAppCommand, uint32);
-    void cmd(SDIOAppCommand, uint32, SDIOWaitResp, uint32*);
+    void cmd(SDIOAppCommand, uint32, SDIORespType, uint32*);
     // general data functions
     void stop(void);
     void read(uint32, uint32*, uint32);
@@ -169,7 +175,8 @@ class SecureDigitalMemoryCard {
     void enable(SDIOInterruptFlag);
     void disable(SDIOInterruptFlag);
     void clear(SDIOInterruptFlag);
-    void check(SDIOInterruptFlag);
+    void check(SDIOCommand, csr);
+    void wait(void);
     // card register access functions
     void getOCR(void);
     void getCID(void);
