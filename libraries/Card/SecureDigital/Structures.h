@@ -133,8 +133,8 @@ typedef struct OperationConditionsRegister {//big-endian
     unsigned S18A                   :1;
     /** VDD Voltage Window: 2.7v - 3.6v */
     unsigned VOLTAGE_WINDOW         :16;
-    unsigned Reserved3              :1; // For low voltage range
-    unsigned Reserved4              :7;
+    /** Reserved for low voltage range */
+    unsigned Reserved3              :8;
 }__attribute__((packed)) ocr;
 
 typedef struct product_revision {

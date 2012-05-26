@@ -98,7 +98,7 @@ void SecureDigitalMemoryCard::init(void) {
               SDIO_RESP_SHRT,
               (uint32*)&status8);
     uint32 arg = SDIO_HOST_CAPACITY_SUPPORT;
-    if (sdio_get_status(this->sdio_d, SDIO_STA_CMDSENT)) {
+    if (sdio_get_status(this->sdio_d, SDIO_STA_CTIMEOUT)) {
         SerialUSB.println("SDIO_ERR: No response from CMD8");
         // the host should set HCS to 0 if the card returns no response
         arg &= ~SDIO_HOST_CAPACITY_SUPPORT;
@@ -126,8 +126,7 @@ void SecureDigitalMemoryCard::init(void) {
         return;
     } else {
         SerialUSB.println("SDIO_ERR: Unexpected response status");
-        SerialUSB.print("Response is 0x");
-        SerialUSB.println(*(uint32*)&status8, HEX);
+        return;
     }
     SerialUSB.println("SDIO_DBG: Interface condition check passed");
 // -------------------------------------------------------------------------
@@ -144,17 +143,16 @@ void SecureDigitalMemoryCard::init(void) {
         SerialUSB.println((uint16)OCR.VOLTAGE_WINDOW, HEX);
     }
 // -------------------------------------------------------------------------
-    /**
     SerialUSB.println("SDIO_DBG: This is the first ACMD41");
-    this->getOCR(); //ACMD41: first ACMD41
-    for(int i = 1; i <= 2; i++) {
+    for(int i = 1; i <= 3; i++) {
+        this->getOCR(); //ACMD41: first ACMD41
         if (OCR.BUSY == 1) {
             SerialUSB.println("SDIO_DBG: Card is ready");
             break;
         } else {
             SerialUSB.println("SDIO_DBG: OCR busy");
-            this->getOCR();
         }
+        delay(1);
     }
     if (OCR.VOLTAGE_WINDOW & SDIO_VALID_VOLTAGE_WINDOW) {
         SerialUSB.println("SDIO_DBG: Valid volatge window");
@@ -166,7 +164,7 @@ void SecureDigitalMemoryCard::init(void) {
         CSD.capacity = CSD_CAP_SDSC;
     }
 // -------------------------------------------------------------------------
-    this->RCA.RCA = 0x1;
+    /**
     SerialUSB.println("SDIO_DBG: Getting Card Idenfication Number");
     this->cmd(ALL_SEND_CID, //CMD2
               0,
@@ -286,10 +284,14 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
             break;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_CCRCFAIL)) {
             switch ((uint8)cmd) {
-            case 41:
+            case 41: // special response format from ACMD41
                 SerialUSB.println("Ignoring CRC for ACMD41");
                 sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
-                break;     
+                if (sdio_get_cmd(this->sdio_d) == 63) {
+                    SerialUSB.println("SDIO_DBG: Response from ACMD41");
+                    sdio_get_resp_short(this->sdio_d, resp);
+                }
+                return;
             case 52:
                 SerialUSB.println("Ignoring CRC for CMD52");
                 sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
@@ -301,15 +303,9 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
             break;
         } //end of if statements
     } //end of while statement
-    SerialUSB.print("SDIO_DBG: Response from ");
-    uint32 respcmd = sdio_get_cmd(this->sdio_d);
-    if (((uint32)cmd == 41) && (respcmd == 63)) {
-        respcmd = 41;
-        SerialUSB.print("A");
-    }
-    if (respcmd == (uint32)cmd)  {
-        SerialUSB.print("CMD");
-        SerialUSB.println(respcmd, DEC);
+    if (sdio_get_cmd(this->sdio_d) == (uint32)cmd)  {
+        SerialUSB.print("SDIO_DBG: Response from CMD");
+        SerialUSB.println(sdio_get_cmd(this->sdio_d), DEC);
         switch (type) {
         case SDIO_RESP_SHRT:
             sdio_get_resp_short(this->sdio_d, resp);
@@ -322,7 +318,7 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
         }
     } else {
         SerialUSB.print("SDIO_ERR: Command mismatch, CMD");
-        SerialUSB.println(respcmd, DEC);
+        SerialUSB.println(sdio_get_cmd(this->sdio_d), DEC);
         return;
     }
 }
@@ -362,11 +358,13 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
                   (uint32)RCA.RCA << 16,
                   SDIO_RESP_SHRT,
                   (uint32*)&status55);
-        //this->check(APP_CMD, (uint32*)&status55);
+        //if (this->check(APP_CMD, 0xFF9FC21) == 0) {
+        //    break;
+        //}
         if (status55.APP_CMD == SDIO_CSR_DISABLED) {
             SerialUSB.println("SDIO_ERR: AppCommand not enabled, try again");
         } else if (status55.COM_CRC_ERROR == SDIO_CSR_ERROR) {
-            SerialUSB.println("SDIO_ERR: Try again");
+            SerialUSB.println("SDIO_ERR: CRC error, try again");
         } else {
             break;
         }
@@ -387,75 +385,99 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
 /**
  * @brief 
  */
- /**
-void SecureDigitalMemoryCard::check(SDIOCommand cmd, uint32 mask) {
-    SerialUSB.print("   Card Response Status for CMD");
+uint32 SecureDigitalMemoryCard::check(SDIOCommand cmd, uint32 mask) {
+    SerialUSB.print("SDIO_DBG: Card Response Status for CMD");
     SerialUSB.println((uint8)cmd, DEC);
+    uint32 temp = 0;
+    sdio_get_resp_short(this->sdio_d, &temp);
+    temp &= mask;
     csr status;
     uint32 *statusp = (uint32*)&status;
-    *statusp = mask;
+    *statusp = temp;
+    
+    uint32 error_count = 0;
     if (status.OUT_OF_RANGE == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Argument was out of the allowed range");
+        error_count++;
     }
     if (status.ADDRESS_ERROR == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Misaligned address");
+        error_count++;
     }
     if (status.BLOCK_LEN_ERROR == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Block length is not allowed");
+        error_count++;
     }
     if (status.ERASE_SEQ_ERROR == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Erase sequence error");
+        error_count++;
     }
     if (status.ERASE_PARAM == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Invalid selection of write-blocks");
+        error_count++;
     }
     if (status.WP_VIOLATION == SDIO_CSR_PROTECTED) {
         SerialUSB.println("SDIO_ERR: Attempt to write to a protected block");
+        error_count++;
     }
     if (status.CARD_IS_LOCKED == SDIO_CSR_CARD_LOCKED) {
         SerialUSB.println("SDIO_ERR: Card is locked by the host");
+        error_count++;
     }
     if (status.LOCK_UNLOCK_FAILED == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Sequence or password error");
+        error_count++;
     }
     if (status.COM_CRC_ERROR == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: CRC error in previous command");
+        error_count++;
     }
     if (status.ILLEGAL_COMMAND == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Command not legal for the card state");
+        error_count++;
     }
     if (status.CARD_ECC_FAILED == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Error correction failed");
+        error_count++;
     }
     if (status.CC_ERROR == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Internal card controller error");
+        error_count++;
     }
     if (status.ERROR == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: A general or unknown error occurred");
+        error_count++;
     }
     if (status.CSD_OVERWRITE == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: CSD does not match the card content");
+        error_count++;
     }
     if (status.WP_ERASE_SKIP == SDIO_CSR_PROTECTED) {
         SerialUSB.println("SDIO_ERR: Erased only partial block due to WP");
+        error_count++;
     }
     if (status.CARD_ECC_DISABLED == SDIO_CSR_ECC_DISABLED) {
         SerialUSB.println("SDIO_ERR: Command executed without internal ECC");
+        error_count++;
     }
     if (status.ERASE_RESET == SDIO_CSR_SET) {
         SerialUSB.println("SDIO_ERR: Out of sequence erase command received");
+        error_count++;
     }
     if (status.READY_FOR_DATA == SDIO_CSR_NOT_READY) {
         SerialUSB.println("SDIO_ERR: Card not ready for data");
+        error_count++;
     }
     if (status.APP_CMD == SDIO_CSR_DISABLED) {
         SerialUSB.println("SDIO_ERR: AppCommand not enabled");
+        error_count++;
     }
     if (status.AKE_SEQ_ERROR == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Authentication sequence process error");
+        error_count++;
     }
     //SerialUSB.println("SDIO_DBG: Card response was free of error");
-    SerialUSB.print("SDIO_DBG: Card state when receiving command ");
+    SerialUSB.print("SDIO_DBG: Card state when receiving command, ");
     switch (status.CURRENT_STATE) {
         case 0:
             SerialUSB.println("IDLE");
@@ -491,8 +513,8 @@ void SecureDigitalMemoryCard::check(SDIOCommand cmd, uint32 mask) {
             SerialUSB.println("RESERVED");
             break;
     }
+    return error_count;
 }
-*/
 
 /**
  * Card register functions
