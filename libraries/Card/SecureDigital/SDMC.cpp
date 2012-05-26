@@ -70,6 +70,9 @@ void SecureDigitalMemoryCard::begin(void) {
  */
 void SecureDigitalMemoryCard::end(void) {
     sdio_reset(this->sdio_d);
+    delay(1);
+    sdio_power_off(this->sdio_d);
+    sdio_clock_disable(this->sdio_d);
 }
 
 /**
@@ -122,13 +125,13 @@ void SecureDigitalMemoryCard::init(void) {
             SerialUSB.println("SDIO_DBG: Valid supplied voltage");
         }
         CSD.version = CSD_VER_2;
+        SerialUSB.println("SDIO_DBG: Interface condition check passed");
     } else if (sdio_get_status(this->sdio_d, SDIO_STA_CCRCFAIL)) {
         return;
     } else {
         SerialUSB.println("SDIO_ERR: Unexpected response status");
         return;
     }
-    SerialUSB.println("SDIO_DBG: Interface condition check passed");
 // -------------------------------------------------------------------------
     SerialUSB.println("SDIO_DBG: This is the inquiry ACMD41");
     this->cmd(SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
@@ -164,12 +167,13 @@ void SecureDigitalMemoryCard::init(void) {
         CSD.capacity = CSD_CAP_SDSC;
     }
 // -------------------------------------------------------------------------
-    /**
     SerialUSB.println("SDIO_DBG: Getting Card Idenfication Number");
     this->cmd(ALL_SEND_CID, //CMD2
               0,
-              SDIO_RESP_SHRT,
+              SDIO_RESP_LONG,
               (uint32*)&this->CID);
+    SerialUSB.print("SDIO_DBG: Serial Number is ");
+    SerialUSB.println(CID.PSN, DEC);
 // -------------------------------------------------------------------------
     SerialUSB.print("SDIO_DBG: Relative address is 0x");
     SerialUSB.println(RCA.RCA, HEX);
@@ -181,6 +185,7 @@ void SecureDigitalMemoryCard::init(void) {
     SerialUSB.print("SDIO_DBG: Relative address is 0x");
     SerialUSB.println(RCA.RCA, HEX);
 // -------------------------------------------------------------------------
+    /**
     SerialUSB.println("SDIO_DBG: Getting Card Specific Data");
     this->getCSD(); //CMD9
 // -------------------------------------------------------------------------
@@ -281,17 +286,13 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
             break;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_CMDSENT)) {
             SerialUSB.println("Command sent");
-            break;
+            return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_CCRCFAIL)) {
             switch ((uint8)cmd) {
             case 41: // special response format from ACMD41
                 SerialUSB.println("Ignoring CRC for ACMD41");
                 sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
-                if (sdio_get_cmd(this->sdio_d) == 63) {
-                    SerialUSB.println("SDIO_DBG: Response from ACMD41");
-                    sdio_get_resp_short(this->sdio_d, resp);
-                }
-                return;
+                break;
             case 52:
                 SerialUSB.println("Ignoring CRC for CMD52");
                 sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
@@ -306,11 +307,23 @@ void SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
     if (sdio_get_cmd(this->sdio_d) == (uint32)cmd)  {
         SerialUSB.print("SDIO_DBG: Response from CMD");
         SerialUSB.println(sdio_get_cmd(this->sdio_d), DEC);
-        switch (type) {
-        case SDIO_RESP_SHRT:
+        sdio_get_resp_short(this->sdio_d, resp);
+    } else if (sdio_get_cmd(this->sdio_d) == 63) {
+        switch ((uint8)cmd) {
+        case 41:
+            SerialUSB.println("SDIO_DBG: Response from ACMD41");
             sdio_get_resp_short(this->sdio_d, resp);
             break;
-        case SDIO_RESP_LONG:
+        case 2:
+            SerialUSB.println("SDIO_DBG: Response from CMD2");
+            sdio_get_resp_long(this->sdio_d, resp);
+            break;
+        case 9:
+            SerialUSB.println("SDIO_DBG: Response from CMD9");
+            sdio_get_resp_long(this->sdio_d, resp);
+            break;
+        case 10:
+            SerialUSB.println("SDIO_DBG: Response from CMD10");
             sdio_get_resp_long(this->sdio_d, resp);
             break;
         default:
