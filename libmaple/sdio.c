@@ -540,24 +540,17 @@ void sdio_clear_interrupt(sdio_dev *dev, uint32 flag) {
 /**
  * @brief Determines which interrupt flags generate an interrupt request
  * @param dev SDIO Device
- * @param mask Interrupt sources to enable or disable
- * @param state The new state of the specified SDIO interrupts
+ * @param mask Interrupt sources to enable
  */
-void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask, uint8 state) {
-    switch (state) {
-    case SDIO_MASK_STATE_DISABLE:
-    /* Disable the SDIO interrupts */
-        dev->regs->MASK &= ~mask;
-        break;
-    case SDIO_MASK_STATE_ENABLE:
-    /* Enable the SDIO interrupts */
-        dev->regs->MASK |= mask;
-        break;
-    case SDIO_MASK_STATE_WRITE:
-    /* Configure entire interrupt mask */
-        dev->regs->MASK = mask;
-        break;
-    default:
-        break;
-    } 
+void sdio_add_interrupt(sdio_dev *dev, uint32 mask) {
+    dev->regs->MASK |= mask;
+}
+
+/**
+ * @brief Writes interrupt mask to generate an interrupt request
+ * @param dev SDIO Device
+ * @param mask Interrupt sources to enable
+ */
+void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask) {
+    dev->regs->MASK = mask;
 }

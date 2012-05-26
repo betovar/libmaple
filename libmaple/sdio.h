@@ -326,11 +326,6 @@ typedef struct sdio_reg_map {
 #define SDIO_GPIO_8B_DATA_INPUT     0x8
 #define SDIO_GPIO_8B_DATA_OUTPUT    0x9
 
-/* GPIO defines */ //FIXME this should prob be an enum
-#define SDIO_MASK_STATE_DISABLE     0x0
-#define SDIO_MASK_STATE_ENABLE      0x1
-#define SDIO_MASK_STATE_WRITE       0x2
-
 /*
  * SDIO Device
  */
@@ -393,7 +388,8 @@ void sdio_write_data(sdio_dev *dev, uint32 data);
 // SDIO interrupt functions
 uint32 sdio_get_status(sdio_dev *dev, uint32 flag);
 void sdio_clear_interrupt(sdio_dev *dev, uint32 flag);
-void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask, uint8 state);
+void sdio_add_interrupt(sdio_dev *dev, uint32 mask);
+void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask);
 #ifdef __cplusplus
 }
 #endif

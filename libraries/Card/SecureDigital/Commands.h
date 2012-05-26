@@ -120,7 +120,7 @@ typedef enum SDIOCommand {
     ERASE_WR_BLK_END_ADDR   = 33,
     /** CMD38 -  */
     ERASE                   = 38,
-    /** CMD38 -  */
+    /** CMD39 -  */
   //CMD39                   = 39,
     /** CMD41 - Reserved */
   //CMD41                   = 41,
@@ -190,42 +190,5 @@ typedef enum SDIOAppCommand {
     SEND_SCR                = 51
     /** ACMD52-59 - Reserved */
 } SDIOAppCommand;
-
-/**
- * @brief 
- */
-static inline uint32 sdio_resp_format(SDIOCommand cmd) {
-    switch ((uint8)cmd) {
-    case 3:
-        return 0xC81C00;
-    case 6:
-        return 0x2F81C00;
-    case 38:
-        return 0x1FF9FC20;
-    case 42:
-        return 0xFF9FC20;
-    case 55:
-        return 0xFF9FC21;
-    case 56:
-        return 0xFF9FC23; 
-    default:
-        return 0xFFFFFFFF;
-    }
-}
-
-static inline uint32 sdio_resp_format(SDIOAppCommand acmd) {
-    switch ((uint8)acmd) {
-    case 6:
-        return 0x8FF9FC20;
-    case 13:
-    case 22:
-    case 23:
-    case 42:
-    case 51:
-        return 0xFF9FC20;
-    default:
-        return 0xFFFFFFFF;
-    }    //0x1C00, 
-}
 
 #endif

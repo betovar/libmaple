@@ -4,7 +4,25 @@ The goal of this library is to provide an feature set of commands specific to
 each card type. Thereby, a user can implement (at a minimum) read and writes
 to a card's registers.
 
-We begin with a Secure Digital card command set as this library is being
-developed alongside the sdio hardware peripheral.
+this page was last modified on 25 May 2012.
 
-this page was last modified on 4 April 2012.
+Reference Manual for STM32F103ZE:
+http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/REFERENCE_MANUAL/CD00171190.pdf
+
+SD Card Physical Layer Specification:
+https://www.sdcard.org/downloads/pls/simplified_specs/Part_1_Physical_Layer_Simplified_Specification_Ver_3.01_Final_100518.pdf
+
+Most of the work done to date has been to set up a C rountine API for users to 
+initialize their own cards and interface with the SDIO peripheral. 
+Alongside this delevopment, the C++ library has tried to draw new users in with
+clean examples of how to work with the C API as well as provide common
+functions for getting started.
+Thus far, the status of this library is to idenitfy a card and read it's 
+card specific registers.
+This is known as the card initialization and identification process, and it is
+almost complete. The init() function provides this process.
+
+Next steps in the library, are to send and receive blocks of data from the 
+card.
+This functionality will be available in read() and write() calls in weeks to 
+come.

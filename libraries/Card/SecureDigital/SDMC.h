@@ -46,14 +46,8 @@ typedef enum SDIORespType {
     SDIO_RESP_NONE     = 0,
     SDIO_RESP_SHRT     = 1,
   //SDIO_RESP_NONE_2   = 2,
-    SDIO_RESP_LONG     = 3,
-    SDIO_RESP_TYPE1,
-    SDIO_RESP_TYPE1B,
-    SDIO_RESP_TYPE2,
-    SDIO_RESP_TYPE3,
-    SDIO_RESP_TYPE6,
-    SDIO_RESP_TYPE7
-} SDIOWaitResp;
+    SDIO_RESP_LONG     = 3
+} SDIORespType;
 
 typedef enum SDIOBusMode {
     SDIO_BUS_INIT     = SDIO_GPIO_INIT,
@@ -81,7 +75,7 @@ typedef enum SDIOClockFrequency {
     SDIO_500_KHZ  = 142,
     SDIO_400_KHZ  = 178,
     SDIO_300_KHZ  = 238,
-    SDIO_CLK_INIT = SDIO_300_KHZ
+    SDIO_CLK_INIT = SDIO_400_KHZ
 } SDIOClockFrequency;
 
 typedef enum SDIOBlockSize {
@@ -172,11 +166,8 @@ class SecureDigitalMemoryCard {
     void readBlock(uint32, uint32*);
     void writeBlock(uint32, const uint32*);
     // interrupt functions
-    void enable(SDIOInterruptFlag);
-    void disable(SDIOInterruptFlag);
     void clear(SDIOInterruptFlag);
-    void check(SDIOCommand, csr);
-    void wait(void);
+    void check(SDIOCommand, uint32);
     // card register access functions
     void getOCR(void);
     void getCID(void);
