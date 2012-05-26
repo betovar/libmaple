@@ -80,6 +80,7 @@ void SecureDigitalMemoryCard::end(void) {
  */
 void SecureDigitalMemoryCard::init(void) {
     SerialUSB.println("SDIO_DBG: Initializing card");
+    sdio_power_off(this->sdio_d);
     if (sdio_card_detect()) {
         SerialUSB.println("SDIO_DBG: Card detected");
     } else {
@@ -91,8 +92,7 @@ void SecureDigitalMemoryCard::init(void) {
     sdio_clock_enable(this->sdio_d);
     delay(1);//Microseconds(185);
 // -------------------------------------------------------------------------
-    this->cmd(GO_IDLE_STATE); //CMD0
-    SerialUSB.println("SDIO_DBG: Card in idle state");
+    this->idle(); //CMD0
 // -------------------------------------------------------------------------
     icr status8;
     this->cmd(SEND_IF_COND, //CMD8
@@ -201,12 +201,20 @@ void SecureDigitalMemoryCard::init(void) {
         return;
     }
 // -------------------------------------------------------------------------
-    /**
     SerialUSB.println("SDIO_DBG: Getting Sd Configuration Register");
-    this->getSCR();
-    */
+    this->getSCR((uint32*)&this->SCR);
 // -------------------------------------------------------------------------  
     SerialUSB.println("SDIO_DBG: Initialization complete");
+}
+
+/**
+ * @brief Send CMD0 to set card to idle state
+ */
+void SecureDigitalMemoryCard::idle(void) {
+    this->cmd(GO_IDLE_STATE);
+    if (sdio_get_status(this->sdio_d, SDIO_STA_CMDSENT)) {
+        SerialUSB.println("SDIO_DBG: Card in idle state");
+    }
 }
 
 /**
@@ -384,9 +392,7 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
                   (uint32)RCA.RCA << 16,
                   SDIO_RESP_SHRT,
                   (uint32*)&status55);
-        //if (this->check(APP_CMD, 0xFF9FC21) == 0) {
-        //    break;
-        //}
+        this->check(0xFF9FC21);
         if (status55.APP_CMD == SDIO_CSR_DISABLED) {
             SerialUSB.println("SDIO_ERR: AppCommand not enabled, try again");
         } else if (status55.COM_CRC_ERROR == SDIO_CSR_ERROR) {
@@ -411,9 +417,8 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
 /**
  * @brief 
  */
-uint32 SecureDigitalMemoryCard::check(SDIOCommand cmd, uint32 mask) {
-    SerialUSB.print("SDIO_DBG: Card Response Status for CMD");
-    SerialUSB.println((uint8)cmd, DEC);
+uint32 SecureDigitalMemoryCard::check(uint32 mask) {
+    SerialUSB.println("SDIO_DBG: Card Response Status check");
     uint32 temp = 0;
     sdio_get_resp_short(this->sdio_d, &temp);
     temp &= mask;
@@ -594,12 +599,19 @@ void SecureDigitalMemoryCard::getCSD(void) {
 /**
  * @brief 
  */
-void SecureDigitalMemoryCard::getSCR(void) {
+void SecureDigitalMemoryCard::getSCR(uint32 *buf) {
     this->cmd(SEND_SCR,
               0,
               SDIO_RESP_SHRT,
               (uint32*)&this->SCR);
-    
+    if (this->check(0xFF9FC20) != 0) { //FIXME to be clarified later
+        return;
+    }
+    if (sdio_get_status(this->sdio_d, SDIO_ICR_CMDRENDC)) {
+        for (int i = 0; sdio_get_fifo_count(this->sdio_d); i++) {
+            buf[i] = sdio_read_data(this->sdio_d);
+        }
+    }
 }
 
 /**
@@ -634,7 +646,7 @@ void SecureDigitalMemoryCard::read(uint32 addr,
     uint32 rxed = 0;
     while (rxed < count) {
         buf[rxed++] = sdio_read_data(this->sdio_d);
-    }//FIXME add cmd with blcok addr
+    }//FIXME add cmd with block addr
 }
 
 /**
@@ -647,7 +659,7 @@ void SecureDigitalMemoryCard::write(uint32 addr,
     uint32 txed = 0;
     while (txed < count) {
         sdio_write_data(this->sdio_d, buf[txed++]);
-    }//FIXME add cmd with blcok addr
+    }//FIXME add cmd with block addr
 }
 
 /**
@@ -659,13 +671,13 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
     sdio_cfg_interrupt(this->sdio_d, SDIO_MASK_RXFIFOFIE |
                        SDIO_MASK_RXFIFOEIE | SDIO_MASK_RXFIFOHFIE |
                        SDIO_MASK_RXDAVLIE | SDIO_MASK_RXOVERRIE);
-    //uint32 count = 512/4;
     csr status;
-    this->cmd(READ_SINGLE_BLOCK, addr,
-              SDIO_RESP_SHRT, (uint32*)&status);
-    if (sdio_get_status(this->sdio_d, SDIO_ICR_CMDRENDC) == 1) {
-        //while (sdio_get_fifo_count(this->sdio_d)) 
-        for (int i = 0; i < 8; i++) {
+    this->cmd(READ_SINGLE_BLOCK,
+              addr,
+              SDIO_RESP_SHRT,
+              (uint32*)&status);
+    if (sdio_get_status(this->sdio_d, SDIO_ICR_CMDRENDC)) {
+        for (int i = 0; sdio_get_fifo_count(this->sdio_d); i++) {
             buf[i] = sdio_read_data(this->sdio_d);
         }
     }

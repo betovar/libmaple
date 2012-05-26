@@ -464,6 +464,15 @@ void sdio_cfg_dcr(sdio_dev *dev, uint32 spc, uint32 val) {
 /**
  * @brief Set response timeout
  * @param dev SDIO Device 
+ * @param length 
+ */
+void sdio_set_data_length(sdio_dev *dev, uint32 length) {
+    dev->regs->DLEN = (~SDIO_DLEN_RESERVED & length);
+}
+
+/**
+ * @brief Set response timeout
+ * @param dev SDIO Device 
  * @param timeout Timeout value for the data path state
  *        machine in card bus clock periods.
  */

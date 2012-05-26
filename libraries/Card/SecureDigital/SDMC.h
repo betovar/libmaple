@@ -153,6 +153,7 @@ class SecureDigitalMemoryCard {
     void test(void);
     void end(void);
     // convenience functions
+    void idle(void);
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
     void blockSize(SDIOBlockSize);
@@ -175,12 +176,12 @@ class SecureDigitalMemoryCard {
     void writeBlock(uint32, const uint32*);
     // interrupt functions
     void clear(SDIOInterruptFlag);
-    uint32 check(SDIOCommand, uint32);
+    uint32 check(uint32);
     // card register access functions
     void getOCR(void);
     void getCID(void);
     void getCSD(void);
-    void getSCR(void);
+    void getSCR(uint32*);
     void setDSR(void);
     
     /** other functions to be developed
