@@ -114,10 +114,16 @@ typedef enum SDIOStatusResponseTag {
  * SD Register Structures
  */
 
-typedef struct OperationConditionsRegister {//big-endian
-    /** Card power up status bit: This bit is set to LOW if
-     *  the card has not finished the power up routine. */
-    unsigned BUSY                   :1;
+typedef struct OperationConditionsRegister {//little-endian
+    /** Reserved for low voltage range */
+    unsigned Reserved3              :8;
+    /** VDD Voltage Window: 2.7v - 3.6v */
+    unsigned VOLTAGE_WINDOW         :16;
+    /** Switch to 1.8v Accepted:
+     *  Only UHS-I card supports this bit */
+    unsigned S18A                   :1;
+    unsigned Reserved2              :4;
+    unsigned Reserved1              :1;
     /** Card Capacity Status: This bit is valid only when
      *  the card power up status bit is set. 
      *  SDHC and SDXC use the 32-bit argument of memory access commands as
@@ -126,15 +132,9 @@ typedef struct OperationConditionsRegister {//big-endian
      *  address format. Block length is determined by CMD16
      */
     unsigned CCS                    :1;
-    unsigned Reserved1              :1;
-    unsigned Reserved2              :4;
-    /** Switch to 1.8v Accepted:
-     *  Only UHS-I card supports this bit */
-    unsigned S18A                   :1;
-    /** VDD Voltage Window: 2.7v - 3.6v */
-    unsigned VOLTAGE_WINDOW         :16;
-    /** Reserved for low voltage range */
-    unsigned Reserved3              :8;
+    /** Card power up status bit: This bit is set to LOW if
+     *  the card has not finished the power up routine. */
+    unsigned BUSY                   :1;
 }__attribute__((packed)) ocr;
 
 typedef struct product_revision {
