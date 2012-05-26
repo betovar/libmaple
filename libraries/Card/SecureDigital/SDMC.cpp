@@ -185,10 +185,23 @@ void SecureDigitalMemoryCard::init(void) {
     SerialUSB.print("SDIO_DBG: Relative address is 0x");
     SerialUSB.println(RCA.RCA, HEX);
 // -------------------------------------------------------------------------
-    /**
     SerialUSB.println("SDIO_DBG: Getting Card Specific Data");
     this->getCSD(); //CMD9
+    SerialUSB.print("SDIO_DBG: CSD version ");
+    switch (this->CSD.version) {
+    case CSD_VER_1:
+        SerialUSB.println(CSD.V1.CSD_STRUCTURE+1, DEC);
+        SerialUSB.println("Compare to CSD_VER_1");
+        break;
+    case CSD_VER_2:
+        SerialUSB.println(CSD.V2.CSD_STRUCTURE+1, DEC);
+        SerialUSB.println("Compare to CSD_VER_2");
+        break;
+    default:
+        return;
+    }
 // -------------------------------------------------------------------------
+    /**
     SerialUSB.println("SDIO_DBG: Getting Sd Configuration Register");
     this->getSCR();
     */
@@ -558,10 +571,24 @@ void SecureDigitalMemoryCard::getCID(void) {
  * @brief Sends an addressed commmand to get the Card Specific Data 
  */
 void SecureDigitalMemoryCard::getCSD(void) {
-    this->cmd(SEND_CSD,
-              (uint32)RCA.RCA << 16,
-              SDIO_RESP_LONG,
-              (uint32*)&this->CSD);
+    switch (this->CSD.version) {
+    case CSD_VER_1:
+        this->cmd(SEND_CSD,
+                  (uint32)RCA.RCA << 16,
+                  SDIO_RESP_LONG,
+                  (uint32*)&this->CSD.V1);
+        break;
+    case CSD_VER_2:
+        this->cmd(SEND_CSD,
+                  (uint32)RCA.RCA << 16,
+                  SDIO_RESP_LONG,
+                  (uint32*)&this->CSD.V2);
+        break;
+    default:
+        SerialUSB.println("SDIO_ERR: CSD version undefined");
+        return;
+    }
+    SerialUSB.println("SDIO_DBG: Card Specific Data received");
 }
 
 /**
@@ -572,6 +599,7 @@ void SecureDigitalMemoryCard::getSCR(void) {
               0,
               SDIO_RESP_SHRT,
               (uint32*)&this->SCR);
+    
 }
 
 /**
