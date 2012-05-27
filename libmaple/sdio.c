@@ -420,6 +420,15 @@ void sdio_cfg_dcr(sdio_dev *dev, uint32 spc, uint32 val) {
 }
 
 /**
+ * @brief Set the Data Control Register
+ * @param dev SDIO Device
+ * @param val Value of Data Control Register data to load
+ */
+void sdio_set_dcr(sdio_dev *dev, uint32 val) {
+    dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & val);
+}
+
+/**
  * @brief Set response timeout
  * @param dev SDIO Device 
  * @param length 

@@ -366,8 +366,10 @@ uint32 sdio_is_rx_act(sdio_dev *dev);
 uint32 sdio_is_tx_act(sdio_dev *dev);
 uint32 sdio_is_cmd_act(sdio_dev *dev);
 // SDIO data functions
+void sdio_set_dcr(sdio_dev *dev, uint32 val);
 void sdio_cfg_dcr(sdio_dev *dev, uint32 spc, uint32 val);
 void sdio_set_timeout(sdio_dev *dev, uint32 timeout);
+void sdio_set_data_length(sdio_dev *dev, uint32 length);
 uint32 sdio_get_data_count(sdio_dev *dev);
 uint32 sdio_get_fifo_count(sdio_dev *dev);
 uint32 sdio_read_data(sdio_dev *dev);

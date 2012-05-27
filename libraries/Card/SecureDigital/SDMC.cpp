@@ -33,14 +33,17 @@
 #include "SDMC.h"
 #include "wirish.h"
 
-static const uint32 SDIO_HOST_CAPACITY_SUPPORT = 0x1 << 30;
-static const uint32 SDIO_FAST_BOOT             = 0x1 << 29; //Reserved
-static const uint32 SDIO_SDXC_POWER_CONTROL    = 0x1 << 28; 
-static const uint32 SDIO_SWITCH_1V8_REQUEST    = 0x1 << 24; //Not allowed
-static const uint32 SDIO_CHECK_PATTERN         = 0xAA;        //Not fixed
-static const uint32 SDIO_VOLTAGE_SUPPLIED      = 0x1;
-static const uint32 SDIO_VOLTAGE_HOST_SUPPORT  = SDIO_VOLTAGE_SUPPLIED << 8;
-static const uint32 SDIO_VALID_VOLTAGE_WINDOW  = 0xFF80;
+static const uint32 SDIO_HOST_CAPACITY_SUPPORT  = 0x1 << 30;
+static const uint32 SDIO_FAST_BOOT              = 0x1 << 29; //Reserved
+static const uint32 SDIO_SDXC_POWER_CONTROL     = 0x1 << 28; 
+static const uint32 SDIO_SWITCH_1V8_REQUEST     = 0x1 << 24; //Not allowed
+static const uint32 SDIO_CHECK_PATTERN          = 0xAA;        //Not fixed
+static const uint32 SDIO_VOLTAGE_SUPPLIED       = 0x1;
+static const uint32 SDIO_VOLTAGE_HOST_SUPPORT   = SDIO_VOLTAGE_SUPPLIED << 8;
+static const uint32 SDIO_VALID_VOLTAGE_WINDOW   = 0xFF80;
+//FIXME replace these with more general routines
+static const uint32 SDIO_DATA_TIMEOUT           = 0xF0000000;
+static const uint32 SDIO_DATA_BLOCKSIZE         = 512;
 
 #if CYCLES_PER_MICROSECOND != 72
 /* TODO [0.2.0?] something smarter than this */
@@ -207,9 +210,22 @@ void SecureDigitalMemoryCard::idle(void) {
  * @param freq 
  */
 void SecureDigitalMemoryCard::clockFreq(SDIOClockFrequency freq) {
-    sdio_clock_disable(this->sdio_d);
-
-    sdio_set_clkcr(this->sdio_d, SDIO_CLKCR_CLKEN | (uint32)freq);
+    //sdio_clock_disable(this->sdio_d);
+    if (freq <= (0x1 << 8)) {
+        sdio_set_clkcr(this->sdio_d, SDIO_CLKCR_CLKEN | (uint32)freq);
+        float speed = (CYCLES_PER_MICROSECOND*1000.0)/((float)freq+2.0);
+        SerialUSB.println("SDIO_DBG: Clock speed is ");
+        if (speed > 1000) {
+            speed /= 1000.0;
+            SerialUSB.print(speed, DEC);
+            SerialUSB.println(" MHz");
+        } else {
+            SerialUSB.print(speed, DEC);
+            SerialUSB.println(" kHz");
+        }
+    } else {
+        return;
+    }
 }
 
 /**
@@ -235,13 +251,23 @@ void SecureDigitalMemoryCard::busMode(SDIOBusMode width) {
  * @param size 
  */
 void SecureDigitalMemoryCard::blockSize(SDIOBlockSize size) {
-    csr status;
+    csr status16;
+    uint32 blocksize = (uint8)size;
+    if (blocksize > 0xF) {
+        SerialUSB.println("SDIO_ERR: Invalid block size");
+        return;
+    }
     this->cmd(SET_BLOCKLEN,
               (0x1 << size),
               SDIO_RESP_SHRT,
-              (uint32*)&status);
-    if (status.ERROR == SDIO_CSR_ERROR) {
+              (uint32*)&status16);
+    if (status16.ERROR == SDIO_CSR_ERROR) {
         SerialUSB.println("SDIO_ERR: Error in SET_BLOCKLEN respsonse");
+        return;
+    } else {
+        sdio_cfg_dcr(this->sdio_d,
+                     SDIO_DCTRL_DBLOCKSIZE,
+                     blocksize << SDIO_DCTRL_DBLOCKSIZE_BIT);
     }
 }
 
@@ -664,14 +690,26 @@ void SecureDigitalMemoryCard::write(uint32 addr,
  * @param addr Block address to read from
  */
 void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
+    //CCS must equal one for block unit addressing
+    csr status7;
+    this->cmd(SELECT_DESELECT_CARD,
+              (uint32)RCA.RCA << 16,
+              SDIO_RESP_SHRT,
+              (uint32*)&status7);
+    //check for busy signal on dat0 line
+    sdio_set_timeout(this->sdio_d, SDIO_DATA_TIMEOUT);
+    sdio_set_dcr(this->sdio_d, (0x9 << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 SDIO_DCTRL_RWMOD | SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN);
+    sdio_set_data_length(this->sdio_d, SDIO_DATA_BLOCKSIZE);
     sdio_cfg_interrupt(this->sdio_d, SDIO_MASK_RXFIFOFIE |
                        SDIO_MASK_RXFIFOEIE | SDIO_MASK_RXFIFOHFIE |
                        SDIO_MASK_RXDAVLIE | SDIO_MASK_RXOVERRIE);
-    csr status;
+    csr status17;
     this->cmd(READ_SINGLE_BLOCK,
               addr,
               SDIO_RESP_SHRT,
-              (uint32*)&status);
+              (uint32*)&status17);
+    this->check(0xCFF9FE00);
     if (sdio_get_status(this->sdio_d, SDIO_ICR_CMDRENDC)) {
         for (int i = 0; sdio_get_fifo_count(this->sdio_d); i++) {
             buf[i] = sdio_read_data(this->sdio_d);
