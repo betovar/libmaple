@@ -25,6 +25,21 @@ void loop() {
     SerialUSB.println("SDIO_DBG: Starting SDMC test");
     SDMC.begin();
     SDMC.init();
+    SerialUSB.println("SDIO_DBG: Getting Card Specific Data");
+    SDMC.getCSD(); //CMD9
+    SerialUSB.print("SDIO_DBG: CSD version ");
+    switch (SDMC.CSD.version) {
+    case CSD_VER_1:
+        SerialUSB.println(SDMC.CSD.V1.CSD_STRUCTURE+1, DEC);
+        SerialUSB.println("Compare to CSD_VER_1");
+        break;
+    case CSD_VER_2:
+        SerialUSB.println(SDMC.CSD.V2.CSD_STRUCTURE+1, DEC);
+        SerialUSB.println("Compare to CSD_VER_2");
+        break;
+    default:
+        return;
+    }
     SDMC.end();
     SerialUSB.println("SDIO_DBG: Test complete");
 }

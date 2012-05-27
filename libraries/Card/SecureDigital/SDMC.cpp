@@ -61,7 +61,7 @@ SecureDigitalMemoryCard::SecureDigitalMemoryCard() {
  */
 void SecureDigitalMemoryCard::begin(void) {
     sdio_set_clkcr(this->sdio_d, SDIO_CLK_INIT); 
-    sdio_cfg_gpio(SDIO_BUS_INIT);
+    sdio_cfg_gpio();
     sdio_init(this->sdio_d);
 }
 
@@ -147,7 +147,7 @@ void SecureDigitalMemoryCard::init(void) {
     }
 // -------------------------------------------------------------------------
     SerialUSB.println("SDIO_DBG: This is the first ACMD41");
-    for(int i = 1; i <= 3; i++) {
+    for(int i = 1; i <= 5; i++) {
         this->getOCR(); //ACMD41: first ACMD41
         if (OCR.BUSY == 1) {
             SerialUSB.println("SDIO_DBG: Card is ready");
@@ -165,6 +165,9 @@ void SecureDigitalMemoryCard::init(void) {
     }
     if (OCR.CCS == 0) {
         CSD.capacity = CSD_CAP_SDSC;
+        SerialUSB.println("SDIO_DBG: Card supports SDSC only");
+    } else {
+        SerialUSB.println("SDIO_DBG: Card supports SDHC and SDXC");
     }
 // -------------------------------------------------------------------------
     SerialUSB.println("SDIO_DBG: Getting Card Idenfication Number");
@@ -172,37 +175,19 @@ void SecureDigitalMemoryCard::init(void) {
               0,
               SDIO_RESP_LONG,
               (uint32*)&this->CID);
-    SerialUSB.print("SDIO_DBG: Serial Number is ");
-    SerialUSB.println(CID.PSN, DEC);
+    SerialUSB.print("SDIO_DBG: Card was manufactured ");
+    SerialUSB.print(CID.MDT.MONTH, DEC);
+    SerialUSB.print("/");
+    SerialUSB.println(CID.MDT.YEAR+2000, DEC);
 // -------------------------------------------------------------------------
-    SerialUSB.print("SDIO_DBG: Relative address is 0x");
-    SerialUSB.println(RCA.RCA, HEX);
     SerialUSB.println("SDIO_DBG: Getting new Relative Address");
     this->cmd(SEND_RELATIVE_ADDR, //CMD3
               0,
               SDIO_RESP_SHRT,
               (uint32*)&this->RCA);
-    SerialUSB.print("SDIO_DBG: Relative address is 0x");
+    SerialUSB.print("SDIO_DBG: Relative address is now 0x");
     SerialUSB.println(RCA.RCA, HEX);
-// -------------------------------------------------------------------------
-    SerialUSB.println("SDIO_DBG: Getting Card Specific Data");
-    this->getCSD(); //CMD9
-    SerialUSB.print("SDIO_DBG: CSD version ");
-    switch (this->CSD.version) {
-    case CSD_VER_1:
-        SerialUSB.println(CSD.V1.CSD_STRUCTURE+1, DEC);
-        SerialUSB.println("Compare to CSD_VER_1");
-        break;
-    case CSD_VER_2:
-        SerialUSB.println(CSD.V2.CSD_STRUCTURE+1, DEC);
-        SerialUSB.println("Compare to CSD_VER_2");
-        break;
-    default:
-        return;
-    }
-// -------------------------------------------------------------------------
-    SerialUSB.println("SDIO_DBG: Getting Sd Configuration Register");
-    this->getSCR((uint32*)&this->SCR);
+    SerialUSB.println("SDIO_DBG: Card should now be in STANDBY state"); //FIXME
 // -------------------------------------------------------------------------  
     SerialUSB.println("SDIO_DBG: Initialization complete");
 }
@@ -222,6 +207,8 @@ void SecureDigitalMemoryCard::idle(void) {
  * @param freq 
  */
 void SecureDigitalMemoryCard::clockFreq(SDIOClockFrequency freq) {
+    sdio_clock_disable(this->sdio_d);
+
     sdio_set_clkcr(this->sdio_d, SDIO_CLKCR_CLKEN | (uint32)freq);
 }
 
@@ -231,7 +218,16 @@ void SecureDigitalMemoryCard::clockFreq(SDIOClockFrequency freq) {
  */
 void SecureDigitalMemoryCard::busMode(SDIOBusMode width) {
     //note: card bus can only be changed when card is unlocked
-    sdio_cfg_gpio(width);
+    //sdio_cfg_gpio();
+    sdio_cfg_clkcr(this->sdio_d, SDIO_CLKCR_WIDBUS, SDIO_CLKCR_WIDBUS_4WIDE);
+    switch (width) {
+    case SDIO_BUS_1BIT:
+    case SDIO_BUS_4BIT:
+        break;
+    default:
+        SerialUSB.println("SDIO_ERR: Unknown bus mode request");
+        return;
+    }
 }
 
 /**

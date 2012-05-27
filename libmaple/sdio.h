@@ -314,18 +314,6 @@ typedef struct sdio_reg_map {
 /* FIFO Register */
 #define SDIO_FIFO_FIFODATA          0xFFFFFFFF
 
-/* GPIO defines */ //FIXME this should prob be an enum
-#define SDIO_GPIO_CARD_DETECT       0x0
-#define SDIO_GPIO_INIT              0x1
-#define SDIO_GPIO_CMD_INPUT         0x2
-#define SDIO_GPIO_CMD_OUTPUT        0x3
-#define SDIO_GPIO_1B_DATA_INPUT     0x4
-#define SDIO_GPIO_1B_DATA_OUTPUT    0x5
-#define SDIO_GPIO_4B_DATA_INPUT     0x6
-#define SDIO_GPIO_4B_DATA_OUTPUT    0x7
-#define SDIO_GPIO_8B_DATA_INPUT     0x8
-#define SDIO_GPIO_8B_DATA_OUTPUT    0x9
-
 /*
  * SDIO Device
  */
@@ -354,8 +342,7 @@ void sdio_power_off(sdio_dev *dev);
 // SDIO clock and bus functions
 void sdio_set_clkcr(sdio_dev *dev, uint32 val);
 void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val);
-void sdio_cfg_clock(sdio_dev *dev, uint8 div);
-void sdio_cfg_gpio(uint8 width);
+void sdio_cfg_gpio(void);
 // SDIO hardware functions
 void sdio_dt_enable(sdio_dev *dev);
 void sdio_dt_disable(sdio_dev *dev);

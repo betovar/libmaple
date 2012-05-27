@@ -116,6 +116,8 @@ void sdio_set_clkcr(sdio_dev *dev, uint32 val) {
  * @param spc Register space to clear
  * @param val Value of Clock Control Register data to load into spc
  * @note seven HCLK clock periods are needed between two write accesses
+ * @note This assumes you're on a LeafLabs-style board
+ *       (CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
  */
 void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val) {
     spc = (~SDIO_CLKCR_RESERVED & spc);
@@ -126,64 +128,19 @@ void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val) {
 }
 
 /**
- * @brief Set Clock Divisor in the Clock Control Register
- * @param dev SDIO
- * @param div clock divider factor to set the sdio_ck frequency
- * @note This assumes you're on a LeafLabs-style board
- *       (CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
- */
-void sdio_cfg_clock(sdio_dev *dev, uint8 div) {
-    /* CLKDIV: Set Clock Divider SDIOCLK/[CLKDIV+2]. */
-    uint32 temp =dev->regs->CLKCR;
-    temp &= ~SDIO_CLKCR_CLKDIV;
-    temp |= (uint32)div;
-    dev->regs->CLKCR = temp;
-}
-
-/**
  * @brief Configure GPIO bit modes for use as an SDIO port's pins
- * @param width Bus width to configure pins for use as an SDIO card
  * @note 8-bit data bus width is only allowed for UHS-I cards
  */
-void sdio_cfg_gpio(uint8 width) {
-    //timer_set_mode();
-    //These gpio pins are constant for the F1 line
-    switch (width) {
-    case SDIO_GPIO_CARD_DETECT:
-        gpio_set_mode(GPIOC, 11,       GPIO_INPUT_PD); //SDIO_D3
-        //delay_us(1000);
-        //gpio_read_bit(GPIOC, 11);
-    case SDIO_GPIO_INIT:
-        gpio_set_mode(GPIOC, 11, GPIO_INPUT_FLOATING); //SDIO_D3
-        gpio_set_mode(GPIOC, 10, GPIO_INPUT_FLOATING); //SDIO_D2
-        gpio_set_mode(GPIOC, 9,  GPIO_INPUT_FLOATING); //SDIO_D1
-        timer_set_mode(TIMER8, 4,     TIMER_DISABLED);
-        gpio_set_mode(GPIOC, 8,  GPIO_INPUT_FLOATING); //SDIO_D0
-        timer_set_mode(TIMER8, 3,     TIMER_DISABLED);
-        gpio_set_mode(GPIOC, 12,   GPIO_AF_OUTPUT_PP); //SDIO_CK
-    case SDIO_GPIO_CMD_OUTPUT:
-        gpio_set_mode(GPIOD, 2,    GPIO_AF_OUTPUT_PP); //SDIO_CMD
-        break;
-    case SDIO_GPIO_CMD_INPUT:
-        gpio_set_mode(GPIOD, 2,  GPIO_INPUT_FLOATING); //SDIO_CMD
-        break;
-    case SDIO_GPIO_4B_DATA_INPUT:
-        gpio_set_mode(GPIOC, 11, GPIO_INPUT_FLOATING); //SDIO_D3
-        gpio_set_mode(GPIOC, 10, GPIO_INPUT_FLOATING); //SDIO_D2
-        gpio_set_mode(GPIOC, 9,  GPIO_INPUT_FLOATING); //SDIO_D1
-    case SDIO_GPIO_1B_DATA_INPUT:
-        gpio_set_mode(GPIOC, 8,  GPIO_INPUT_FLOATING); //SDIO_D0
-        break;
-    case SDIO_GPIO_4B_DATA_OUTPUT:
-        gpio_set_mode(GPIOC, 11,   GPIO_AF_OUTPUT_PP); //SDIO_D3
-        gpio_set_mode(GPIOC, 10,   GPIO_AF_OUTPUT_PP); //SDIO_D2
-        gpio_set_mode(GPIOC, 9,    GPIO_AF_OUTPUT_PP); //SDIO_D1
-    case SDIO_GPIO_1B_DATA_OUTPUT:
-        gpio_set_mode(GPIOC, 8,    GPIO_AF_OUTPUT_PP); //SDIO_D0
-        break;
-    default: // Error catch
-        ASSERT(0);
-    } //end of switch case
+void sdio_cfg_gpio(void) {
+    //These gpio devices and pins are constant for the F1 line
+    gpio_set_mode(GPIOC, 11, GPIO_INPUT_FLOATING); //SDIO_D3
+    gpio_set_mode(GPIOC, 10, GPIO_INPUT_FLOATING); //SDIO_D2
+    gpio_set_mode(GPIOC, 9,  GPIO_INPUT_FLOATING); //SDIO_D1
+    timer_set_mode(TIMER8, 4,     TIMER_DISABLED);
+    gpio_set_mode(GPIOC, 8,  GPIO_INPUT_FLOATING); //SDIO_D0
+    timer_set_mode(TIMER8, 3,     TIMER_DISABLED);
+    gpio_set_mode(GPIOC, 12,   GPIO_AF_OUTPUT_PP); //SDIO_CK
+    gpio_set_mode(GPIOD, 2,    GPIO_AF_OUTPUT_PP); //SDIO_CMD
 }
 
 /*
@@ -393,7 +350,8 @@ void sdio_get_resp_long(sdio_dev *dev, uint32 *buf) {
  * @brief Detects if card is inserted
  */
 uint32 sdio_card_detect(void) {
-    sdio_cfg_gpio(SDIO_GPIO_CARD_DETECT);
+    gpio_set_mode(GPIOC, 11, GPIO_INPUT_PD); //SDIO_D3
+    sdio_cfg_gpio();
     delay_us(1000);
     if (gpio_read_bit(GPIOC, 11)) {
         return 1;

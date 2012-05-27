@@ -58,17 +58,9 @@ typedef enum SDIORespType {
 } SDIORespType;
 
 typedef enum SDIOBusMode {
-    SDIO_BUS_INIT     = SDIO_GPIO_INIT,
-    SDIO_BUS_1BIT,
-    SDIO_BUS_4BIT
-  //SDIO_BUS_RESPIN   = SDIO_GPIO_CMD_INPUT,
-  //SDIO_BUS_CMDOUT   = SDIO_GPIO_CMD_OUTPUT,
-  //SDIO_BUS_DAT1_IN  = SDIO_GPIO_1B_DATA_INPUT,
-  //SDIO_BUS_DAT1_OUT = SDIO_GPIO_1B_DATA_OUTPUT,
-  //SDIO_BUS_DAT4_IN  = SDIO_GPIO_4B_DATA_INPUT,
-  //SDIO_BUS_DAT4_OUT = SDIO_GPIO_4B_DATA_OUTPUT,
-  //SDIO_BUS_DAT8_IN  = SDIO_GPIO_8B_DATA_INPUT,
-  //SDIO_BUS_DAT8_OUT = SDIO_GPIO_8B_DATA_OUTPUT
+    SDIO_BUS_1BIT     = SDIO_CLKCR_WIDBUS_DEFAULT,
+    SDIO_BUS_4BIT     = SDIO_CLKCR_WIDBUS_4WIDE
+  //SDIO_BUS_8BIT     = SDIO_CLKCR_WIDBUS_8WIDE
 } SDIOBusMode;
 
 typedef enum SDIOClockFrequency {
@@ -168,6 +160,10 @@ class SecureDigitalMemoryCard {
     void stop(void);
     void read(uint32, uint32*, uint32);
     void write(uint32, const uint32*, uint32);
+    //public card register access functions
+    void getCSD(void);
+    void getSCR(uint32*);
+    void setDSR(void);
 
   private:
     sdio_dev *sdio_d;
@@ -180,9 +176,6 @@ class SecureDigitalMemoryCard {
     // card register access functions
     void getOCR(void);
     void getCID(void);
-    void getCSD(void);
-    void getSCR(uint32*);
-    void setDSR(void);
     
     /** other functions to be developed
     void reset(void);
