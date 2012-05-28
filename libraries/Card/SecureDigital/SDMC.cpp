@@ -234,7 +234,11 @@ void SecureDigitalMemoryCard::clockFreq(SDIOClockFrequency freq) {
  */
 void SecureDigitalMemoryCard::busMode(SDIOBusMode width) {
     //note: card bus can only be changed when card is unlocked
-    //sdio_cfg_gpio();
+    this->cmd(SET_BUS_WIDTH,
+              width,
+              SDIO_RESP_SHRT,
+              NULL);
+    this->check(0x8FF9FC20);
     sdio_cfg_clkcr(this->sdio_d, SDIO_CLKCR_WIDBUS, SDIO_CLKCR_WIDBUS_4WIDE);
     switch (width) {
     case SDIO_BUS_1BIT:
@@ -441,97 +445,101 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
  */
 uint32 SecureDigitalMemoryCard::check(uint32 mask) {
     SerialUSB.println("SDIO_DBG: Card Response Status check");
-    uint32 temp = 0;
-    sdio_get_resp_short(this->sdio_d, &temp);
-    temp &= mask;
-    csr status;
-    uint32 *statusp = (uint32*)&status;
-    *statusp = temp;
+    uint32 status = 0;
+    sdio_get_resp_short(this->sdio_d, &status);
+    status &= mask;
     
-    uint32 error_count = 0;
-    if (status.OUT_OF_RANGE == SDIO_CSR_ERROR) {
+    uint32 count = 0;
+    if (status & (0x1 << 31)) {
         SerialUSB.println("SDIO_ERR: Argument was out of the allowed range");
-        error_count++;
+        count++;
     }
-    if (status.ADDRESS_ERROR == SDIO_CSR_ERROR) {
-        SerialUSB.println("SDIO_ERR: Misaligned address");
-        error_count++;
+    if (status & (0x1 << 30)) {
+            SerialUSB.println("SDIO_ERR: Misaligned address");
+        count++;
     }
-    if (status.BLOCK_LEN_ERROR == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 29)) {
         SerialUSB.println("SDIO_ERR: Block length is not allowed");
-        error_count++;
+        count++;
     }
-    if (status.ERASE_SEQ_ERROR == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 28)) {
         SerialUSB.println("SDIO_ERR: Erase sequence error");
-        error_count++;
+        count++;
     }
-    if (status.ERASE_PARAM == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 27)) {
         SerialUSB.println("SDIO_ERR: Invalid selection of write-blocks");
-        error_count++;
+        count++;
     }
-    if (status.WP_VIOLATION == SDIO_CSR_PROTECTED) {
+    if (status & (0x1 << 26)) {
         SerialUSB.println("SDIO_ERR: Attempt to write to a protected block");
-        error_count++;
+        count++;
     }
-    if (status.CARD_IS_LOCKED == SDIO_CSR_CARD_LOCKED) {
+    if (status & (0x1 << 25)) {
         SerialUSB.println("SDIO_ERR: Card is locked by the host");
-        error_count++;
+        count++;
     }
-    if (status.LOCK_UNLOCK_FAILED == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 24)) {
         SerialUSB.println("SDIO_ERR: Sequence or password error");
-        error_count++;
+        count++;
     }
-    if (status.COM_CRC_ERROR == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 23)) {
         SerialUSB.println("SDIO_ERR: CRC error in previous command");
-        error_count++;
+        count++;
     }
-    if (status.ILLEGAL_COMMAND == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 22)) {
         SerialUSB.println("SDIO_ERR: Command not legal for the card state");
-        error_count++;
+        count++;
     }
-    if (status.CARD_ECC_FAILED == SDIO_CSR_ERROR) {
-        SerialUSB.println("SDIO_ERR: Error correction failed");
-        error_count++;
+    if (status & (0x1 << 21)) {
+        SerialUSB.println("SDIO_ERR: Error correction failure");
+        count++;
     }
-    if (status.CC_ERROR == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 20)) {
         SerialUSB.println("SDIO_ERR: Internal card controller error");
-        error_count++;
+        count++;
     }
-    if (status.ERROR == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 19)) {
         SerialUSB.println("SDIO_ERR: A general or unknown error occurred");
-        error_count++;
+        count++;
     }
-    if (status.CSD_OVERWRITE == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 16)) {
         SerialUSB.println("SDIO_ERR: CSD does not match the card content");
-        error_count++;
+        count++;
     }
-    if (status.WP_ERASE_SKIP == SDIO_CSR_PROTECTED) {
+    if (status & (0x1 << 15)) {
         SerialUSB.println("SDIO_ERR: Erased only partial block due to WP");
-        error_count++;
+        count++;
     }
-    if (status.CARD_ECC_DISABLED == SDIO_CSR_ECC_DISABLED) {
+    if (status & (0x1 << 14)) {
         SerialUSB.println("SDIO_ERR: Command executed without internal ECC");
-        error_count++;
+        count++;
     }
-    if (status.ERASE_RESET == SDIO_CSR_SET) {
-        SerialUSB.println("SDIO_ERR: Out of sequence erase command received");
-        error_count++;
+    if (status & (0x1 << 13)) {
+        SerialUSB.println("SDIO_ERR: Erase sequence was reset early");
+        count++;
     }
-    if (status.READY_FOR_DATA == SDIO_CSR_NOT_READY) {
-        SerialUSB.println("SDIO_ERR: Card not ready for data");
-        error_count++;
+    if (status & (0x1 << 8)) {
+        SerialUSB.println("SDIO_ERR: Card ready for data");
+    } else {
+        if (mask & (0x1 << 8)) {
+            SerialUSB.println("SDIO_ERR: Card not ready for data");
+            count++;
+        }
     }
-    if (status.APP_CMD == SDIO_CSR_DISABLED) {
-        SerialUSB.println("SDIO_ERR: AppCommand not enabled");
-        error_count++;
+    if (status & (0x1 << 5)) {
+        SerialUSB.println("SDIO_ERR: AppCommand enabled");
+    } else {
+        if (mask & (0x1 << 5)) {
+            SerialUSB.println("SDIO_ERR: AppCommand disabled");
+            count++;
+        }
     }
-    if (status.AKE_SEQ_ERROR == SDIO_CSR_ERROR) {
+    if (status & (0x1 << 3)) {
         SerialUSB.println("SDIO_ERR: Authentication sequence process error");
-        error_count++;
+        count++;
     }
-    //SerialUSB.println("SDIO_DBG: Card response was free of error");
     SerialUSB.print("SDIO_DBG: Card state when receiving command, ");
-    switch (status.CURRENT_STATE) {
+    switch ((status >> 9) & 0xF) {
         case 0:
             SerialUSB.println("IDLE");
             break;
@@ -566,7 +574,10 @@ uint32 SecureDigitalMemoryCard::check(uint32 mask) {
             SerialUSB.println("RESERVED");
             break;
     }
-    return error_count;
+    if (count == 0) {
+        SerialUSB.println("SDIO_DBG: Card response was free of error");
+    }
+    return count;
 }
 
 /**

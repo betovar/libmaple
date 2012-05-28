@@ -165,7 +165,7 @@ class SecureDigitalMemoryCard {
     void getSCR(uint32*);
     void setDSR(void);
 
-//  private:
+  //private:
     sdio_dev *sdio_d;
     // basic data functions
     void readBlock(uint32, uint32*);

@@ -30,8 +30,11 @@ void loop() {
         myBlock[i] = 0;
     }
     SDMC.readBlock(0, (uint32*)&myBlock);
-    SerialUSB.println("===START_OF_BLOCK===");
-    for (int i = 0; i < 512; i++) {ß
+    SerialUSB.print("===START_OF_BLOCK===");
+    for (int i = 0; i < 512; i++) {
+        if (i%32 == 0) {
+            SerialUSB.println("");
+        }
         SerialUSB.print(myBlock[i], HEX);
     }
     SerialUSB.println("");
