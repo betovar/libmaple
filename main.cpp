@@ -24,21 +24,21 @@ void loop() {
     waitForButtonPress();
     SerialUSB.println("SDIO_DBG: Starting SDMC test");
     SDMC.begin();
-    SDMC.init();
+    /**
     uint8 myBlock[512];
     for (int i = 0; i < 512; i++) {
         myBlock[i] = 0;
     }
     SDMC.readBlock(0, (uint32*)&myBlock);
-    SerialUSB.print("===START_OF_BLOCK===");
+    SerialUSB.println("===START_OF_BLOCK===");
     for (int i = 0; i < 512; i++) {
-        if (i%32 == 0) {
+        SerialUSB.print(myBlock[i], HEX);
+        if ((i+1)%32 == 0) {
             SerialUSB.println("");
         }
-        SerialUSB.print(myBlock[i], HEX);
     }
-    SerialUSB.println("");
     SerialUSB.println("===END_OF_BLOCK===");
+    */
     SDMC.end();
     SerialUSB.println("SDIO_DBG: Test complete");
 }

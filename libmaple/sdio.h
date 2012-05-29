@@ -350,7 +350,8 @@ void sdio_clock_enable(sdio_dev *dev);
 void sdio_clock_disable(sdio_dev *dev);
 void sdio_dma_enable(sdio_dev *dev);
 void sdio_dma_disable(sdio_dev *dev);
-void sdio_cfg_dma(sdio_dev *dev);
+void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *rx_buf, uint16 count);
+//void sdio_cfg_dma_tx(sdio_dev *dev, uint32 *tx_buf, uint16 count);
 // SDIO command functions
 void sdio_load_arg(sdio_dev *dev, uint32 arg);
 void sdio_send_cmd(sdio_dev *dev, uint32 cmd);
@@ -359,7 +360,7 @@ void sdio_get_resp_short(sdio_dev *dev, uint32 *buf);
 void sdio_get_resp_long(sdio_dev *dev, uint32 *buf);
 // SDIO status functions
 uint32 sdio_card_detect(void);
-uint32 sdio_is_power(sdio_dev *dev);
+uint32 sdio_card_powered(sdio_dev *dev);
 uint32 sdio_is_rx_data_aval(sdio_dev *dev);
 uint32 sdio_is_tx_data_aval(sdio_dev *dev);
 uint32 sdio_is_rx_act(sdio_dev *dev);

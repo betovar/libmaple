@@ -35,6 +35,7 @@
 #include "timer.h"
 #include "delay.h"
 #include "bitband.h"
+#include "dma.h"
 
 /*
  * SDIO device
@@ -196,95 +197,20 @@ void sdio_dma_disable(sdio_dev *dev) {
 }
 
 /**
- * @brief Configure DMA
+ * @brief Configure DMA for receive transfer
  * @param dev SDIO device
+ * @param rx_buf pointer to 32-bit memory address
+ * @param count Number of transfers to receive
+ * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
  */
-void sdio_cfg_dma(sdio_dev *dev) {
-    //other things go here
-    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
-/**
-  * @brief  Configures the DMA2 Channel4 for SDIO Tx request.
-  * @param  BufferSRC: pointer to the source buffer
-  * @param  BufferSize: buffer size
-  * @retval None
-void SD_LowLevel_DMA_TxConfig(uint32_t *BufferSRC, uint32_t BufferSize)
-{
-  DMA_InitTypeDef SDDMA_InitStructure;
+void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *rx_buf, uint16 count) {
 
-  DMA_ClearFlag(SD_SDIO_DMA_STREAM, SD_SDIO_DMA_FLAG_FEIF | 
-  SD_SDIO_DMA_FLAG_DMEIF | SD_SDIO_DMA_FLAG_TEIF | 
-  SD_SDIO_DMA_FLAG_HTIF | SD_SDIO_DMA_FLAG_TCIF);
-
-  // DMA2 Stream3  or Stream6 disable 
-  DMA_Cmd(SD_SDIO_DMA_STREAM, DISABLE);
-
-  // DMA2 Stream3  or Stream6 Config 
-  DMA_DeInit(SD_SDIO_DMA_STREAM);
-
-  SDDMA_InitStructure.DMA_Channel = SD_SDIO_DMA_CHANNEL;
-  SDDMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)SDIO_FIFO_ADDRESS;
-  SDDMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)BufferSRC;
-  SDDMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
-  SDDMA_InitStructure.DMA_BufferSize = 0;
-  SDDMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-  SDDMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-  SDDMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-  SDDMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
-  SDDMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-  SDDMA_InitStructure.DMA_Priority = DMA_Priority_VeryHigh;
-  SDDMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Enable;
-  SDDMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
-  SDDMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_INC4;
-  SDDMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_INC4;
-  DMA_Init(SD_SDIO_DMA_STREAM, &SDDMA_InitStructure);
-  DMA_ITConfig(SD_SDIO_DMA_STREAM, DMA_IT_TC, ENABLE);
-  DMA_FlowControllerConfig(SD_SDIO_DMA_STREAM, DMA_FlowCtrl_Peripheral);
-
-  // DMA2 Stream3  or Stream6 enable 
-  DMA_Cmd(SD_SDIO_DMA_STREAM, ENABLE);
-
-
-  * @brief  Configures the DMA2 Channel4 for SDIO Rx request.
-  * @param  BufferDST: pointer to the destination buffer
-  * @param  BufferSize: buffer size
-  * @retval None
-
-void SD_LowLevel_DMA_RxConfig(uint32_t *BufferDST, uint32_t BufferSize)
-{
-  DMA_InitTypeDef SDDMA_InitStructure;
-
-  DMA_ClearFlag(SD_SDIO_DMA_STREAM, SD_SDIO_DMA_FLAG_FEIF | 
-    SD_SDIO_DMA_FLAG_DMEIF | SD_SDIO_DMA_FLAG_TEIF | SD_SDIO_DMA_FLAG_HTIF | 
-    SD_SDIO_DMA_FLAG_TCIF);
-
-  // DMA2 Stream3  or Stream6 disable 
-  DMA_Cmd(SD_SDIO_DMA_STREAM, DISABLE);
-
-  // DMA2 Stream3 or Stream6 Config 
-  DMA_DeInit(SD_SDIO_DMA_STREAM);
-
-  SDDMA_InitStructure.DMA_Channel = SD_SDIO_DMA_CHANNEL;
-  SDDMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)SDIO_FIFO_ADDRESS;
-  SDDMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)BufferDST;
-  SDDMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
-  SDDMA_InitStructure.DMA_BufferSize = 0;
-  SDDMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-  SDDMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-  SDDMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-  SDDMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
-  SDDMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-  SDDMA_InitStructure.DMA_Priority = DMA_Priority_VeryHigh;
-  SDDMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Enable;
-  SDDMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
-  SDDMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_INC4;
-  SDDMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_INC4;
-  DMA_Init(SD_SDIO_DMA_STREAM, &SDDMA_InitStructure);
-  DMA_ITConfig(SD_SDIO_DMA_STREAM, DMA_IT_TC, ENABLE);
-  DMA_FlowControllerConfig(SD_SDIO_DMA_STREAM, DMA_FlowCtrl_Peripheral);
-
-  // DMA2 Stream3 or Stream6 enable
-  DMA_Cmd(SD_SDIO_DMA_STREAM, ENABLE);
-*/
+    dma_setup_transfer(DMA2, DMA_CH4, //constant for STM32F1 line
+                       &SDIO->regs->FIFO,   DMA_SIZE_32BITS,
+                       rx_buf,              DMA_SIZE_32BITS,
+                       (DMA_MINC_MODE | DMA_CIRC_MODE | DMA_TRNS_CMPLT));
+    dma_set_num_transfers(DMA2, DMA_CH4, count);
+    dma_enable(DMA2, DMA_CH4);
 }
 
 /*
@@ -359,8 +285,14 @@ uint32 sdio_card_detect(void) {
     return 0;
 }
 
-uint32 sdio_is_power(sdio_dev *dev) {
-    return dev->regs->POWER;
+uint32 sdio_card_powered(sdio_dev *dev) {
+    int i;
+    for (i = 1; i <=5; i++) {
+        if (dev->regs->POWER == SDIO_POWER_ON) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /**

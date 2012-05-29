@@ -58,9 +58,9 @@ typedef enum SDIORespType {
 } SDIORespType;
 
 typedef enum SDIOBusMode {
-    SDIO_BUS_1BIT     = SDIO_CLKCR_WIDBUS_DEFAULT,
-    SDIO_BUS_4BIT     = SDIO_CLKCR_WIDBUS_4WIDE
-  //SDIO_BUS_8BIT     = SDIO_CLKCR_WIDBUS_8WIDE
+    SDIO_BUS_1BIT     = 0,
+    SDIO_BUS_4BIT     = 1
+  //SDIO_BUS_8BIT     = 2
 } SDIOBusMode;
 
 typedef enum SDIOClockFrequency {
@@ -142,6 +142,7 @@ class SecureDigitalMemoryCard {
     // startup.. functions
     void begin(void);
     void init(void);
+    void identify(void);
     void test(void);
     void end(void);
     // convenience functions
@@ -165,11 +166,12 @@ class SecureDigitalMemoryCard {
     void getSCR(uint32*);
     void setDSR(void);
 
-  //private:
-    sdio_dev *sdio_d;
-    // basic data functions
+    // basic data functions (TEMP make private)
     void readBlock(uint32, uint32*);
     void writeBlock(uint32, const uint32*);
+
+  private:
+    sdio_dev *sdio_d;
     // interrupt functions
     void clear(SDIOInterruptFlag);
     uint32 check(uint32);
