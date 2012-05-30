@@ -139,49 +139,48 @@ class SecureDigitalMemoryCard {
     dsr DSR; // Default is 0x0404
 
     SecureDigitalMemoryCard();
-    // startup.. functions
+    //---------------- startup functions ------------------
     void begin(void);
-    void init(void);
-    void identify(void);
     void test(void);
     void end(void);
-    // convenience functions
+    //---------------- convenience functions --------------
     void idle(void);
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
     void blockSize(SDIOBlockSize);
-    // command functions
+    //---------------- command functions ------------------
     void cmd(SDIOCommand);
     void cmd(SDIOCommand, uint32);
     void cmd(SDIOCommand, uint32, SDIORespType, uint32*);
     void cmd(SDIOAppCommand);
     void cmd(SDIOAppCommand, uint32);
     void cmd(SDIOAppCommand, uint32, SDIORespType, uint32*);
-    // general data functions
+    //---------------- general data functions -------------
     void stop(void);
     void read(uint32, uint32*, uint32);
     void write(uint32, const uint32*, uint32);
-    //public card register access functions
+    //---------------- public card register access functions
     void getCSD(void);
     void getSCR(uint32*);
     void setDSR(void);
 
-    // basic data functions (TEMP make private)
+    //---------------- basic data functions ---------------
     void readBlock(uint32, uint32*);
     void writeBlock(uint32, const uint32*);
 
   private:
     sdio_dev *sdio_d;
-    // interrupt functions
+    //---------------- start routines ---------------------
+    void initialization(void);
+    void identification(void);
+    //---------------- interrupt functions ----------------
     void clear(SDIOInterruptFlag);
     uint32 check(uint32);
-    // card register access functions
-    void getOCR(void);
+    //---------------- card register access functions -----
+    void getOCR(void); //only allowed during identification mode
     void getCID(void);
     
     /** other functions to be developed
-    void reset(void);
-    void identify(void);
     void protect(void); // write protect
     void passwordSet(void);
     void passwordReset(void);

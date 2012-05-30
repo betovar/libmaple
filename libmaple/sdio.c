@@ -70,6 +70,7 @@ void sdio_init(sdio_dev *dev) {
  * @param dev SDIO Device
  */
 void sdio_reset(sdio_dev *dev) {
+    rcc_reset_dev(dev->clk_id);
     dev->regs->POWER  = 0x00000000;
     dev->regs->CLKCR  = 0x00000000;
     dev->regs->ARG    = 0x00000000;
@@ -361,9 +362,9 @@ void sdio_set_dcr(sdio_dev *dev, uint32 val) {
 }
 
 /**
- * @brief Set response timeout
+ * @brief Set data length value
  * @param dev SDIO Device 
- * @param length 
+ * @param length Length of data to transfer
  */
 void sdio_set_data_length(sdio_dev *dev, uint32 length) {
     dev->regs->DLEN = (~SDIO_DLEN_RESERVED & length);
@@ -372,48 +373,47 @@ void sdio_set_data_length(sdio_dev *dev, uint32 length) {
 /**
  * @brief Set response timeout
  * @param dev SDIO Device 
- * @param timeout Timeout value for the data path state
- *        machine in card bus clock periods.
+ * @param timeout Timeout value for the data path state machine
  */
 void sdio_set_timeout(sdio_dev *dev, uint32 timeout) {
     dev->regs->DTIMER = timeout;
 }
 
 /**
-  * @brief  Part of the data path state machine, this (read-only)register
-  *         loads the value from the data length register and decrements
-  *         until 0.
-  * @param  dev SDIO Device
-  * @retval Number of remaining data bytes to be transferred 
-  */
+ * @brief  Part of the data path state machine, this (read-only)register
+ *         loads the value from the data length register and decrements
+ *         until 0.
+ * @param  dev SDIO Device
+ * @retval Number of remaining data bytes to be transferred 
+ */
 uint32 sdio_get_data_count(sdio_dev *dev) {
     return dev->regs->DCOUNT;
 }
 
 /**
-  * @brief  Returns the number of words left to be written to or read from FIFO
-  * @param dev SDIO Device
-  * @retval Remaining number of words
-  */
+ * @brief  Returns the number of words left to be written to or read from FIFO
+ * @param dev SDIO Device
+ * @retval Remaining number of words
+ */
 uint32 sdio_get_fifo_count(sdio_dev *dev) {
     return dev->regs->FIFOCNT;
 }
 
 /**
-  * @brief  Read one data word from Rx FIFO
-  * @param dev SDIO Device
-  * @retval Data received
-  */
+ * @brief  Read one data word from Rx FIFO
+ * @param dev SDIO Device
+ * @retval Data received
+ */
 uint32 sdio_read_data(sdio_dev *dev) {
     return dev->regs->FIFO;
 }
 
 /**
-  * @brief  Write one data word to Tx FIFO
-  * @param dev SDIO Device
-  * @param  data 32-bit data word to write
-  * @retval None
-  */
+ * @brief  Write one data word to Tx FIFO
+ * @param dev SDIO Device
+ * @param  data 32-bit data word to write
+ * @retval None
+ */
 void sdio_write_data(sdio_dev *dev, uint32 data) {
     dev->regs->FIFO = data;
 }
@@ -423,11 +423,11 @@ void sdio_write_data(sdio_dev *dev, uint32 data) {
  */
 
 /**
-  * @brief Checks whether the specified SDIO interrupt has occurred or not
-  * @param dev SDIO Device
-  * @param rupt Specifies the SDIO interrupt source to check
-  * @retval Status of the interrupt, asserted: 1, deasserted: 0
-  */
+ * @brief Checks whether the specified SDIO interrupt has occurred or not
+ * @param dev SDIO Device
+ * @param rupt Specifies the SDIO interrupt source to check
+ * @retval Status of the interrupt, asserted: 1, deasserted: 0
+ */
 uint32 sdio_get_status(sdio_dev *dev, uint32 flag) { 
     if (dev->regs->STA & flag) {
         return 1;
@@ -437,7 +437,7 @@ uint32 sdio_get_status(sdio_dev *dev, uint32 flag) {
 }
 
 /**
- * @brief Clears the SDIO's pending flags
+ * @brief Clears the SDIO's pending interrupt flags
  * @param dev SDIO Device
  * @param flag Specifies the flag to clear
  */
@@ -446,11 +446,11 @@ void sdio_clear_interrupt(sdio_dev *dev, uint32 flag) {
 }
 
 /**
- * @brief Determines which interrupt flags generate an interrupt request
+ * @brief Adds an interrupt flag to generate an interrupt request
  * @param dev SDIO Device
  * @param mask Interrupt sources to enable
  */
-void sdio_add_interrupt(sdio_dev *dev, uint32 mask) {
+void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask) {
     dev->regs->MASK |= mask;
 }
 
@@ -459,6 +459,6 @@ void sdio_add_interrupt(sdio_dev *dev, uint32 mask) {
  * @param dev SDIO Device
  * @param mask Interrupt sources to enable
  */
-void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask) {
+void sdio_set_interrupt(sdio_dev *dev, uint32 mask) {
     dev->regs->MASK = mask;
 }
