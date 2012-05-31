@@ -97,36 +97,30 @@ typedef enum SDIOBlockSize {
 } SDIOBlockSize;
 
 typedef enum SDIOInterruptFlag {
-    SDIO_FLAG_CCRCFAIL = 0,
-    SDIO_FLAG_DCRCFAIL = 1,
-    SDIO_FLAG_CTIMEOUT = 2,
-    SDIO_FLAG_DTIMEOUT = 3,
-    SDIO_FLAG_TXUNDERR = 4,
-    SDIO_FLAG_RXOVERR  = 5,
-    SDIO_FLAG_CMDREND  = 6,
-    SDIO_FLAG_CMDSENT  = 7,
-    SDIO_FLAG_DATAEND  = 8,
-    SDIO_FLAG_STBITERR = 9,
-    SDIO_FLAG_DBCKEND  = 10,
-    SDIO_FLAG_CMDACT   = 11,
-    SDIO_FLAG_TXACT    = 12,
-    SDIO_FLAG_RXACT    = 13,
-    SDIO_FLAG_TXFIFOHE = 14,
-    SDIO_FLAG_RXFIFOHF = 15,
-    SDIO_FLAG_TXFIFOF  = 16,
-    SDIO_FLAG_RXFIFOF  = 17,
-    SDIO_FLAG_TXFIFOE  = 18,
-    SDIO_FLAG_RXFIFOE  = 19,
-    SDIO_FLAG_TXDAVL   = 20,
-    SDIO_FLAG_RXDAVL   = 21,
-    SDIO_FLAG_SDIOIT   = 22,
-    SDIO_FLAG_CEATAEND = 23
-    //Convenience Flags
-  //SDIO_FLAG_DYNAMIC  = 33,
-  //SDIO_FLAG_STATIC   = 34,
-  //SDIO_FLAG_COMMAND  = 35,
-  //SDIO_FLAG_DATA     = 36,
-  //SDIO_FLAG_ALL      = 37
+    SDIO_FLAG_CCRCFAIL  = 0,
+    SDIO_FLAG_DCRCFAIL  = 1,
+    SDIO_FLAG_CTIMEOUT  = 2,
+    SDIO_FLAG_DTIMEOUT  = 3,
+    SDIO_FLAG_TXUNDERR  = 4,
+    SDIO_FLAG_RXOVERR   = 5,
+    SDIO_FLAG_CMDREND   = 6,
+    SDIO_FLAG_CMDSENT   = 7,
+    SDIO_FLAG_DATAEND   = 8,
+    SDIO_FLAG_STBITERR  = 9,
+    SDIO_FLAG_DBCKEND   = 10,
+    SDIO_FLAG_CMDACT    = 11,
+    SDIO_FLAG_TXACT     = 12,
+    SDIO_FLAG_RXACT     = 13,
+    SDIO_FLAG_TXFIFOHE  = 14,
+    SDIO_FLAG_RXFIFOHF  = 15,
+    SDIO_FLAG_TXFIFOF   = 16,
+    SDIO_FLAG_RXFIFOF   = 17,
+    SDIO_FLAG_TXFIFOE   = 18,
+    SDIO_FLAG_RXFIFOE   = 19,
+    SDIO_FLAG_TXDAVL    = 20,
+    SDIO_FLAG_RXDAVL    = 21,
+    SDIO_FLAG_SDIOIT    = 22,
+    SDIO_FLAG_CEATAEND  = 23
 } SDIOInterruptFlag;
 
 class SecureDigitalMemoryCard {
@@ -149,9 +143,9 @@ class SecureDigitalMemoryCard {
     void busMode(SDIOBusMode);
     void blockSize(SDIOBlockSize);
     //---------------- command functions ------------------
-    void cmd(SDIOCommand);
-    void cmd(SDIOCommand, uint32);
-    void cmd(SDIOCommand, uint32, SDIORespType, uint32*);
+    SDIOInterruptFlag cmd(SDIOCommand);
+    SDIOInterruptFlag cmd(SDIOCommand, uint32);
+    SDIOInterruptFlag cmd(SDIOCommand, uint32, SDIORespType, uint32*);
     void cmd(SDIOAppCommand);
     void cmd(SDIOAppCommand, uint32);
     void cmd(SDIOAppCommand, uint32, SDIORespType, uint32*);
@@ -160,6 +154,7 @@ class SecureDigitalMemoryCard {
     void read(uint32, uint32*, uint32);
     void write(uint32, const uint32*, uint32);
     //---------------- public card register access functions
+    void newRCA(void);
     void getCSD(void);
     void getSCR(uint32*);
     void setDSR(void);

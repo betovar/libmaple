@@ -446,11 +446,11 @@ void sdio_clear_interrupt(sdio_dev *dev, uint32 flag) {
 }
 
 /**
- * @brief Adds an interrupt flag to generate an interrupt request
+ * @brief Add interrupt flag to generate an interrupt request
  * @param dev SDIO Device
  * @param mask Interrupt sources to enable
  */
-void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask) {
+void sdio_add_interrupt(sdio_dev *dev, uint32 mask) {
     dev->regs->MASK |= mask;
 }
 

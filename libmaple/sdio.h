@@ -122,6 +122,9 @@ typedef struct sdio_reg_map {
 #define SDIO_CMD_WAITPEND           BIT(SDIO_CMD_WAITPEND_BIT)
 #define SDIO_CMD_WAITINT            BIT(SDIO_CMD_WAITINT_BIT)
 #define SDIO_CMD_WAITRESP           (0x3 << SDIO_CMD_WAITRESP_BIT)
+#define SDIO_CMD_WAITRESP_NONE      (0x0 << SDIO_CMD_WAITRESP_BIT)
+#define SDIO_CMD_WAITRESP_SHORT     (0x1 << SDIO_CMD_WAITRESP_BIT)
+#define SDIO_CMD_WAITRESP_LONG      (0x3 << SDIO_CMD_WAITRESP_BIT)
 #define SDIO_CMD_CMDINDEX           0x3F
 
 /* Command Response Register */
@@ -379,7 +382,7 @@ void sdio_write_data(sdio_dev *dev, uint32 data);
 uint32 sdio_get_status(sdio_dev *dev, uint32 flag);
 void sdio_clear_interrupt(sdio_dev *dev, uint32 flag);
 void sdio_add_interrupt(sdio_dev *dev, uint32 mask);
-void sdio_cfg_interrupt(sdio_dev *dev, uint32 mask);
+void sdio_set_interrupt(sdio_dev *dev, uint32 mask);
 #ifdef __cplusplus
 }
 #endif
