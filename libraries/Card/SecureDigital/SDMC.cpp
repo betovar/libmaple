@@ -92,7 +92,7 @@ void SecureDigitalMemoryCard::begin(void) {
  */
 void SecureDigitalMemoryCard::end(void) {
     sdio_reset(this->sdio_d);
-    delay(10);
+    delay(1);
 }
 
 /**
@@ -100,8 +100,7 @@ void SecureDigitalMemoryCard::end(void) {
  */
 void SecureDigitalMemoryCard::idle(void) {
     for (int i =1; i <= 3; i++) {
-        this->cmd(GO_IDLE_STATE);
-        if (sdio_get_status(this->sdio_d, SDIO_STA_CMDSENT)) {
+        if (this->cmd(GO_IDLE_STATE) == SDIO_FLAG_CMDSENT) {
             SerialUSB.println("SDIO_DBG: Card in IDLE state");
             return;
         } else {
@@ -117,19 +116,22 @@ void SecureDigitalMemoryCard::idle(void) {
 void SecureDigitalMemoryCard::initialization(void) {
     SerialUSB.println("SDIO_DBG: Initializing card");
     icr status8;
+    SDIOInterruptFlag rupt8;
     uint32 arg = SDIO_HOST_CAPACITY_SUPPORT;
     for (int i = 1; i <= 3; i++) {
-        this->cmd(SEND_IF_COND, //CMD8
-                  //SDIO_SDXC_POWER_CONTROL |
-                  SDIO_VOLTAGE_HOST_SUPPORT | SDIO_CHECK_PATTERN,
-                  SDIO_RESP_SHRT,
-                  (uint32*)&status8);
-        if (sdio_get_status(this->sdio_d, SDIO_STA_CMDREND)) {
+        rupt8 = this->cmd(SEND_IF_COND, //CMD8
+                         //SDIO_SDXC_POWER_CONTROL |
+                         SDIO_VOLTAGE_HOST_SUPPORT |
+                         SDIO_CHECK_PATTERN,
+                         SDIO_RESP_SHRT,
+                         (uint32*)&status8);
+        if (rupt8 == SDIO_FLAG_CMDREND) {
             break;
         }
         idle();
     }
-    if (sdio_get_status(this->sdio_d, SDIO_STA_CMDREND)) {
+    switch (rupt8) {
+    case SDIO_FLAG_CMDREND:
         if (status8.CHECK_PATTERN != SDIO_CHECK_PATTERN) {
             SerialUSB.print("SDIO_ERR: Unusuable Card, ");
             SerialUSB.print("Check pattern 0x");
@@ -148,32 +150,38 @@ void SecureDigitalMemoryCard::initialization(void) {
         }
         CSD.version = CSD_VER_2;
         SerialUSB.println("SDIO_DBG: Interface condition check passed");
-    } else if (sdio_get_status(this->sdio_d, SDIO_STA_CTIMEOUT)) {
+        break;
+    case SDIO_FLAG_CTIMEOUT:
         SerialUSB.println("SDIO_DBG: Card does not support CMD8");
         // the host should set HCS to 0 if the card returns no response
         arg &= ~SDIO_HOST_CAPACITY_SUPPORT;
         // probably version 1.x memory card
         CSD.version = CSD_VER_1;
         return;
-    } else if (sdio_get_status(this->sdio_d, SDIO_STA_CCRCFAIL)) {
+    case SDIO_FLAG_CCRCFAIL:
         return;
-    } else {
+    default:
         SerialUSB.println("SDIO_ERR: Unexpected response status");
-        ASSERT(0); //return;
+        return; // ASSERT(0);
     }
     delay(1);
 // -------------------------------------------------------------------------
     SerialUSB.println("SDIO_DBG: This is the inquiry ACMD41");
-    this->cmd(SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
-              0,
-              SDIO_RESP_TYPE7,
-              (uint32*)&this->OCR);
-    if (sdio_get_status(this->sdio_d, SDIO_STA_CTIMEOUT)) {
+    SDIOInterruptFlag rupt41;
+    rupt41 = this->cmd(SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
+                       0,
+                       SDIO_RESP_TYPE7,
+                       (uint32*)&this->OCR);
+    switch (rupt41) {
+    case SDIO_FLAG_CTIMEOUT:
         SerialUSB.println("SDIO_ERR: Not SD Card");
-        ASSERT(0); //return;
-    } else {
+        return; // ASSERT(0);
+    case SDIO_FLAG_CCRCFAIL:
+        return;
+    default:
         SerialUSB.print("SDIO_DBG: Volatge window of the card 0x");
         SerialUSB.println((uint16)OCR.VOLTAGE_WINDOW, HEX);
+        break;
     }
 // -------------------------------------------------------------------------
     SerialUSB.println("SDIO_DBG: This is the first ACMD41");
@@ -433,8 +441,8 @@ SDIOInterruptFlag SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
  * @brief Application Command (without response nor argument) to send to card
  * @param acmd Application Command to send
  */
-void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd) {
-    this->cmd(acmd, 0, SDIO_RESP_NONE, NULL);
+SDIOInterruptFlag SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd) {
+    return this->cmd(acmd, 0, SDIO_RESP_NONE, NULL);
 }
 
 /**
@@ -442,8 +450,9 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd) {
  * @param acmd Command to send
  * @param arg Argument to send
  */
-void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd, uint32 arg) {
-    this->cmd(acmd, arg, SDIO_RESP_NONE, NULL);
+SDIOInterruptFlag SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
+                                               uint32 arg) {
+    return this->cmd(acmd, arg, SDIO_RESP_NONE, NULL);
 }
 
 /**
@@ -453,16 +462,17 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd, uint32 arg) {
  * @param type Wait for response tag 
  * @param resp Buffer to store response
  */
-void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
-                                  uint32 arg,
-                                  SDIORespType type,
-                                  uint32 *resp) {
+SDIOInterruptFlag SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
+                                               uint32 arg,
+                                               SDIORespType type,
+                                               uint32 *resp) {
     csr status55;
+    SDIOInterruptFlag rupt55;
     for (uint32 i = 1; i <= 3; i++) {
-        this->cmd(APP_CMD,
-                  (uint32)RCA.RCA << 16,
-                  SDIO_RESP_TYPE1,
-                  (uint32*)&status55);
+        rupt55 = this->cmd(APP_CMD,
+                           (uint32)RCA.RCA << 16,
+                           SDIO_RESP_TYPE1,
+                           (uint32*)&status55);
         this->check(0xFF9FC21);
         if (status55.APP_CMD == SDIO_CSR_DISABLED) {
             SerialUSB.println("SDIO_DBG: AppCommand not enabled, try again");
@@ -474,14 +484,15 @@ void SecureDigitalMemoryCard::cmd(SDIOAppCommand acmd,
     }
     if (status55.APP_CMD == SDIO_CSR_DISABLED) {
         SerialUSB.println("SDIO_DBG: AppCommand not enabled, exiting routine");
-        return;
+        return SDIO_FLAG_ERROR;
     }
     if (sdio_get_cmd(this->sdio_d) == APP_CMD) {
-        this->cmd((SDIOCommand)acmd,
-                  arg,
-                  type,
-                  resp);
+        return this->cmd((SDIOCommand)acmd,
+                         arg,
+                         type,
+                         resp);
     }
+    return SDIO_FLAG_ERROR;
 }
 
 /**

@@ -120,7 +120,10 @@ typedef enum SDIOInterruptFlag {
     SDIO_FLAG_TXDAVL    = 20,
     SDIO_FLAG_RXDAVL    = 21,
     SDIO_FLAG_SDIOIT    = 22,
-    SDIO_FLAG_CEATAEND  = 23
+    SDIO_FLAG_CEATAEND  = 23,
+    // added
+    SDIO_FLAG_NONE      = 32,
+    SDIO_FLAG_ERROR
 } SDIOInterruptFlag;
 
 class SecureDigitalMemoryCard {
@@ -146,9 +149,9 @@ class SecureDigitalMemoryCard {
     SDIOInterruptFlag cmd(SDIOCommand);
     SDIOInterruptFlag cmd(SDIOCommand, uint32);
     SDIOInterruptFlag cmd(SDIOCommand, uint32, SDIORespType, uint32*);
-    void cmd(SDIOAppCommand);
-    void cmd(SDIOAppCommand, uint32);
-    void cmd(SDIOAppCommand, uint32, SDIORespType, uint32*);
+    SDIOInterruptFlag cmd(SDIOAppCommand);
+    SDIOInterruptFlag cmd(SDIOAppCommand, uint32);
+    SDIOInterruptFlag cmd(SDIOAppCommand, uint32, SDIORespType, uint32*);
     //---------------- general data functions -------------
     void stop(void);
     void read(uint32, uint32*, uint32);
