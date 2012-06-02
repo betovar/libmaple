@@ -177,6 +177,8 @@ class SecureDigitalMemoryCard {
     //---------------- card register access functions -----
     void getOCR(void); //only allowed during identification mode
     void getCID(void);
+    void select(uint16);
+    void deselect(void);
     
     /** other functions to be developed
     void protect(void); // write protect
