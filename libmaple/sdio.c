@@ -135,14 +135,14 @@ void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val) {
  */
 void sdio_cfg_gpio(void) {
     //These gpio devices and pins are constant for the F1 line
-    gpio_set_mode(GPIOC, 11, GPIO_INPUT_FLOATING); //SDIO_D3
-    gpio_set_mode(GPIOC, 10, GPIO_INPUT_FLOATING); //SDIO_D2
-    gpio_set_mode(GPIOC, 9,  GPIO_INPUT_FLOATING); //SDIO_D1
-    timer_set_mode(TIMER8, 4,     TIMER_DISABLED);
-    gpio_set_mode(GPIOC, 8,  GPIO_INPUT_FLOATING); //SDIO_D0
-    timer_set_mode(TIMER8, 3,     TIMER_DISABLED);
-    gpio_set_mode(GPIOC, 12,   GPIO_AF_OUTPUT_PP); //SDIO_CK
-    gpio_set_mode(GPIOD, 2,    GPIO_AF_OUTPUT_PP); //SDIO_CMD
+    gpio_set_mode(GPIOC,   11, GPIO_INPUT_FLOATING); //SDIO_D3
+    gpio_set_mode(GPIOC,   10, GPIO_INPUT_FLOATING); //SDIO_D2
+    gpio_set_mode(GPIOC,    9, GPIO_INPUT_FLOATING); //SDIO_D1
+    timer_set_mode(TIMER8,  4,      TIMER_DISABLED);
+    gpio_set_mode(GPIOC,    8, GPIO_INPUT_FLOATING); //SDIO_D0
+    timer_set_mode(TIMER8,  3,      TIMER_DISABLED);
+    gpio_set_mode(GPIOC,   12,   GPIO_AF_OUTPUT_PP); //SDIO_CK
+    gpio_set_mode(GPIOD,    2,   GPIO_AF_OUTPUT_PP); //SDIO_CMD
 }
 
 /*
@@ -209,9 +209,8 @@ void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *dst, uint16 count) {
     dma_setup_transfer(DMA2, DMA_CH4, //constant for STM32F1 line
                        &dev->regs->FIFO,    DMA_SIZE_32BITS,
                        dst,                 DMA_SIZE_32BITS,
-                       (DMA_MINC_MODE | DMA_PINC_MODE | DMA_TRNS_CMPLT));
+                       DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
     dma_set_num_transfers(DMA2, DMA_CH4, count);
-    //dma_attach_interrupt(DMA2, DMA_CH4, sdio_rx_irq);
     dma_enable(DMA2, DMA_CH4);
 }
 

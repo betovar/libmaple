@@ -82,7 +82,7 @@ void SecureDigitalMemoryCard::begin(void) {
     SerialUSB.println("SDIO_DBG: Powered on");
     sdio_clock_enable(this->sdio_d);
     delay(1);//Microseconds(185);
-    this->idle(); //CMD0
+    this->idle();
     this->initialization();
     this->identification();
 }
@@ -138,7 +138,7 @@ void SecureDigitalMemoryCard::initialization(void) {
             SerialUSB.print("SDIO_ERR: Unusuable Card, ");
             SerialUSB.print("Check pattern 0x");
             SerialUSB.println(status8.CHECK_PATTERN, HEX);
-            ASSERT(0); //return;
+            return; // ASSERT(0);
         } else {
             SerialUSB.println("SDIO_DBG: Valid check pattern");
         }
@@ -778,10 +778,11 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
     sdio_add_interrupt(this->sdio_d,
                        SDIO_MASK_RXDAVLIE | SDIO_MASK_DBCKENDIE |
                        SDIO_MASK_DATAENDIE | SDIO_MASK_STBITERRIE | 
-                       SDIO_MASK_RXFIFOHFIE | SDIO_MASK_RXOVERRIE);
+                       SDIO_MASK_RXFIFOHFIE | SDIO_MASK_RXFIFOFIE |
+                       SDIO_MASK_RXFIFOEIE | SDIO_MASK_RXOVERRIE);
+    sdio_cfg_dma_rx(this->sdio_d, buf, SDIO_DATA_BLOCKSIZE);
     sdio_set_dcr(this->sdio_d, (0x9 << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN | SDIO_DCTRL_DMAEN);
-    sdio_cfg_dma_rx(this->sdio_d, buf, SDIO_DATA_BLOCKSIZE/4);
     csr status17;
     SDIOInterruptFlag rupt17;
     rupt17 = this->cmd(READ_SINGLE_BLOCK,
@@ -796,7 +797,7 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
         SerialUSB.println("SDIO_ERR: Unknown response in readBlock");
         return;
     }
-    while (sdio_get_status(this->sdio_d, SDIO_STA_DBCKEND) == 0) {
+    while (sdio_get_data_count(this->sdio_d) > 0) {
         if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DTIMEOUTC);
             SerialUSB.println("SDIO_ERR: Data timeout");
@@ -811,8 +812,8 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXOVERR)) {
             SerialUSB.println("SDIO_ERR: Data FIFO overrun");
             return;
-        } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXFIFOF)) {
-            sdio_clock_disable(this->sdio_d);
+        } else if (sdio_get_status(this->sdio_d, SDIO_STA_DBCKEND)) {
+            break;
         }
     }
     SerialUSB.print("SDIO_DBG: Transfer complete");
