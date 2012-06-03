@@ -146,7 +146,7 @@ void SecureDigitalMemoryCard::initialization(void) {
             SerialUSB.print("SDIO_ERR: Unusuable Card,");
             SerialUSB.print("Accepted voltage 0x");
             SerialUSB.println(status8.VOLTAGE_ACCEPTED, HEX);
-            ASSERT(0); //return;
+            return; // ASSERT(0);
         } else {
             SerialUSB.println("SDIO_DBG: Valid supplied voltage");
         }
@@ -780,7 +780,7 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
                        SDIO_MASK_DATAENDIE | SDIO_MASK_STBITERRIE | 
                        SDIO_MASK_RXFIFOHFIE | SDIO_MASK_RXOVERRIE);
     sdio_set_dcr(this->sdio_d, (0x9 << SDIO_DCTRL_DBLOCKSIZE_BIT) |
-                 SDIO_DCTRL_RWMOD | SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN);
+                 SDIO_DCTRL_DTDIR); // | SDIO_DCTRL_DTEN);
     //sdio_cfg_dma_rx(this->sdio_d, buf, SDIO_DATA_BLOCKSIZE/32);
     csr status17;
     SDIOInterruptFlag rupt17;
@@ -789,7 +789,7 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
                        addr,
                        SDIO_RESP_SHRT,
                        (uint32*)&status17);
-    //this->check(0xCFF9FE00);
+    this->check(0xCFF9FE00);
     switch (rupt17) { 
     case SDIO_FLAG_CMDREND:
         break;
@@ -798,6 +798,7 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
         return;
     }
     //sdio_dma_enable(this->sdio_d);
+    sdio_cfg_dcr(this->sdio_d, SDIO_DCTRL_DTEN, SDIO_DCTRL_DTEN);
     while (sdio_get_status(this->sdio_d, SDIO_STA_DBCKEND) == 0) {
         if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DTIMEOUTC);
@@ -817,11 +818,13 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
             for (int i = 1; i <= 8; i++) {
                 buf[rxed++] = sdio_read_data(this->sdio_d);
             }
+        } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXFIFOF)) {
+            sdio_clock_disable(this->sdio_d);
         }
     }
     SerialUSB.print("SDIO_DBG: rxed ");
     SerialUSB.println(rxed, DEC);
-    //sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DBCKENDC);
+    sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DBCKENDC);
     //sdio_dma_disable(this->sdio_d);
 }
 
