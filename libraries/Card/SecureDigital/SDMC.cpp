@@ -780,8 +780,8 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
                        SDIO_MASK_DATAENDIE | SDIO_MASK_STBITERRIE | 
                        SDIO_MASK_RXFIFOHFIE | SDIO_MASK_RXOVERRIE);
     sdio_set_dcr(this->sdio_d, (0x9 << SDIO_DCTRL_DBLOCKSIZE_BIT) |
-                 SDIO_DCTRL_DTDIR); // | SDIO_DCTRL_DTEN);
-    //sdio_cfg_dma_rx(this->sdio_d, buf, SDIO_DATA_BLOCKSIZE/32);
+                 SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN | SDIO_DCTRL_DMAEN);
+    sdio_cfg_dma_rx(this->sdio_d, buf, SDIO_DATA_BLOCKSIZE/4);
     csr status17;
     SDIOInterruptFlag rupt17;
     int rxed = 0;
@@ -797,8 +797,6 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
         SerialUSB.println("SDIO_ERR: Unknown response in readBlock");
         return;
     }
-    //sdio_dma_enable(this->sdio_d);
-    sdio_cfg_dcr(this->sdio_d, SDIO_DCTRL_DTEN, SDIO_DCTRL_DTEN);
     while (sdio_get_status(this->sdio_d, SDIO_STA_DBCKEND) == 0) {
         if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DTIMEOUTC);
