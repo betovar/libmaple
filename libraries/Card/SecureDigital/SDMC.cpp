@@ -784,7 +784,6 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
     sdio_cfg_dma_rx(this->sdio_d, buf, SDIO_DATA_BLOCKSIZE/4);
     csr status17;
     SDIOInterruptFlag rupt17;
-    int rxed = 0;
     rupt17 = this->cmd(READ_SINGLE_BLOCK,
                        addr,
                        SDIO_RESP_SHRT,
@@ -812,18 +811,13 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXOVERR)) {
             SerialUSB.println("SDIO_ERR: Data FIFO overrun");
             return;
-        } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXFIFOHF)) {
-            for (int i = 1; i <= 8; i++) {
-                buf[rxed++] = sdio_read_data(this->sdio_d);
-            }
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXFIFOF)) {
             sdio_clock_disable(this->sdio_d);
         }
     }
-    SerialUSB.print("SDIO_DBG: rxed ");
-    SerialUSB.println(rxed, DEC);
+    SerialUSB.print("SDIO_DBG: Transfer complete");
     sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DBCKENDC);
-    //sdio_dma_disable(this->sdio_d);
+    sdio_dma_disable(this->sdio_d);
 }
 
 void SecureDigitalMemoryCard::writeBlock(uint32 addr, const uint32 *buf) {

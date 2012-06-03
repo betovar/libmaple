@@ -205,12 +205,13 @@ void sdio_dma_disable(sdio_dev *dev) {
  * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
  */
 void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *dst, uint16 count) {
+    dma_init(DMA2);
     dma_setup_transfer(DMA2, DMA_CH4, //constant for STM32F1 line
-                       &SDIO->regs->FIFO,   DMA_SIZE_32BITS,
+                       &dev->regs->FIFO,    DMA_SIZE_32BITS,
                        dst,                 DMA_SIZE_32BITS,
-                       (DMA_MINC_MODE | DMA_PINC_MODE |
-                       DMA_HALF_TRNS |  DMA_TRNS_CMPLT));
+                       (DMA_MINC_MODE | DMA_PINC_MODE | DMA_TRNS_CMPLT));
     dma_set_num_transfers(DMA2, DMA_CH4, count);
+    //dma_attach_interrupt(DMA2, DMA_CH4, sdio_rx_irq);
     dma_enable(DMA2, DMA_CH4);
 }
 

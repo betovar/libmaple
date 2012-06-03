@@ -35,7 +35,8 @@ void loop() {
     SerialUSB.println("===START_OF_BLOCK===");
     for (int i = 0; i < BLOCK_SIZE; i++) {
         SerialUSB.print(myBlock[i], HEX);
-        if ((i+1)%32 == 0) {
+        SerialUSB.print(",");
+        if ((i+1)%16 == 0) {
             SerialUSB.println("");
         }
     }
