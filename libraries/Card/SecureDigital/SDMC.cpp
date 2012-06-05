@@ -700,19 +700,64 @@ void SecureDigitalMemoryCard::getCSD(void) {
 /**
  * @brief 
  */
-void SecureDigitalMemoryCard::getSCR(uint32 *buf) {
-    this->cmd(SEND_SCR,
-              0,
-              SDIO_RESP_SHRT,
-              (uint32*)&this->SCR);
-    if (this->check(0xFF9FC20) != 0) { //FIXME to be clarified later
+void SecureDigitalMemoryCard::getSCR(void) {
+}
+
+/**
+ * @brief 
+ */
+void SecureDigitalMemoryCard::getSSR(uint32 *buf) {
+    this->select(this->RCA.RCA);
+    //check for busy signal on dat0 line?
+    sdio_set_data_timeout(this->sdio_d, SDIO_DATA_TIMEOUT);
+    sdio_set_data_length(this->sdio_d, SDIO_BKSZ_2);
+    sdio_add_interrupt(this->sdio_d,
+                       SDIO_MASK_DATAENDIE | SDIO_MASK_STBITERRIE | 
+                       SDIO_MASK_RXDAVLIE | SDIO_MASK_RXOVERRIE|
+                       SDIO_MASK_DCRCFAILIE | SDIO_MASK_DTIMEOUTIE);
+    sdio_set_dcr(this->sdio_d, SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN |
+                 (SDIO_BKSZ_2 << SDIO_DCTRL_DBLOCKSIZE_BIT));
+    SDIOInterruptFlag rupt17;
+    rupt17 = this->cmd(SD_STATUS,
+                       0,
+                       SDIO_RESP_SHRT,
+                       buf);//(uint32*)&this->SCR);
+    this->check(0xFF9FC20);
+    switch (rupt17) { 
+    case SDIO_FLAG_CMDREND:
+        break;
+    case SDIO_FLAG_DTIMEOUT:
+        SerialUSB.println("SDIO_ERR: Data timeout");
+        return;
+    default:
+        SerialUSB.println("SDIO_ERR: Unknown response in getSSR");
         return;
     }
-    if (sdio_get_status(this->sdio_d, SDIO_ICR_CMDRENDC)) {
-        for (int i = 0; sdio_get_fifo_count(this->sdio_d); i++) {
-            buf[i] = sdio_read_data(this->sdio_d);
-        }
+    int rxed = 0;
+    while (sdio_get_status(this->sdio_d, SDIO_STA_DATAEND) == 0) {
     }
+        if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
+            sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DTIMEOUTC);
+            SerialUSB.println("SDIO_ERR: Data timeout");
+            return;
+        } else if (sdio_get_status(this->sdio_d, SDIO_STA_DCRCFAIL)) {
+            sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DCRCFAILC);
+            SerialUSB.println("SDIO_ERR: Data CRC fail");
+            return;
+        } else if (sdio_get_status(this->sdio_d, SDIO_STA_STBITERR)) {
+            SerialUSB.println("SDIO_ERR: Data start-bit");
+            return;
+        } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXOVERR)) {
+            SerialUSB.println("SDIO_ERR: Data FIFO overrun");
+            return;
+        } else {
+            SerialUSB.println("SDIO_DBG: No errors in transfer");
+        }
+    for (int i = 1; i <= 2; i++) {
+        buf[rxed++] = sdio_read_data(this->sdio_d);
+    }
+    SerialUSB.print("SDIO_DBG: Bytes received ");
+    SerialUSB.println(rxed*4, DEC);
 }
 
 /**
@@ -773,7 +818,7 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
     //CCS must equal one for block unit addressing
     this->select(this->RCA.RCA);
     //check for busy signal on dat0 line?
-    sdio_set_timeout(this->sdio_d, SDIO_DATA_TIMEOUT);
+    sdio_set_data_timeout(this->sdio_d, SDIO_DATA_TIMEOUT);
     sdio_set_data_length(this->sdio_d, SDIO_DATA_BLOCKSIZE);
     sdio_add_interrupt(this->sdio_d,
                        SDIO_MASK_RXDAVLIE | SDIO_MASK_DBCKENDIE |

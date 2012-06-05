@@ -13,7 +13,7 @@
 #include "wirish.h"
 #include "libraries/Card/SecureDigital/SDMC.h"
 
-static const uint16 BLOCK_SIZE = (0x1 << SDIO_BKSZ_512);
+static const uint16 SIZE = 8;
 
 SecureDigitalMemoryCard SDMC;
 
@@ -26,23 +26,18 @@ void loop() {
     waitForButtonPress();
     SerialUSB.println("SDIO_DBG: Starting SDMC test");
     SDMC.begin();
-    SDMC.blockSize(SDIO_BKSZ_512);
-    uint8 myBlock[BLOCK_SIZE];
-    for (int i = 0; i < BLOCK_SIZE; i++) {
-        myBlock[i] = 0;
+    uint8 myByteArray[SIZE];
+    for (int i = 0; i < SIZE; i++) {
+        myByteArray[i] = 0;
     }
-    SDMC.readBlock(0, (uint32*)&myBlock);
-    SerialUSB.println("===START_OF_BLOCK===");
-    for (int i = 0; i < BLOCK_SIZE; i++) {
-        SerialUSB.print(myBlock[i], HEX);
-        SerialUSB.print(",");
-        if ((i+1)%16 == 0) {
+    SDMC.getSSR((uint32*)&myByteArray);
+    SDMC.end();
+    for (int i = 0; i < SIZE; i++) {
+        SerialUSB.print(myByteArray[i], HEX);
+        if ((i+1)%4 == 0) {
             SerialUSB.println("");
         }
     }
-    SerialUSB.println("===END_OF_BLOCK===");
-
-    SDMC.end();
     SerialUSB.println("SDIO_DBG: Test complete");
 }
 

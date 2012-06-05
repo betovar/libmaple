@@ -142,6 +142,8 @@ typedef enum SDIOCommand {
     SET_DSR                 = 4,
     /** CMD5 - reserved for SDIO cards */
   //IO_SEND_OP_COND         = 5,
+
+
     /** CMD7 - toggles a card between the stand-by and transfer
      * states or between the programming and disconnect states */
     SELECT_DESELECT_CARD    = 7,
@@ -517,7 +519,7 @@ typedef struct CardSpecificData {
 typedef struct SdConfigurationRegister {
     /** value 0 is for physical layer spec 1.01-3.01 */
     unsigned SCR_STRUCTURE          :4;
-    /**  */
+    /** SD Memory Card - Spec. Version */
     unsigned SD_SPEC                :4;
     /** The data status is card vendor dependent */
     unsigned DATA_STAT_AFTER_ERASE  :1;
@@ -525,13 +527,14 @@ typedef struct SdConfigurationRegister {
     unsigned SD_SECURITY            :3;
     /** DAT bus widths that are supported by the card */
     unsigned SD_BUS_WIDTHS          :4;
-    /**  */
+    /** Spec. Version 3.00 or higher */
     unsigned SD_SPEC3               :1;
     /** Extended Security support */
     unsigned EX_SECURITY            :4;
     unsigned Reserved1              :9;
     /** new command support for newer cards */
     unsigned CMD_SUPPORT            :2;
+    /** Reserved for manufacturer */
     uint32 Reserved2;
 }__attribute__((packed)) scr;
 
@@ -617,6 +620,7 @@ class SecureDigitalMemoryCard {
   public:
     ocr OCR;
     scr SCR;
+    ssr SSR;
     cid CID;
     csd CSD;
     rca RCA;
@@ -646,7 +650,8 @@ class SecureDigitalMemoryCard {
     //---------------- public card register access functions
     void newRCA(void);
     void getCSD(void);
-    void getSCR(uint32*);
+    void getSCR(void);
+    void getSSR(uint32*);
     void setDSR(void);
 
     //---------------- basic data functions ---------------

@@ -375,7 +375,7 @@ void sdio_set_data_length(sdio_dev *dev, uint32 length) {
  * @param dev SDIO Device 
  * @param timeout Timeout value for the data path state machine
  */
-void sdio_set_timeout(sdio_dev *dev, uint32 timeout) {
+void sdio_set_data_timeout(sdio_dev *dev, uint32 timeout) {
     dev->regs->DTIMER = timeout;
 }
 
