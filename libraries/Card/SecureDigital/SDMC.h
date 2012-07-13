@@ -42,7 +42,7 @@
 
 typedef enum SDIORespType {
     SDIO_RESP_NONE     = 0,
-    SDIO_RESP_SHRT     = 1,
+    SDIO_RESP_SHORT    = 1,
   //SDIO_RESP_NONE_2   = 2,
     SDIO_RESP_LONG     = 3,
     SDIO_RESP_TYPE1,
@@ -77,21 +77,22 @@ typedef enum SDIOClockFrequency {
 } SDIOClockFrequency;
 
 typedef enum SDIOBlockSize {
-    SDIO_BKSZ_1     = 0,
-    SDIO_BKSZ_2     = 1,
-    SDIO_BKSZ_4     = 2,
-    SDIO_BKSZ_8     = 3,
-    SDIO_BKSZ_16    = 4,
-    SDIO_BKSZ_32    = 5,
-    SDIO_BKSZ_64    = 6,
-    SDIO_BKSZ_128   = 7,
-    SDIO_BKSZ_256   = 8,
-    SDIO_BKSZ_512   = 9,
-    SDIO_BKSZ_1024  = 10,
-    SDIO_BKSZ_2048  = 11,
-    SDIO_BKSZ_4096  = 12,
-    SDIO_BKSZ_8192  = 13,
-    SDIO_BKSZ_16384 = 14
+    SDIO_BKSZ_1       = 0,
+    SDIO_BKSZ_2       = 1,
+    SDIO_BKSZ_4       = 2,
+    SDIO_BKSZ_8       = 3,
+    SDIO_BKSZ_16      = 4,
+    SDIO_BKSZ_32      = 5,
+    SDIO_BKSZ_64      = 6,
+    SDIO_BKSZ_128     = 7,
+    SDIO_BKSZ_256     = 8,
+    SDIO_BKSZ_512     = 9,
+    SDIO_BKSZ_1024    = 10,
+    SDIO_BKSZ_2048    = 11,
+    SDIO_BKSZ_4096    = 12,
+    SDIO_BKSZ_8192    = 13,
+    SDIO_BKSZ_16384   = 14,
+    SDIO_BKSZ_DEFAULT = 9
 } SDIOBlockSize;
 
 typedef enum SDIOInterruptFlag {
@@ -625,6 +626,7 @@ class SecureDigitalMemoryCard {
     csd CSD;
     rca RCA;
     dsr DSR; // Default is 0x0404
+    csr CSR;
 
     SecureDigitalMemoryCard();
     //---------------- startup functions ------------------

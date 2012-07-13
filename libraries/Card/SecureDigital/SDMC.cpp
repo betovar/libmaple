@@ -125,7 +125,7 @@ void SecureDigitalMemoryCard::initialization(void) {
                          //SDIO_SDXC_POWER_CONTROL |
                          SDIO_VOLTAGE_HOST_SUPPORT |
                          SDIO_CHECK_PATTERN,
-                         SDIO_RESP_SHRT,
+                         SDIO_RESP_SHORT,
                          (uint32*)&status8);
         if (rupt8 == SDIO_FLAG_CMDREND) {
             break;
@@ -263,7 +263,7 @@ void SecureDigitalMemoryCard::busMode(SDIOBusMode width) {
     csr status;
     this->cmd(SET_BUS_WIDTH, //ACMD6
               width,
-              SDIO_RESP_SHRT,
+              SDIO_RESP_SHORT,
               (uint32*)&status);
     this->check(0x8FF9FE20);
     switch (width) {
@@ -295,7 +295,7 @@ void SecureDigitalMemoryCard::blockSize(SDIOBlockSize size) {
     this->select(this->RCA.RCA);
     this->cmd(SET_BLOCKLEN,
               (0x1 << blocksize),
-              SDIO_RESP_SHRT,
+              SDIO_RESP_SHORT,
               (uint32*)&status16);
     this->check(0x2FF9FE00);
     if (status16.ERROR == SDIO_CSR_ERROR) {
@@ -348,7 +348,7 @@ SDIOInterruptFlag SecureDigitalMemoryCard::cmd(SDIOCommand cmd,
                        SDIO_MASK_CTIMEOUTIE | SDIO_MASK_CCRCFAILIE);
     sdio_load_arg(this->sdio_d, arg);
     switch (type) {
-    case SDIO_RESP_SHRT:
+    case SDIO_RESP_SHORT:
     case SDIO_RESP_TYPE1:
     case SDIO_RESP_TYPE3:
     case SDIO_RESP_TYPE6:
@@ -720,7 +720,7 @@ void SecureDigitalMemoryCard::getSSR(uint32 *buf) {
     SDIOInterruptFlag rupt17;
     rupt17 = this->cmd(SD_STATUS,
                        0,
-                       SDIO_RESP_SHRT,
+                       SDIO_RESP_SHORT,
                        buf);//(uint32*)&this->SCR);
     this->check(0xFF9FC20);
     switch (rupt17) { 
@@ -778,7 +778,7 @@ void SecureDigitalMemoryCard::stop(void) {
     csr status12;
     this->cmd(STOP_TRANSMISSION, //CMD12
               0,
-              SDIO_RESP_SHRT, //SDIO_RESP_TYPE1b
+              SDIO_RESP_SHORT, //SDIO_RESP_TYPE1b
               (uint32*)&status12);
     this->check(0xC6F85E00);
 }
@@ -832,7 +832,7 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
     SDIOInterruptFlag rupt17;
     rupt17 = this->cmd(READ_SINGLE_BLOCK,
                        addr,
-                       SDIO_RESP_SHRT,
+                       SDIO_RESP_SHORT,
                        (uint32*)&status17);
     this->check(0xCFF9FE00);
     switch (rupt17) { 
@@ -889,7 +889,7 @@ void SecureDigitalMemoryCard::writeBlock(uint32 addr, const uint32 *buf) {
     //uint32 count = 512/4;
     csr status;
     this->cmd(WRITE_BLOCK, addr,
-              SDIO_RESP_SHRT, (uint32*)&status);
+              SDIO_RESP_SHORT, (uint32*)&status);
     if (sdio_get_status(this->sdio_d, SDIO_ICR_CMDRENDC) == 1) {
         //while (sdio_get_fifo_count(this->sdio_d)) 
         for (int i = 0; i < 8; i++) {
@@ -902,7 +902,7 @@ void SecureDigitalMemoryCard::select(uint16 card) {
     csr status7;
     this->cmd(SELECT_DESELECT_CARD,
               (uint32)card << 16,
-              SDIO_RESP_SHRT, //SDIO_RESP_TYPE1b
+              SDIO_RESP_SHORT, //SDIO_RESP_TYPE1b
               (uint32*)&status7);
     this->check(0xFF9FF00);
 }
