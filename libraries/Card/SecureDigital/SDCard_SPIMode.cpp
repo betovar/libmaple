@@ -29,27 +29,27 @@
  * @brief High-level SPI interface for SD cards
  */
 
-#include "wirish/HardwareSPI.h"
-#include "libmaple_types.h"
+#include "SDCard_SPIMode.h"
 
-class SD-SPI: public HardwareSPI {
-	void readBlock();
-	void writeBlock();
-	void init();
-/*
-available()
-close()
-flush()
-peek()
-position()
-print()
-println()
-seek()
-size()
-read()
-write()
-isDirectory()
-openNextFile()
-rewindDirectory()
-*/
+/**
+ * @brief Constructor
+ */
+SDCardSPIMode::SDCardSPIMode(void) {
+
+}
+
+void SDCardSPIMode::begin(void) {
+
+}
+
+void SDCardSPIMode::end(void) {
+
+}
+
+void SDCardSPIMode::read(uint8 *dst) {
+
+}
+
+void SDCardSPIMode::write(const uint8 *src) {
+
 }

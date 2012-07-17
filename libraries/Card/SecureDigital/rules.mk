@@ -11,13 +11,13 @@ CFLAGS_$(d) := $(WIRISH_INCLUDES) $(LIBMAPLE_INCLUDES)
 cSRCS_$(d) := 
 
 cppSRCS_$(d) := SD-SDIO.cpp \
-		SD-SPI.cpp
+			    SD-SPI.cpp
 
 cFILES_$(d) := $(cSRCS_$(d):%=$(d)/%)
 cppFILES_$(d) := $(cppSRCS_$(d):%=$(d)/%)
 
 OBJS_$(d) := $(cFILES_$(d):%.c=$(BUILD_PATH)/%.o) \
-                 $(cppFILES_$(d):%.cpp=$(BUILD_PATH)/%.o)
+             $(cppFILES_$(d):%.cpp=$(BUILD_PATH)/%.o)
 DEPS_$(d) := $(OBJS_$(d):%.o=%.d)
 
 $(OBJS_$(d)): TGT_CFLAGS := $(CFLAGS_$(d))

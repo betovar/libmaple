@@ -30,16 +30,17 @@
  */
 
 #include "libmaple_types.h"
+#include "../../../wirish/Print.h"
 
-#ifndef _SD_CARD_H_
-#define _SD_CARD_H_
+#ifndef _SDCARD_H_
+#define _SDCARD_H_
 
 /**
  * SD Command Enumerations
  */
 
 typedef enum SDCommand {
-#if defined(SD_CARD_SPI_MODE) || defined(SD_CARD_SD_MODE) || defined(SDIO_CARD_SD_MODE)
+#if defined(SD_CARD_SPI_MODE) || defined(SD_CARD_SD_MODE)
     /** CMD0 - Resets all cards to idle state */
     GO_IDLE_STATE           = 0,
     /** CMD1 - reserved MMC */
@@ -58,6 +59,8 @@ typedef enum SDCommand {
     STOP_TRANSMISSION       = 12,
     /** CMD13 - Addressed card sends its status register */
     SEND_STATUS             = 13,
+    /** CMD15 - Sends an addressed card into the Inactive State */
+    GO_INACTIVE_STATE       = 15,
     /** CMD16 -  */
     SET_BLOCKLEN            = 16,
     /** CMD17 -  */
@@ -93,7 +96,8 @@ typedef enum SDCommand {
     /** CMD59 - Turns the CRC option on or off */
     CRC_ON_OFF              = 59,
 #endif
-#if defined(SD_CARD_SD_MODE) || defined(SDIO_CARD_SD_MODE)
+
+#if defined(SD_CARD_SD_MODE)
     /** CMD2 - Asks any card to send the CID numbers on the CMD line */
     ALL_SEND_CID            = 2,
     /** CMD3 - Ask the card to publish a new relative address */
@@ -106,16 +110,16 @@ typedef enum SDCommand {
     /** CMD11 - Switch to 1.8V bus signaling level */
   //VOLTAGE_SWITCH          = 11,
 #endif
-#if defined(SDIO_CARD_SD_MODE)
+
+#if defined(SDIO_CARD_SD_MODE) //not yet supported
     /** CMD5 - reserved for SDIO cards */
   //IO_SEND_OP_COND         = 5,
     /** CMD52-54 - Commands for SDIO */
   //IO_RW_DIRECT            = 52,
   //IO_RW_EXTENDED          = 53,
   //CMD54                   = 54,
-    /** CMD15 - Sends an addressed card into the Inactive State */
-    GO_INACTIVE_STATE       = 15,
 #endif
+
     /** CMD14 - Reserved */
   //CMD14                   = 14,
     /** CMD19 - Reserved */
@@ -132,17 +136,17 @@ typedef enum SDCommand {
   //PROGRAM_CID             = 26,
     /** CMD31 - Reserved */
   //CMD31                   = 31,
-    /** CMD34 -  */
+    /** CMD34 - Reserved */
   //CMD34                   = 34,
-    /** CMD35 -  */
+    /** CMD35 - Reserved */
   //CMD35                   = 35,
-    /** CMD36 -  */
+    /** CMD36 - Reserved */
   //CMD36                   = 36,
-    /** CMD37 -  */
+    /** CMD37 - Reserved */
   //CMD37                   = 37,
-    /** CMD39 -  */
+    /** CMD39 - Reserved */
   //CMD39                   = 39,
-    /** CMD40 -  */
+    /** CMD40 - Reserved */
   //CMD40                   = 40,
     /** CMD41 - Reserved */
   //CMD41                   = 41,
@@ -153,7 +157,7 @@ typedef enum SDCommand {
   //CMD57                   = 57,
     /** CMD50 - Reserved */
     /** CMD60-63 - Reserved for manufacturer */
-} SDIOCommand;
+} SDCommand;
 
 typedef enum SDAppCommand {
 #if defined(SD_CARD_SD_MODE) || defined(SD_CARD_SPI_MODE)
@@ -181,7 +185,7 @@ typedef enum SDAppCommand {
     /** ACMD24-40 - Reserved for SD security applications */
     /** ACMD43-49 - Reserved for SD security applications */
     /** ACMD52-59 - Reserved */
-} SDIOAppCommand;
+} SDAppCommand;
 
 /**
  * SD Structure Specific Enumerations
@@ -511,35 +515,28 @@ typedef struct CardInformationStructure {} cis;
 typedef struct CodeStorageArea {} csa;
 */
 
-class SDCard {
+class SecureDigitalCardInterface {
   public:
+    Print PrintLog;
 	ocr OCR;
     scr SCR;
     ssr SSR;
     cid CID;
     csd CSD;
-    rca RCA;
     dsr DSR; // Default is 0x0404
     csr CSR;
-	virtual void readBlock() = 0;
-	virtual void writeBlock() = 0;
-/*
-	available()
-	close()
-	flush()
-	peek()
-	position()
-	print()
-	println()
-	seek()
-	size()
-	read()
-	write()
-	isDirectory()
-	openNextFile()
-	rewindDirectory()
-*/
-};
+#if defined(SD_CARD_SD_MODE)
+    rca RCA;
+#endif
 
+    SecureDigitalCardInterface(void);
+    virtual void begin(void) = 0;
+    virtual void end(void) = 0;
+	virtual void read(uint8 *dst) = 0;
+	virtual void write(const uint8 *src) = 0;
+
+  protected:
+    void log(Print dev) {this->Printlog = dev};
+};
 
 #endif

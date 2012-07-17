@@ -11,11 +11,11 @@
  */
 
 #include "wirish.h"
-#include "libraries/Card/SecureDigital/SDMC.h"
+#include "libraries/Card/SecureDigital/SDCard.h"
 
 static const uint16 SIZE = 8;
 
-SecureDigitalMemoryCard SDMC;
+SecureDigitalCard SDCard;
 
 void setup() {
     pinMode(BOARD_LED_PIN, OUTPUT);
@@ -24,21 +24,21 @@ void setup() {
 
 void loop() {
     waitForButtonPress();
-    SerialUSB.println("SDIO_DBG: Starting SDMC test");
-    SDMC.begin();
+    SerialUSB.println("*** Starting SDMC test ***");
+    SDCard.begin();
     uint8 myByteArray[SIZE];
     for (int i = 0; i < SIZE; i++) {
         myByteArray[i] = 0;
     }
-    SDMC.getSSR((uint32*)&myByteArray);
-    SDMC.end();
+    SDCard.getSSR((uint32*)&myByteArray);
+    SDCard.end();
     for (int i = 0; i < SIZE; i++) {
         SerialUSB.print(myByteArray[i], HEX);
         if ((i+1)%4 == 0) {
             SerialUSB.println("");
         }
     }
-    SerialUSB.println("SDIO_DBG: Test complete");
+    SerialUSB.println("*** Test complete ***");
 }
 
 // Force init to be called *first*, i.e. before static object allocation.
