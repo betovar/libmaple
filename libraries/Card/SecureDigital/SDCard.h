@@ -29,8 +29,8 @@
  * @brief 
  */
 
-#include "libmaple_types.h"
-#include "../../../wirish/Print.h"
+#include <libmaple/libmaple_types.h>
+#include <wirish/Print.h>
 
 #ifndef _SDCARD_H_
 #define _SDCARD_H_
@@ -40,7 +40,7 @@
  */
 
 typedef enum SDCommand {
-#if defined(SD_CARD_SPI_MODE) || defined(SD_CARD_SD_MODE)
+#if defined(SDCARD_SPIMODE) || defined(SDCARD_SDMODE)
     /** CMD0 - Resets all cards to idle state */
     GO_IDLE_STATE           = 0,
     /** CMD1 - reserved MMC */
@@ -97,7 +97,7 @@ typedef enum SDCommand {
     CRC_ON_OFF              = 59,
 #endif
 
-#if defined(SD_CARD_SD_MODE)
+#if defined(SDCARD_SDMODE)
     /** CMD2 - Asks any card to send the CID numbers on the CMD line */
     ALL_SEND_CID            = 2,
     /** CMD3 - Ask the card to publish a new relative address */
@@ -111,7 +111,7 @@ typedef enum SDCommand {
   //VOLTAGE_SWITCH          = 11,
 #endif
 
-#if defined(SDIO_CARD_SD_MODE) //not yet supported
+#if defined(SDIOCARD_SDMODE) //not yet supported
     /** CMD5 - reserved for SDIO cards */
   //IO_SEND_OP_COND         = 5,
     /** CMD52-54 - Commands for SDIO */
@@ -160,11 +160,11 @@ typedef enum SDCommand {
 } SDCommand;
 
 typedef enum SDAppCommand {
-#if defined(SD_CARD_SD_MODE) || defined(SD_CARD_SPI_MODE)
+#if defined(SDCARD_SDMODE) || defined(SDCARD_SPIMODE)
     /** ACMD6 -  */
     SET_BUS_WIDTH           = 6,
 #endif
-#if defined(SD_CARD_SPI_MODE)
+#if defined(SDCARD_SPIMODE)
     /** ACMD13 -  */
     SD_STATUS               = 13,
     /** ACMD22 -  */
@@ -515,28 +515,28 @@ typedef struct CardInformationStructure {} cis;
 typedef struct CodeStorageArea {} csa;
 */
 
-class SecureDigitalCardInterface {
+class SecureDigitalCard {
   public:
-    Print PrintLog;
+    Print SerialSD;
 	ocr OCR;
     scr SCR;
     ssr SSR;
+    csr CSR;
     cid CID;
     csd CSD;
     dsr DSR; // Default is 0x0404
-    csr CSR;
-#if defined(SD_CARD_SD_MODE)
+#if defined(SDCARD_SDMODE)
     rca RCA;
 #endif
 
-    SecureDigitalCardInterface(void);
+    SecureDigitalCard(void);
     virtual void begin(void) = 0;
     virtual void end(void) = 0;
 	virtual void read(uint8 *dst) = 0;
 	virtual void write(const uint8 *src) = 0;
 
   protected:
-    void log(Print dev) {this->Printlog = dev};
+    void SerialSD(Print dev) {this->SerialSD = dev};
 };
 
 #endif

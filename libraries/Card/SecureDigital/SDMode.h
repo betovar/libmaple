@@ -25,17 +25,18 @@
  *****************************************************************************/
 
 /**
- * @file SDMC.h
+ * @file SDMode.h
  * @author Brian E Tovar <betovar@leaflabs.com>
  * @brief Wirish SD Memory Card implementation
  */
 
-#include "sdio.h"
- #include "SDCard.h"
-#include "libmaple_types.h"
+#include <libmaple/sdio.h>
+#include <libmaple/libmaple_types.h>
+#include <libraries/Card/SD/SDCard.h>
 
-#ifndef _SDCARD_SDMODE_H_
-#define _SDCARD_SDMODE_H_
+
+#ifndef _SDMODE_H_
+#define _SDMODE_H_
 
 /**
  * SDIO Enumerations
@@ -130,52 +131,52 @@ typedef enum SDIOInterruptFlag {
  * Hardware SDIO class definition
  */
 
-class SDCardSDMode : public SecureDigitalCardInterface {
+class SDMode : public SecureDigitalCard { // HardwareSDIO
   public:
+    sdio_dev *sdio_d;
 
-    SDCardSDMode(void);
+    SDMode(void);
+    void begin(void);
+    void end(void);
+    void read(uint8 *dst);
+    void write(const uint8 *src);
   protected:  
     //---------------- convenience functions --------------
-    void idle(void);
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
     void blockSize(SDIOBlockSize);
+    void select(uint16);
+    void select(void);
+    void deselect(void);
     //---------------- command functions ------------------
-    void cmd(SDIOCommand);
-    void cmd(SDIOCommand, uint32);
-    void cmd(SDIOCommand, uint32, SDIORespType, uint32*);
-    void cmd(SDIOAppCommand);
-    void cmd(SDIOAppCommand, uint32);
-    void cmd(SDIOAppCommand, uint32, SDIORespType, uint32*);
+    void command(SDIOCommand);
+    void command(SDIOCommand, uint32);
+    void command(SDIOCommand, uint32, SDIORespType, uint32*);
+    void command(SDIOAppCommand);
+    void command(SDIOAppCommand, uint32);
+    void command(SDIOAppCommand, uint32, SDIORespType, uint32*);
     //---------------- public card register access functions
-    void newRCA(void);
+    void getOCR(void); //only allowed during identification mode
+    void getCID(void);
     void getCSD(void);
     void getSCR(void);
     void getSSR(uint32*);
     void setDSR(void);
-
+    void newRCA(void);
     //---------------- basic data functions ---------------
     void readBlock(uint32, uint32*);
     void writeBlock(uint32, const uint32*);
     void stop(void);
-
-  private:
-    sdio_dev *sdio_d;
     //---------------- start routines ---------------------
+    void idle(void);
     void initialization(void);
     void identification(void);
-    //---------------- card register access functions -----
-    void getOCR(void); //only allowed during identification mode
-    void getCID(void);
-    void select(uint16);
-    void deselect(void);
     
     /** other functions to be developed
     void protect(void); // write protect
-    void passwordSet(void);
-    void passwordReset(void);
-    void cardLock(void);
-    void cardUnlock(void);
+    void password(void); // password set/reset
+    void lock(void);
+    void unlock(void);
     void erase(void);
     */
 

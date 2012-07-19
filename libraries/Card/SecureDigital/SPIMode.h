@@ -25,19 +25,24 @@
  *****************************************************************************/
 
 /**
- * @file SD-SPI.h
+ * @file SPIMode.h
  * @brief High-level SPI interface for SD cards
  */
 
-#include "SDCard.h"
-#include "../../../wirish/comm/HardwareSPI.h"
-#include "libmaple_types.h"
+#include <libmaple/libmaple_types.h>
+#include <libraries/Card/SD/SDCard.h>
+#include <wirish/comm/HardwareSPI.h>
+ 
+#ifndef _SPIMODE_H_
+#define _SPIMODE_H_
 
-#ifndef _SDCARD_SPIMODE_H_
-#define _SDCARD_SPIMODE_H_
-
-class SDCardSPIMode : public SecureDigitalCardInterface, public HardwareSPI {
-SDCardSPIMode(void);
+class SPIMode : public SecureDigitalCard, public HardwareSPI {
+  public:
+    SPIMode(void);
+    void begin(void);
+    void end(void);
+    void read(uint8 *dst);
+    void write(const uint8 *src);
 };
 
 /*

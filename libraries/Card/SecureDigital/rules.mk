@@ -10,8 +10,8 @@ CFLAGS_$(d) := $(WIRISH_INCLUDES) $(LIBMAPLE_INCLUDES)
 # Local rules and targets
 cSRCS_$(d) := 
 
-cppSRCS_$(d) := SD-SDIO.cpp \
-			    SD-SPI.cpp
+cppSRCS_$(d) := SDMode.cpp \
+		SPIMode.cpp
 
 cFILES_$(d) := $(cSRCS_$(d):%=$(d)/%)
 cppFILES_$(d) := $(cppSRCS_$(d):%=$(d)/%)

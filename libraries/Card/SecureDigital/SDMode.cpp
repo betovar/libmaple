@@ -25,13 +25,13 @@
  *****************************************************************************/
 
 /**
- * @file SDMC.cpp
+ * @file SDMode.cpp
  * @author Brian E Tovar <betovar@leaflabs.com>
  * @brief Wirish SD Memory Card implementation
  */
 
-#include "SDCard_SDMode.h"
-#include "wirish.h"
+#include "SDMode.h"
+#include <wirish/wirish.h>
 
 static const uint32 SDIO_HOST_CAPACITY_SUPPORT  = 0x1 << 30;
 //static const uint32 SDIO_FAST_BOOT              = 0x1 << 29; //Reserved
@@ -42,7 +42,7 @@ static const uint32 SDIO_VOLTAGE_SUPPLIED       = 0x1;
 static const uint32 SDIO_VOLTAGE_HOST_SUPPORT   = SDIO_VOLTAGE_SUPPLIED << 8;
 static const uint32 SDIO_VALID_VOLTAGE_WINDOW   = 0x3000;
 //FIXME temporary, replace these with more general routines
-static const uint32 SDIO_DATA_TIMEOUT           = 0xFFFF0000;
+static const uint32 SDIO_DATA_TIMEOUT           = 0xFFFFFFFF;
 static const uint32 SDIO_DATA_BLOCKSIZE         = 512;
 
 #if CYCLES_PER_MICROSECOND != 72
@@ -53,7 +53,7 @@ static const uint32 SDIO_DATA_BLOCKSIZE         = 512;
 /**
  * @brief Constructor
  */
-SDCardSDMode::SDCardSDMode() {
+SDMode::SDMode() {
     this->sdio_d = SDIO;
     this->RCA.RCA = 0x0;
     this->CSD.version = CSD_VER_UNDEF;
@@ -62,7 +62,7 @@ SDCardSDMode::SDCardSDMode() {
 /**
  * @brief Configure common startup settings 
  */
-void SDCardSDMode::begin(void) {
+void SDMode::begin(void) {
     sdio_set_clkcr(this->sdio_d, SDIO_CLK_INIT); 
     sdio_cfg_gpio();
     sdio_init(this->sdio_d);
@@ -71,13 +71,13 @@ void SDCardSDMode::begin(void) {
         delay(1);
     }
     if (sdio_card_detect()) {
-        PrintLog.println("SDIO_DBG: Card detected");
+        SerialSD.println("SDIO_DBG: Card detected");
     } else {
-        PrintLog.println("SDIO_ERR: Card not detected");
+        SerialSD.println("SDIO_ERR: Card not detected");
         return;
     }
     sdio_power_on(this->sdio_d);
-    PrintLog.println("SDIO_DBG: Powered on");
+    SerialSD.println("SDIO_DBG: Powered on");
     sdio_clock_enable(this->sdio_d);
     delay(1);//Microseconds(185);
     this->idle();
@@ -88,7 +88,7 @@ void SDCardSDMode::begin(void) {
 /**
  * @brief Reset sdio device
  */
-void SDCardSDMode::end(void) {
+void SDMode::end(void) {
     sdio_reset(this->sdio_d);
     this->RCA.RCA = 0x0;
     this->CSD.version = CSD_VER_UNDEF;
@@ -98,28 +98,28 @@ void SDCardSDMode::end(void) {
 /**
  * @brief Send CMD0 to set card into idle state
  */
-void SDCardSDMode::idle(void) {
+void SDMode::idle(void) {
     for (int i =1; i <= 3; i++) {
-        if (this->cmd(GO_IDLE_STATE) == SDIO_FLAG_CMDSENT) {
-            PrintLog.println("SDIO_DBG: Card in IDLE state");
+        if (this->command(GO_IDLE_STATE) == SDIO_FLAG_CMDSENT) {
+            SerialSD.println("SDIO_DBG: Card in IDLE state");
             return;
         } else {
             delay(1);
         }
     }
-    PrintLog.println("SDIO_ERR: Card not in IDLE state");
+    SerialSD.println("SDIO_ERR: Card not in IDLE state");
 }
 
 /**
  * @brief Card Initialization method
  */
-void SDCardSDMode::initialization(void) {
-    PrintLog.println("SDIO_DBG: Initializing card");
+void SDMode::initialization(void) {
+    SerialSD.println("SDIO_DBG: Initializing card");
     icr status8;
     SDIOInterruptFlag rupt8;
     uint32 arg = SDIO_HOST_CAPACITY_SUPPORT;
     for (int i = 1; i <= 3; i++) {
-        rupt8 = this->cmd(SEND_IF_COND, //CMD8
+        rupt8 = this->command(SEND_IF_COND, //CMD8
                          //SDIO_SDXC_POWER_CONTROL |
                          SDIO_VOLTAGE_HOST_SUPPORT |
                          SDIO_CHECK_PATTERN,
@@ -133,26 +133,26 @@ void SDCardSDMode::initialization(void) {
     switch (rupt8) {
     case SDIO_FLAG_CMDREND:
         if (status8.CHECK_PATTERN != SDIO_CHECK_PATTERN) {
-            PrintLog.print("SDIO_ERR: Unusuable Card, ");
-            PrintLog.print("Check pattern 0x");
-            PrintLog.println(status8.CHECK_PATTERN, HEX);
+            SerialSD.print("SDIO_ERR: Unusuable Card, ");
+            SerialSD.print("Check pattern 0x");
+            SerialSD.println(status8.CHECK_PATTERN, HEX);
             return; // ASSERT(0);
         } else {
-            PrintLog.println("SDIO_DBG: Valid check pattern");
+            SerialSD.println("SDIO_DBG: Valid check pattern");
         }
         if (status8.VOLTAGE_ACCEPTED != SDIO_VOLTAGE_SUPPLIED) {
-            PrintLog.print("SDIO_ERR: Unusuable Card,");
-            PrintLog.print("Accepted voltage 0x");
-            PrintLog.println(status8.VOLTAGE_ACCEPTED, HEX);
+            SerialSD.print("SDIO_ERR: Unusuable Card,");
+            SerialSD.print("Accepted voltage 0x");
+            SerialSD.println(status8.VOLTAGE_ACCEPTED, HEX);
             return; // ASSERT(0);
         } else {
-            PrintLog.println("SDIO_DBG: Valid supplied voltage");
+            SerialSD.println("SDIO_DBG: Valid supplied voltage");
         }
         CSD.version = CSD_VER_2;
-        PrintLog.println("SDIO_DBG: Interface condition check passed");
+        SerialSD.println("SDIO_DBG: Interface condition check passed");
         break;
     case SDIO_FLAG_CTIMEOUT:
-        PrintLog.println("SDIO_DBG: Card does not support CMD8");
+        SerialSD.println("SDIO_DBG: Card does not support CMD8");
         // the host should set HCS to 0 if the card returns no response
         arg &= ~SDIO_HOST_CAPACITY_SUPPORT;
         // probably version 1.x memory card
@@ -161,92 +161,92 @@ void SDCardSDMode::initialization(void) {
     case SDIO_FLAG_CCRCFAIL:
         return;
     default:
-        PrintLog.println("SDIO_ERR: Unexpected response status");
+        SerialSD.println("SDIO_ERR: Unexpected response status");
         return; // ASSERT(0);
     }
     delay(1);
 // -------------------------------------------------------------------------
-    PrintLog.println("SDIO_DBG: This is the inquiry ACMD41");
+    SerialSD.println("SDIO_DBG: This is the inquiry ACMD41");
     SDIOInterruptFlag rupt41;
-    rupt41 = this->cmd(SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
+    rupt41 = this->command(SD_SEND_OP_COND, //ACMD41: inquiry ACMD41
                        0,
                        SDIO_RESP_TYPE7,
                        (uint32*)&this->OCR);
     switch (rupt41) {
     case SDIO_FLAG_CTIMEOUT:
-        PrintLog.println("SDIO_ERR: Not SD Card");
+        SerialSD.println("SDIO_ERR: Not SD Card");
         return; // ASSERT(0);
     case SDIO_FLAG_CCRCFAIL:
         return;
     default:
-        PrintLog.print("SDIO_DBG: Volatge window of the card 0x");
-        PrintLog.println((uint16)OCR.VOLTAGE_WINDOW, HEX);
+        SerialSD.print("SDIO_DBG: Volatge window of the card 0x");
+        SerialSD.println((uint16)OCR.VOLTAGE_WINDOW, HEX);
         break;
     }
 // -------------------------------------------------------------------------
-    PrintLog.println("SDIO_DBG: This is the first ACMD41");
+    SerialSD.println("SDIO_DBG: This is the first ACMD41");
     for(int i = 1; i <= 10; i++) {
         this->getOCR(); //ACMD41: first ACMD41
         if (OCR.BUSY == 1) {
-            PrintLog.println("SDIO_DBG: Card is ready");
+            SerialSD.println("SDIO_DBG: Card is ready");
             break;
         } else {
-            PrintLog.println("SDIO_DBG: OCR busy");
+            SerialSD.println("SDIO_DBG: OCR busy");
             delay(1);
         }
     }
     if (OCR.BUSY == 0) {
         return;
     } else if (OCR.VOLTAGE_WINDOW & SDIO_VALID_VOLTAGE_WINDOW) {
-        PrintLog.println("SDIO_DBG: Valid volatge window");
+        SerialSD.println("SDIO_DBG: Valid volatge window");
     } else {
-        PrintLog.println("SDIO_ERR: Unusuable Card");
+        SerialSD.println("SDIO_ERR: Unusuable Card");
         return;
     }
     if (OCR.CCS == 0) {
         CSD.capacity = CSD_CAP_SDSC;
-        PrintLog.println("SDIO_DBG: Card supports SDSC only");
+        SerialSD.println("SDIO_DBG: Card supports SDSC only");
     } else {
-        PrintLog.println("SDIO_DBG: Card supports SDHC and SDXC");
+        SerialSD.println("SDIO_DBG: Card supports SDHC and SDXC");
     }
-    PrintLog.println("SDIO_DBG: Initialization complete");
+    SerialSD.println("SDIO_DBG: Initialization complete");
 }
 
 /**
  * @brief Identify the card with a Relative Card Address
  */
-void SDCardSDMode::identification(void) {
-    PrintLog.println("SDIO_DBG: Getting Card Idenfication Number");
-    this->cmd(ALL_SEND_CID, //CMD2
+void SDMode::identification(void) {
+    SerialSD.println("SDIO_DBG: Getting Card Idenfication Number");
+    this->command(ALL_SEND_CID, //CMD2
               0,
               SDIO_RESP_LONG,
               (uint32*)&this->CID);
-    PrintLog.print("SDIO_DBG: Card serial number ");
-    PrintLog.println(CID.PSN, DEC);
+    SerialSD.print("SDIO_DBG: Card serial number ");
+    SerialSD.println(CID.PSN, DEC);
 // -------------------------------------------------------------------------
-    PrintLog.println("SDIO_DBG: Getting new Relative Card Address");
+    SerialSD.println("SDIO_DBG: Getting new Relative Card Address");
     this->newRCA();
-    PrintLog.print("SDIO_DBG: RCA is 0x");
-    PrintLog.println(RCA.RCA, HEX);
-    PrintLog.println("SDIO_DBG: Card should now be in STANDBY state"); //FIXME
+    SerialSD.print("SDIO_DBG: RCA is 0x");
+    SerialSD.println(RCA.RCA, HEX);
+    SerialSD.println("SDIO_DBG: Card should now be in STANDBY state"); //FIXME
 }
 
 /**
  * @brief Configure clock in clock control register and send command to card
  * @param freq 
  */
-void SDCardSDMode::clockFreq(SDIOClockFrequency freq) {
+void SDMode::clockFreq(SDIOClockFrequency freq) {
     //sdio_clock_disable(this->sdio_d);
     sdio_cfg_clkcr(this->sdio_d, SDIO_CLKCR_CLKDIV, (uint32)freq);
     float speed = (CYCLES_PER_MICROSECOND*1000.0)/((float)freq+2.0);
-    PrintLog.println("SDIO_DBG: Clock speed is ");
+    SerialSD.println("SDIO_DBG: Clock speed is ");
     if (speed > 1000) {
         speed /= 1000.0;
-        PrintLog.print(speed, DEC);
-        PrintLog.println(" MHz");
+        SerialSD.print(speed, DEC);
+        SerialSD.println(" MHz");
     } else {
-        PrintLog.print(speed, DEC);
-        PrintLog.println(" kHz");
+        SerialSD.print(speed, DEC);
+        SerialSD.println(" kHz");
     }
 }
 
@@ -255,9 +255,9 @@ void SDCardSDMode::clockFreq(SDIOClockFrequency freq) {
  * @param width WIDBUS value to set
  * @note Card bus width can only be changed when card is unlocked
  */
-void SDCardSDMode::busMode(SDIOBusMode width) {
+void SDMode::busMode(SDIOBusMode width) {
     csr status;
-    this->cmd(SET_BUS_WIDTH, //ACMD6
+    this->command(SET_BUS_WIDTH, //ACMD6
               width,
               SDIO_RESP_SHORT,
               (uint32*)&status);
@@ -272,7 +272,7 @@ void SDCardSDMode::busMode(SDIOBusMode width) {
                        SDIO_CLKCR_WIDBUS_4WIDE);
         break;
     default:
-        PrintLog.println("SDIO_ERR: Unknown bus mode request");
+        SerialSD.println("SDIO_ERR: Unknown bus mode request");
         return;
     }
 }
@@ -281,21 +281,21 @@ void SDCardSDMode::busMode(SDIOBusMode width) {
  * @brief Set data block size for data commands
  * @param size 
  */
-void SDCardSDMode::blockSize(SDIOBlockSize size) {
+void SDMode::blockSize(SDIOBlockSize size) {
     csr status16;
     uint32 blocksize = (uint8)size;
     if (blocksize > 0xF) {
-        PrintLog.println("SDIO_ERR: Invalid block size");
+        SerialSD.println("SDIO_ERR: Invalid block size");
         return;
     }
     this->select(this->RCA.RCA);
-    this->cmd(SET_BLOCKLEN,
+    this->command(SET_BLOCKLEN,
               (0x1 << blocksize),
               SDIO_RESP_SHORT,
               (uint32*)&status16);
     //this->check(0x2FF9FE00);
     if (status16.ERROR == SDIO_CSR_ERROR) {
-        PrintLog.println("SDIO_ERR: Error in SET_BLOCKLEN respsonse");
+        SerialSD.println("SDIO_ERR: Error in SET_BLOCKLEN respsonse");
         return;
     } else {
         sdio_cfg_dcr(this->sdio_d,
@@ -312,8 +312,8 @@ void SDCardSDMode::blockSize(SDIOBlockSize size) {
  * @brief Command (without response nor argument) to send to card
  * @param cmd Command index to send
  */
-SDIOInterruptFlag SDCardSDMode::cmd(SDIOCommand cmd) {
-    return this->cmd(cmd, 0, SDIO_RESP_NONE, NULL);
+void SDMode::command(SDIOCommand cmd) {
+    return this->command(cmd, 0, SDIO_RESP_NONE, NULL);
 }
 
 /**
@@ -321,8 +321,8 @@ SDIOInterruptFlag SDCardSDMode::cmd(SDIOCommand cmd) {
  * @param cmd Command index to send
  * @param arg Argument to send
  */
-SDIOInterruptFlag SDCardSDMode::cmd(SDIOCommand cmd, uint32 arg) {
-    return this->cmd(cmd, arg, SDIO_RESP_NONE, NULL);
+void SDMode::command(SDIOCommand cmd, uint32 arg) {
+    return this->command(cmd, arg, SDIO_RESP_NONE, NULL);
 }
 
 /**
@@ -332,12 +332,12 @@ SDIOInterruptFlag SDCardSDMode::cmd(SDIOCommand cmd, uint32 arg) {
  * @param type Wait for response type
  * @param resp Buffer to store response
  */
-SDIOInterruptFlag SDCardSDMode::cmd(SDIOCommand cmd,
-                                               uint32 arg,
-                                               SDIORespType type,
-                                               uint32 *resp) {
-    PrintLog.print("SDIO_DBG: Sending CMD");
-    PrintLog.println(cmd, DEC);
+void SDMode::command(SDIOCommand cmd,
+                                  uint32 arg,
+                                  SDIORespType type,
+                                  uint32 *resp) {
+    SerialSD.print("SDIO_DBG: Sending CMD");
+    SerialSD.println(cmd, DEC);
     //sdio_clock_enable(this->sdio_d);
     sdio_add_interrupt(this->sdio_d, SDIO_MASK_CMDACTIE |
                        SDIO_MASK_CMDSENTIE | SDIO_MASK_CMDRENDIE |
@@ -364,62 +364,58 @@ SDIOInterruptFlag SDCardSDMode::cmd(SDIOCommand cmd,
     default:
         break;
     }
-    if (sdio_is_cmd_act(this->sdio_d)) {
-        PrintLog.println("SDIO_DBG: Command active");
-    }
-    PrintLog.print("SDIO_DBG: Wait for interrupt... ");
     while (1) {
         if (sdio_get_status(this->sdio_d, SDIO_STA_CTIMEOUT)) {
-            PrintLog.println("Command timeout");
+            SerialSD.println("Command timeout");
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CTIMEOUTC);
-            return SDIO_FLAG_CTIMEOUT;
+            return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_CMDREND)) {
-            PrintLog.println("Response recieved");
+            SerialSD.println("Response recieved");
             break;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_CMDSENT)) {
-            PrintLog.println("Command sent");
-            return SDIO_FLAG_CMDSENT;
+            SerialSD.println("Command sent");
+            return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_CCRCFAIL)) {
             switch ((uint8)cmd) {
             case 41: // special response format from ACMD41
-                PrintLog.println("Ignoring CRC for ACMD41");
+                SerialSD.println("Ignoring CRC for ACMD41");
                 sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
                 break;
             case 52:
-                PrintLog.println("Ignoring CRC for CMD52");
+                SerialSD.println("Ignoring CRC for CMD52");
                 sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
                 break;
             default:
-                PrintLog.println("Command CRC failure");
+                SerialSD.println("Command CRC failure");
                 sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
-                return SDIO_FLAG_CCRCFAIL;
+                return;
             } //end of switch statement
             break;
         } //end of if statement
     } //end of while statement
     if (sdio_get_cmd(this->sdio_d) == (uint32)cmd) {
-        PrintLog.print("SDIO_DBG: Response from CMD");
-        PrintLog.println(sdio_get_cmd(this->sdio_d), DEC);
+        SerialSD.print("SDIO_DBG: Response from CMD");
+        SerialSD.println(sdio_get_cmd(this->sdio_d), DEC);
         sdio_get_resp_short(this->sdio_d, resp);
         sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
     } else if (sdio_get_cmd(this->sdio_d) == 0x3F) {
         switch ((uint8)cmd) {
         case 41:
-            PrintLog.println("SDIO_DBG: Response from ACMD41");
+            SerialSD.println("SDIO_DBG: Response from ACMD41");
             sdio_get_resp_short(this->sdio_d, resp);
             break;
         case 2:
-            PrintLog.println("SDIO_DBG: Response from CMD2");
+            SerialSD.println("SDIO_DBG: Response from CMD2");
             sdio_get_resp_long(this->sdio_d, resp);
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
             break;
         case 9:
-            PrintLog.println("SDIO_DBG: Response from CMD9");
+            SerialSD.println("SDIO_DBG: Response from CMD9");
             sdio_get_resp_long(this->sdio_d, resp);
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
             break;
         case 10:
-            PrintLog.println("SDIO_DBG: Response from CMD10");
+            SerialSD.println("SDIO_DBG: Response from CMD10");
             sdio_get_resp_long(this->sdio_d, resp);
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
             break;
@@ -427,22 +423,21 @@ SDIOInterruptFlag SDCardSDMode::cmd(SDIOCommand cmd,
             break;
         }
     } else {
-        PrintLog.print("SDIO_ERR: Command mismatch, response from CMD");
-        PrintLog.println(sdio_get_cmd(this->sdio_d), DEC);
-        return SDIO_FLAG_CMDREND;
+        SerialSD.print("SDIO_ERR: Command mismatch, response from CMD");
+        SerialSD.println(sdio_get_cmd(this->sdio_d), DEC);
+        return;
     }
     sdio_clear_interrupt(this->sdio_d, 
                          SDIO_ICR_CMDSENTC | SDIO_ICR_CMDRENDC |
                          SDIO_ICR_CTIMEOUTC | SDIO_ICR_CCRCFAILC);
-    return SDIO_FLAG_CMDREND;
 }
 
 /**
  * @brief Application Command (without response nor argument) to send to card
  * @param acmd Application Command to send
  */
-SDIOInterruptFlag SDCardSDMode::cmd(SDIOAppCommand acmd) {
-    return this->cmd(acmd, 0, SDIO_RESP_NONE, NULL);
+void SDMode::command(SDIOAppCommand acmd) {
+    this->command(acmd, 0, SDIO_RESP_NONE, NULL);
 }
 
 /**
@@ -450,9 +445,9 @@ SDIOInterruptFlag SDCardSDMode::cmd(SDIOAppCommand acmd) {
  * @param acmd Command to send
  * @param arg Argument to send
  */
-SDIOInterruptFlag SDCardSDMode::cmd(SDIOAppCommand acmd,
-                                               uint32 arg) {
-    return this->cmd(acmd, arg, SDIO_RESP_NONE, NULL);
+void SDMode::command(SDIOAppCommand acmd,
+                     uint32 arg) {
+    this->command(acmd, arg, SDIO_RESP_NONE, NULL);
 }
 
 /**
@@ -462,37 +457,36 @@ SDIOInterruptFlag SDCardSDMode::cmd(SDIOAppCommand acmd,
  * @param type Wait for response tag 
  * @param resp Buffer to store response
  */
-SDIOInterruptFlag SDCardSDMode::cmd(SDIOAppCommand acmd,
-                                               uint32 arg,
-                                               SDIORespType type,
-                                               uint32 *resp) {
+void SDMode::command(SDIOAppCommand acmd,
+                     uint32 arg,
+                     SDIORespType type,
+                     uint32 *resp) {
     csr status55;
     SDIOInterruptFlag rupt55;
     for (uint32 i = 1; i <= 3; i++) {
-        rupt55 = this->cmd(APP_CMD,
+        rupt55 = this->command(APP_CMD,
                            (uint32)RCA.RCA << 16,
                            SDIO_RESP_TYPE1,
                            (uint32*)&status55);
         //this->check(0xFF9FC21);
         if (status55.APP_CMD == SDIO_CSR_DISABLED) {
-            PrintLog.println("SDIO_DBG: AppCommand not enabled, try again");
+            log.println("SDIO_DBG: AppCommand not enabled, try again");
         } else if (status55.COM_CRC_ERROR == SDIO_CSR_ERROR) {
-            PrintLog.println("SDIO_DBG: CRC error, try again");
+            SerialSD.println("SDIO_DBG: CRC error, try again");
         } else {
             break;
         }
     }
     if (status55.APP_CMD == SDIO_CSR_DISABLED) {
-        PrintLog.println("SDIO_DBG: AppCommand not enabled, exiting routine");
-        return SDIO_FLAG_ERROR;
+        SerialSD.println("SDIO_DBG: AppCommand not enabled, exiting routine");
+        return;
     }
     if (sdio_get_cmd(this->sdio_d) == APP_CMD) {
-        return this->cmd((SDIOCommand)acmd,
-                         arg,
-                         type,
-                         resp);
+        this->command((SDIOCommand)acmd,
+                      arg,
+                      type,
+                      resp);
     }
-    return SDIO_FLAG_ERROR;
 }
 
 /**
@@ -502,8 +496,8 @@ SDIOInterruptFlag SDCardSDMode::cmd(SDIOAppCommand acmd,
 /**
  * @brief Sends a command to get the Operating Conditions Register
  */
-void SDCardSDMode::newRCA(void) {
-    this->cmd(SEND_RELATIVE_ADDR, //CMD3
+void SDMode::newRCA(void) {
+    this->command(SEND_RELATIVE_ADDR, //CMD3
               0,
               SDIO_RESP_TYPE6,
               (uint32*)&this->RCA);
@@ -512,8 +506,8 @@ void SDCardSDMode::newRCA(void) {
 /**
  * @brief Sends a command to get the Operating Conditions Register
  */
-void SDCardSDMode::getOCR(void) {
-    this->cmd(SD_SEND_OP_COND, //ACMD41
+void SDMode::getOCR(void) {
+    this->command(SD_SEND_OP_COND, //ACMD41
               //SDIO_HOST_CAPACITY_SUPPORT | (OCR.VOLTAGE_WINDOW << 8),
               SDIO_HOST_CAPACITY_SUPPORT | (SDIO_VALID_VOLTAGE_WINDOW << 8),
               SDIO_RESP_TYPE3,
@@ -523,8 +517,8 @@ void SDCardSDMode::getOCR(void) {
 /**
  * @brief Sends an addressed command to get the Card IDentification number
  */
-void SDCardSDMode::getCID(void) {
-    this->cmd(SEND_CID, //CMD10
+void SDMode::getCID(void) {
+    this->command(SEND_CID, //CMD10
               (uint32)RCA.RCA << 16,
               SDIO_RESP_TYPE2,
               (uint32*)&this->CID);
@@ -533,7 +527,7 @@ void SDCardSDMode::getCID(void) {
 /**
  * @brief Sends an addressed commmand to get the Card Specific Data 
  */
-void SDCardSDMode::getCSD(void) {
+void SDMode::getCSD(void) {
     uint32 *response = NULL;
     switch (this->CSD.version) {
     case CSD_VER_1:
@@ -543,26 +537,26 @@ void SDCardSDMode::getCSD(void) {
         response = (uint32*)&this->CSD.V2;
         break;
     default:
-        PrintLog.println("SDIO_ERR: CSD version undefined");
+        SerialSD.println("SDIO_ERR: CSD version undefined");
         return;
     }
-    this->cmd(SEND_CSD, //CMD9
+    this->command(SEND_CSD, //CMD9
               (uint32)RCA.RCA << 16,
               SDIO_RESP_TYPE2,
               response);
-    PrintLog.println("SDIO_DBG: Card Specific Data received");
+    SerialSD.println("SDIO_DBG: Card Specific Data received");
 }
 
 /**
  * @brief 
  */
-void SDCardSDMode::getSCR(void) {
+void SDMode::getSCR(void) {
 }
 
 /**
  * @brief 
  */
-void SDCardSDMode::getSSR(uint32 *buf) {
+void SDMode::getSSR(uint32 *buf) {
     this->select(this->RCA.RCA);
     //check for busy signal on dat0 line?
     sdio_set_data_timeout(this->sdio_d, SDIO_DATA_TIMEOUT);
@@ -574,7 +568,7 @@ void SDCardSDMode::getSSR(uint32 *buf) {
     sdio_set_dcr(this->sdio_d, SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN |
                  (SDIO_BKSZ_2 << SDIO_DCTRL_DBLOCKSIZE_BIT));
     SDIOInterruptFlag rupt17;
-    rupt17 = this->cmd(SD_STATUS,
+    rupt17 = this->command(SD_STATUS,
                        0,
                        SDIO_RESP_SHORT,
                        buf);//(uint32*)&this->SCR);
@@ -583,10 +577,10 @@ void SDCardSDMode::getSSR(uint32 *buf) {
     case SDIO_FLAG_CMDREND:
         break;
     case SDIO_FLAG_DTIMEOUT:
-        PrintLog.println("SDIO_ERR: Data timeout");
+        SerialSD.println("SDIO_ERR: Data timeout");
         return;
     default:
-        PrintLog.println("SDIO_ERR: Unknown response in getSSR");
+        SerialSD.println("SDIO_ERR: Unknown response in getSSR");
         return;
     }
     int rxed = 0;
@@ -594,33 +588,33 @@ void SDCardSDMode::getSSR(uint32 *buf) {
     }
         if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DTIMEOUTC);
-            PrintLog.println("SDIO_ERR: Data timeout");
+            SerialSD.println("SDIO_ERR: Data timeout");
             return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_DCRCFAIL)) {
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DCRCFAILC);
-            PrintLog.println("SDIO_ERR: Data CRC fail");
+            SerialSD.println("SDIO_ERR: Data CRC fail");
             return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_STBITERR)) {
-            PrintLog.println("SDIO_ERR: Data start-bit");
+            SerialSD.println("SDIO_ERR: Data start-bit");
             return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXOVERR)) {
-            PrintLog.println("SDIO_ERR: Data FIFO overrun");
+            SerialSD.println("SDIO_ERR: Data FIFO overrun");
             return;
         } else {
-            PrintLog.println("SDIO_DBG: No errors in transfer");
+            SerialSD.println("SDIO_DBG: No errors in transfer");
         }
     for (int i = 1; i <= 2; i++) {
         buf[rxed++] = sdio_read_data(this->sdio_d);
     }
-    PrintLog.print("SDIO_DBG: Bytes received ");
-    PrintLog.println(rxed*4, DEC);
+    SerialSD.print("SDIO_DBG: Bytes received ");
+    SerialSD.println(rxed*4, DEC);
 }
 
 /**
  * @brief Sends a command to set the Driver Stage Register
  */
-void SDCardSDMode::setDSR(void) {
-    this->cmd(SET_DSR, (uint32)DSR << 16);
+void SDMode::setDSR(void) {
+    this->command(SET_DSR, (uint32)DSR << 16);
 }
 
 /**
@@ -630,12 +624,12 @@ void SDCardSDMode::setDSR(void) {
 /**
  * @brief Stop transmission to/from card
  */
-void SDCardSDMode::stop(void) {
+void SDMode::stop(void) {
     csr status12;
-    this->cmd(STOP_TRANSMISSION, //CMD12
-              0,
-              SDIO_RESP_SHORT, //SDIO_RESP_TYPE1b
-              (uint32*)&status12);
+    this->command(STOP_TRANSMISSION, //CMD12
+                  0,
+                  SDIO_RESP_SHORT, //SDIO_RESP_TYPE1b
+                  (uint32*)&status12);
     //this->check(0xC6F85E00);
 }
 
@@ -643,7 +637,7 @@ void SDCardSDMode::stop(void) {
  * @brief Read next word from FIFO 
  * @retval Data that was read from FIFO
  */
-void SDCardSDMode::read(uint32 addr,
+void SDMode::read(uint32 addr,
                                    uint32 *buf,
                                    uint32 count) {
     uint32 rxed = 0;
@@ -656,7 +650,7 @@ void SDCardSDMode::read(uint32 addr,
  * @brief Write next word into FIFO
  * @param word Data to write to FIFO
  */
-void SDCardSDMode::write(uint32 addr, 
+void SDMode::write(uint32 addr, 
                                     const uint32 *buf,
                                     uint32 count) {
     uint32 txed = 0;
@@ -670,9 +664,9 @@ void SDCardSDMode::write(uint32 addr,
  * @param buf Buffer to save data to
  * @param addr Block address to read from
  */
-void SDCardSDMode::readBlock(uint32 addr, uint32 *buf) {
+void SDMode::readBlock(uint32 addr, uint32 *buf) {
     //CCS must equal one for block unit addressing
-    this->select(this->RCA.RCA);
+    this->select();
     //check for busy signal on dat0 line?
     sdio_set_data_timeout(this->sdio_d, SDIO_DATA_TIMEOUT);
     sdio_set_data_length(this->sdio_d, SDIO_DATA_BLOCKSIZE);
@@ -686,7 +680,7 @@ void SDCardSDMode::readBlock(uint32 addr, uint32 *buf) {
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN | SDIO_DCTRL_DMAEN);
     csr status17;
     SDIOInterruptFlag rupt17;
-    rupt17 = this->cmd(READ_SINGLE_BLOCK,
+    rupt17 = this->command(READ_SINGLE_BLOCK,
                        addr,
                        SDIO_RESP_SHORT,
                        (uint32*)&status17);
@@ -695,34 +689,34 @@ void SDCardSDMode::readBlock(uint32 addr, uint32 *buf) {
     case SDIO_FLAG_CMDREND:
         break;
     default:
-        PrintLog.println("SDIO_ERR: Unknown response in readBlock");
+        SerialSD.println("SDIO_ERR: Unknown response in readBlock");
         return;
     }
     while (sdio_get_data_count(this->sdio_d) > 0) {
         if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DTIMEOUTC);
-            PrintLog.println("SDIO_ERR: Data timeout");
+            SerialSD.println("SDIO_ERR: Data timeout");
             return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_DCRCFAIL)) {
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DCRCFAILC);
-            PrintLog.println("SDIO_ERR: Data CRC fail");
+            SerialSD.println("SDIO_ERR: Data CRC fail");
             return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_STBITERR)) {
-            PrintLog.println("SDIO_ERR: Data start-bit");
+            SerialSD.println("SDIO_ERR: Data start-bit");
             return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXOVERR)) {
-            PrintLog.println("SDIO_ERR: Data FIFO overrun");
+            SerialSD.println("SDIO_ERR: Data FIFO overrun");
             return;
         } else if (sdio_get_status(this->sdio_d, SDIO_STA_DBCKEND)) {
             break;
         }
     }
-    PrintLog.print("SDIO_DBG: Transfer complete");
+    SerialSD.print("SDIO_DBG: Transfer complete");
     sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DBCKENDC);
     sdio_dma_disable(this->sdio_d);
 }
 
-void SDCardSDMode::writeBlock(uint32 addr, const uint32 *buf) {
+void SDMode::writeBlock(uint32 addr, const uint32 *buf) {
     /**
     a)  Program the SDIO data length register (SDIO data timer register should
     be already programmed before the card identification process)
@@ -744,7 +738,7 @@ void SDCardSDMode::writeBlock(uint32 addr, const uint32 *buf) {
                        SDIO_MASK_TXDAVLIE | SDIO_MASK_TXUNDERRIE);
     //uint32 count = 512/4;
     csr status;
-    this->cmd(WRITE_BLOCK, addr,
+    this->command(WRITE_BLOCK, addr,
               SDIO_RESP_SHORT, (uint32*)&status);
     if (sdio_get_status(this->sdio_d, SDIO_ICR_CMDRENDC) == 1) {
         //while (sdio_get_fifo_count(this->sdio_d)) 
@@ -754,15 +748,19 @@ void SDCardSDMode::writeBlock(uint32 addr, const uint32 *buf) {
     }
 }
 
-void SDCardSDMode::select(uint16 card) {
+void SDMode::select(uint16 rca) {
     csr status7;
-    this->cmd(SELECT_DESELECT_CARD,
-              (uint32)card << 16,
-              SDIO_RESP_SHORT, //SDIO_RESP_TYPE1b
-              (uint32*)&status7);
+    this->command(SELECT_DESELECT_CARD,
+                 (uint32)rca << 16,
+                 SDIO_RESP_SHORT, //SDIO_RESP_TYPE1b
+                 (uint32*)&status7);
     //this->check(0xFF9FF00);
 }
 
-void SDCardSDMode::deselect(void) {
+void SDMode::select(void) {
+    this->select(this->RCA.RCA);
+}
+
+void SDMode::deselect(void) {
     this->select(0);
 }

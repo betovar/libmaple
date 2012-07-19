@@ -33,10 +33,10 @@
 #ifndef _SDIO_H_
 #define _SDIO_H_
 
-#include "rcc.h"
-#include "nvic.h"
-#include "util.h"
-#include "libmaple_types.h"
+#include <libmaple/rcc.h>
+#include <libmaple/nvic.h>
+#include <libmaple/util.h>
+#include <libmaple/libmaple_types.h>
 
 #ifdef __cplusplus
 extern "C" {

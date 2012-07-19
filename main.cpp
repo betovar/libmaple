@@ -10,8 +10,8 @@
  * Author: Brian E Tovar <betovar@leaflabs.com>
  */
 
-#include "wirish.h"
-#include "libraries/Card/SecureDigital/SDCard.h"
+#include <wirish/wirish.h>
+#include <libraries/Card/SecureDigital/SDCard.h>
 
 static const uint16 SIZE = 8;
 

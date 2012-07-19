@@ -25,31 +25,31 @@
  *****************************************************************************/
 
 /**
- * @file SD-SPI.h
+ * @file SPIMode.cpp
  * @brief High-level SPI interface for SD cards
  */
 
-#include "SDCard_SPIMode.h"
+#include "SPIMode.h"
 
 /**
  * @brief Constructor
  */
-SDCardSPIMode::SDCardSPIMode(void) {
+SPIMode::SPIMode(void) {
 
 }
 
-void SDCardSPIMode::begin(void) {
+void SPIMode::begin(void) {
+	HardwareSPI::begin();
+}
+
+void SPIMode::end(void) {
+	HardwareSPI::end();
+}
+
+void SPIMode::read(uint8 *dst) {
 
 }
 
-void SDCardSPIMode::end(void) {
-
-}
-
-void SDCardSPIMode::read(uint8 *dst) {
-
-}
-
-void SDCardSPIMode::write(const uint8 *src) {
+void SPIMode::write(const uint8 *src) {
 
 }

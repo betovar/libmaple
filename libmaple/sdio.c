@@ -30,12 +30,12 @@
  * @brief SDIO interface support
  */
 
-#include "sdio.h"
-#include "gpio.h"
-#include "timer.h"
-#include "delay.h"
-#include "bitband.h"
-#include "dma.h"
+#include <libmaple/sdio.h>
+#include <libmaple/gpio.h>
+#include <libmaple/timer.h>
+#include <libmaple/delay.h>
+#include <libmaple/bitband.h>
+#include <libmaple/dma.h>
 
 /*
  * SDIO device
