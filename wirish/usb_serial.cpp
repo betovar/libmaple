@@ -28,23 +28,33 @@
  * @brief USB virtual serial terminal
  */
 
+#include <wirish/usb_serial.h>
+
 #include <string.h>
 
-#include "wirish.h"
-#include "usb_cdcacm.h"
-#include "usb.h"
+#include <libmaple/usb_cdcacm.h>
+#include <libmaple/usb.h>
+
+#include <wirish/wirish.h>
 
 #define USB_TIMEOUT 50
 
 USBSerial::USBSerial(void) {
+#if !BOARD_HAVE_SERIALUSB
+    ASSERT(0);
+#endif
 }
 
 void USBSerial::begin(void) {
+#if BOARD_HAVE_SERIALUSB
     usb_cdcacm_enable(BOARD_USB_DISC_DEV, BOARD_USB_DISC_BIT);
+#endif
 }
 
 void USBSerial::end(void) {
+#if BOARD_HAVE_SERIALUSB
     usb_cdcacm_disable(BOARD_USB_DISC_DEV, BOARD_USB_DISC_BIT);
+#endif
 }
 
 void USBSerial::write(uint8 ch) {
@@ -57,7 +67,7 @@ void USBSerial::write(const char *str) {
 }
 
 void USBSerial::write(const void *buf, uint32 len) {
-    if (!(usbIsConnected() && usbIsConfigured()) || !buf) {
+    if (!this->isConnected() || !buf) {
         return;
     }
 
@@ -103,7 +113,7 @@ uint8 USBSerial::pending(void) {
 }
 
 uint8 USBSerial::isConnected(void) {
-    return usbIsConnected() && usbIsConfigured();
+    return usb_is_connected(USBLIB) && usb_is_configured(USBLIB);
 }
 
 uint8 USBSerial::getDTR(void) {
@@ -114,4 +124,6 @@ uint8 USBSerial::getRTS(void) {
     return usb_cdcacm_get_rts();
 }
 
+#if BOARD_HAVE_SERIALUSB
 USBSerial SerialUSB;
+#endif
