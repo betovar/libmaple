@@ -31,25 +31,8 @@
  */
 
 #include <libmaple/sdio.h>
-#include <libmaple/gpio.h>
-#include <libmaple/timer.h>
-#include <libmaple/delay.h>
 #include <libmaple/bitband.h>
 #include <libmaple/dma.h>
-
-/*
- * SDIO device
- */
-
-#ifdef STM32_HIGH_DENSITY
-static sdio_dev sdio = {
-    .regs     = SDIO_BASE,
-    .clk_id   = RCC_SDIO,
-    .irq_num  = NVIC_SDIO,
-};
-/** SDIO device */
-sdio_dev *SDIO = &sdio;
-#endif
 
 /*
  * SDIO configure functions
@@ -129,22 +112,6 @@ void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val) {
     dev->regs->CLKCR = temp;
 }
 
-/**
- * @brief Configure GPIO bit modes for use as an SDIO port's pins
- * @note 8-bit data bus width is only allowed for UHS-I cards
- */
-void sdio_cfg_gpio(void) {
-    //These gpio devices and pins are constant for the F1 line
-    gpio_set_mode(GPIOC,   11, GPIO_INPUT_FLOATING); //SDIO_D3
-    gpio_set_mode(GPIOC,   10, GPIO_INPUT_FLOATING); //SDIO_D2
-    gpio_set_mode(GPIOC,    9, GPIO_INPUT_FLOATING); //SDIO_D1
-    timer_set_mode(TIMER8,  4,      TIMER_DISABLED);
-    gpio_set_mode(GPIOC,    8, GPIO_INPUT_FLOATING); //SDIO_D0
-    timer_set_mode(TIMER8,  3,      TIMER_DISABLED);
-    gpio_set_mode(GPIOC,   12,   GPIO_AF_OUTPUT_PP); //SDIO_CK
-    gpio_set_mode(GPIOD,    2,   GPIO_AF_OUTPUT_PP); //SDIO_CMD
-}
-
 /*
  * SDIO hardware functions
  */
@@ -195,23 +162,6 @@ void sdio_dma_enable(sdio_dev *dev) {
  */
 void sdio_dma_disable(sdio_dev *dev) {
     bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 0);
-}
-
-/**
- * @brief Configure DMA for receive transfer
- * @param dev SDIO device
- * @param rx_buf pointer to 32-bit memory address
- * @param count Number of transfers to receive
- * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
- */
-void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *dst, uint16 count) {
-    dma_init(DMA2);
-    dma_setup_transfer(DMA2, DMA_CH4, //constant for STM32F1 line
-                       &dev->regs->FIFO,    DMA_SIZE_32BITS,
-                       dst,                 DMA_SIZE_32BITS,
-                       DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
-    dma_set_num_transfers(DMA2, DMA_CH4, count);
-    dma_enable(DMA2, DMA_CH4);
 }
 
 /*
@@ -272,19 +222,6 @@ void sdio_get_resp_long(sdio_dev *dev, uint32 *buf) {
 /*
  * SDIO status functions
  */
-
-/**
- * @brief Detects if card is inserted
- */
-uint32 sdio_card_detect(void) {
-    gpio_set_mode(GPIOC, 11, GPIO_INPUT_PD); //SDIO_D3
-    sdio_cfg_gpio();
-    delay_us(1000);
-    if (gpio_read_bit(GPIOC, 11)) {
-        return 1;
-    }
-    return 0;
-}
 
 uint32 sdio_card_powered(sdio_dev *dev) {
     int i;

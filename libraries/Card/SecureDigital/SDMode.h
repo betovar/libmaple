@@ -32,7 +32,7 @@
 
 #include <libmaple/sdio.h>
 #include <libmaple/libmaple_types.h>
-#include <libraries/Card/SD/SDCard.h>
+#include "SDCard.h"
 
 
 #ifndef _SDMODE_H_

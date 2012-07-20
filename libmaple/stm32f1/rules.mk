@@ -23,6 +23,7 @@ cSRCS_$(d) += gpio.c
 cSRCS_$(d) += i2c.c
 cSRCS_$(d) += rcc.c
 cSRCS_$(d) += spi.c
+cSRCS_$(d) += sdio.c
 cSRCS_$(d) += timer.c
 cSRCS_$(d) += usart.c
 

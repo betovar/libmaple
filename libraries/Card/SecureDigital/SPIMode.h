@@ -30,8 +30,8 @@
  */
 
 #include <libmaple/libmaple_types.h>
-#include <libraries/Card/SD/SDCard.h>
-#include <wirish/comm/HardwareSPI.h>
+#include <wirish/HardwareSPI.h>
+#include "SDCard.h"
  
 #ifndef _SPIMODE_H_
 #define _SPIMODE_H_
