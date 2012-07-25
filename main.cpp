@@ -13,7 +13,7 @@
 #include "wirish.h"
 #include "libraries/Card/SecureDigital/SDMC.h"
 
-static const uint16 SIZE = 8;
+static const uint16 SIZE = 64;
 
 SecureDigitalMemoryCard SDMC;
 

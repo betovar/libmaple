@@ -31,7 +31,7 @@ PRODUCT_ID := 0003
 
 # Try "make help" for more information on BOARD and MEMORY_TARGET;
 # these default to a Maple Native Flash build.
-BOARD ?= maple_native
+BOARD ?= maple
 MEMORY_TARGET ?= flash
 
 # $(BOARD)- and $(MEMORY_TARGET)-specific configuration
@@ -75,9 +75,9 @@ else
 endif
 LIBMAPLE_MODULES += $(SRCROOT)/wirish
 # Official libraries:
-#LIBMAPLE_MODULES += $(SRCROOT)/libraries/Servo
-#LIBMAPLE_MODULES += $(SRCROOT)/libraries/LiquidCrystal
-#LIBMAPLE_MODULES += $(SRCROOT)/libraries/Wire
+LIBMAPLE_MODULES += $(SRCROOT)/libraries/Servo
+LIBMAPLE_MODULES += $(SRCROOT)/libraries/LiquidCrystal
+LIBMAPLE_MODULES += $(SRCROOT)/libraries/Wire
 
 # Experimental libraries:
 #LIBMAPLE_MODULES += $(SRCROOT)/libraries/FreeRTOS
@@ -134,7 +134,7 @@ help:
 	@echo "      sketch:   Compile for BOARD to MEMORY_TARGET (default)."
 	@echo "      install:  Compile and upload code over USB, using Maple bootloader"
 	@echo "  "
-	@echo "  You *must* set BOARD if not compiling for Maple Native (e.g."
+	@echo "  You *must* set BOARD if not compiling for Maple (e.g."
 	@echo "  use BOARD=maple_mini for mini, etc.), and MEMORY_TARGET"
 	@echo "  if not compiling to Flash."
 	@echo "  "

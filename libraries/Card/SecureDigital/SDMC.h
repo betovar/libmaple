@@ -129,7 +129,7 @@ typedef enum SDIOInterruptFlag {
  * SD Command Enumerations
  */
 
-typedef enum SDIOCommand {
+typedef enum SDCommand {
 // Basic Commands (class 0)
     /** CMD0 - Resets all cards to idle state */
     GO_IDLE_STATE           = 0,
@@ -264,9 +264,9 @@ typedef enum SDIOCommand {
   //CMD50                   = 50,
     /** CMD57 -  */
   //CMD57                   = 57,
-} SDIOCommand;
+} SDCommand;
 
-typedef enum SDIOAppCommand {
+typedef enum SDAppCommand {
 // Application Specific Commands used/reserved by SD Memory Card (class n/a)
     /** ACMD1-5 - Reserved */
     /** ACMD6 -  */
@@ -287,7 +287,7 @@ typedef enum SDIOAppCommand {
     /** ACMD51 -  */
     SEND_SCR                = 51
     /** ACMD52-59 - Reserved */
-} SDIOAppCommand;
+} SDAppCommand;
 
 /**
  * SD Structure Specific Enumerations
@@ -627,11 +627,12 @@ class SecureDigitalMemoryCard {
     rca RCA;
     dsr DSR; // Default is 0x0404
     csr CSR;
+    SDIOInterruptFlag ruptFlag;
+    SDIOInterruptFlag ruptFlag55;
 
     SecureDigitalMemoryCard();
     //---------------- startup functions ------------------
     void begin(void);
-    void test(void);
     void end(void);
     //---------------- convenience functions --------------
     void idle(void);
@@ -639,40 +640,37 @@ class SecureDigitalMemoryCard {
     void busMode(SDIOBusMode);
     void blockSize(SDIOBlockSize);
     //---------------- command functions ------------------
-    SDIOInterruptFlag cmd(SDIOCommand);
-    SDIOInterruptFlag cmd(SDIOCommand, uint32);
-    SDIOInterruptFlag cmd(SDIOCommand, uint32, SDIORespType, uint32*);
-    SDIOInterruptFlag cmd(SDIOAppCommand);
-    SDIOInterruptFlag cmd(SDIOAppCommand, uint32);
-    SDIOInterruptFlag cmd(SDIOAppCommand, uint32, SDIORespType, uint32*);
+    void cmd(SDCommand);
+    void cmd(SDCommand, uint32);
+    void cmd(SDCommand, uint32, SDIORespType, uint32*);
+    void cmd(SDAppCommand);
+    void cmd(SDAppCommand, uint32);
+    void cmd(SDAppCommand, uint32, SDIORespType, uint32*);
+    void response(void);
     //---------------- general data functions -------------
     void stop(void);
     void read(uint32, uint32*, uint32);
     void write(uint32, const uint32*, uint32);
-    //---------------- public card register access functions
-    void newRCA(void);
+    //---------------- card register access functions -----
+    void getCID(void);
     void getCSD(void);
     void getSCR(void);
     void getSSR(uint32*);
     void setDSR(void);
 
+  private:
+    sdio_dev *sdio_d;
+    //---------------- begin routines ---------------------
+    void initialization(void);
+    void identification(void);
+    void getOCR(void);
+    void newRCA(void);
+    //---------------- card select functions --------------
+    void select(uint16);
+    void deselect(void);
     //---------------- basic data functions ---------------
     void readBlock(uint32, uint32*);
     void writeBlock(uint32, const uint32*);
-
-  private:
-    sdio_dev *sdio_d;
-    //---------------- start routines ---------------------
-    void initialization(void);
-    void identification(void);
-    //---------------- interrupt functions ----------------
-    void clear(SDIOInterruptFlag);
-    uint32 check(uint32);
-    //---------------- card register access functions -----
-    void getOCR(void); //only allowed during identification mode
-    void getCID(void);
-    void select(uint16);
-    void deselect(void);
     
     /** other functions to be developed
     void protect(void); // write protect
