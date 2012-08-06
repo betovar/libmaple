@@ -10,6 +10,7 @@
  * Author: Brian E Tovar <betovar@leaflabs.com>
  */
 
+#define SDIO_DEBUG_ON
 #include "wirish.h"
 #include "libraries/Card/SecureDigital/SDMC.h"
 
@@ -26,6 +27,7 @@ void loop() {
     waitForButtonPress();
     SerialUSB.println("SDIO_DBG: Starting SDMC test");
     SDMC.begin();
+/*
     uint8 myByteArray[SIZE];
     for (int i = 0; i < SIZE; i++) {
         myByteArray[i] = 0;
@@ -38,6 +40,7 @@ void loop() {
             SerialUSB.println("");
         }
     }
+    */
     SerialUSB.println("SDIO_DBG: Test complete");
 }
 

@@ -32,6 +32,7 @@
 
 #include "sdio.h"
 #include "libmaple_types.h"
+#include "../wirish/Print.h"
 
 #ifndef _SDMC_H_
 #define _SDMC_H_
@@ -627,10 +628,11 @@ class SecureDigitalMemoryCard {
     rca RCA;
     dsr DSR; // Default is 0x0404
     csr CSR;
+    
     SDIOInterruptFlag ruptFlag;
     SDIOInterruptFlag ruptFlag55;
 
-    SecureDigitalMemoryCard();
+    SecureDigitalMemoryCard(void);
     //---------------- startup functions ------------------
     void begin(void);
     void end(void);
@@ -643,10 +645,12 @@ class SecureDigitalMemoryCard {
     void cmd(SDCommand);
     void cmd(SDCommand, uint32);
     void cmd(SDCommand, uint32, SDIORespType, uint32*);
+    void cmd(SDCommand, uint32, SDIORespType, uint32*, uint32);
     void cmd(SDAppCommand);
     void cmd(SDAppCommand, uint32);
     void cmd(SDAppCommand, uint32, SDIORespType, uint32*);
-    void response(void);
+    void cmd(SDAppCommand, uint32, SDIORespType, uint32*, uint32);
+    void response(SDCommand);
     //---------------- general data functions -------------
     void stop(void);
     void read(uint32, uint32*, uint32);
