@@ -10,7 +10,6 @@
  * Author: Brian E Tovar <betovar@leaflabs.com>
  */
 
-#define SDIO_DEBUG_ON
 #include "wirish.h"
 #include "libraries/Card/SecureDigital/SDMC.h"
 
@@ -25,7 +24,7 @@ void setup() {
 
 void loop() {
     waitForButtonPress();
-    SerialUSB.println("SDIO_DBG: Starting SDMC test");
+    SerialUSB.println("*** Starting SDMC test ***");
     SDMC.begin();
 /*
     uint8 myByteArray[SIZE];
@@ -41,7 +40,7 @@ void loop() {
         }
     }
     */
-    SerialUSB.println("SDIO_DBG: Test complete");
+    SerialUSB.println("*** SDMC test complete ***");
 }
 
 // Force init to be called *first*, i.e. before static object allocation.
