@@ -234,6 +234,9 @@ void SecureDigitalMemoryCard::initialization(void) {
         }
     }
     if (OCR.BUSY == 0) {
+        #if defined(SDIO_DEBUG_ON)
+        SDIO_DEBUG.println("SDIO_ERR: Card is not ready");
+        #endif
         return;
     } else if (OCR.VOLTAGE_WINDOW & SDIO_VALID_VOLTAGE_WINDOW) {
         #if defined(SDIO_DEBUG_ON)
@@ -270,8 +273,51 @@ void SecureDigitalMemoryCard::identification(void) {
               SDIO_RESP_LONG,
               (uint32*)&this->CID);
     #if defined(SDIO_DEBUG_ON)
-    SDIO_DEBUG.print("SDIO_DBG: Card serial number ");
-    SDIO_DEBUG.println(CID.PSN, DEC);
+    SDIO_DEBUG.print("SDIO_DBG: Card serial number 0x");
+    SDIO_DEBUG.println(CID.PSN, HEX);
+    SDIO_DEBUG.print("SDIO_DBG: Date of manufacture ");
+    switch (CID.MDT.MONTH) {
+      case 1:
+        SDIO_DEBUG.print("January ");
+        break;
+      case 2:
+        SDIO_DEBUG.print("February ");
+        break;
+      case 3:
+        SDIO_DEBUG.print("March ");
+        break;
+      case 4:
+        SDIO_DEBUG.print("April ");
+        break;
+      case 5:
+        SDIO_DEBUG.print("May ");
+        break;
+      case 6:
+        SDIO_DEBUG.print("June ");
+        break;
+      case 7:
+        SDIO_DEBUG.print("July ");
+        break;
+      case 8:
+        SDIO_DEBUG.print("August ");
+        break;
+      case 9:
+        SDIO_DEBUG.print("September ");
+        break;
+      case 10:
+        SDIO_DEBUG.print("October ");
+        break;
+      case 11:
+        SDIO_DEBUG.print("November ");
+        break;
+      case 12:
+        SDIO_DEBUG.print("December ");
+        break;
+      default:
+        break;
+    }
+    SDIO_DEBUG.println(CID.MDT.YEAR+2000, DEC);
+    SDIO_DEBUG.println(CID.Always0, DEC);
 // -------------------------------------------------------------------------
     SDIO_DEBUG.println("SDIO_DBG: Getting new Relative Card Address");
     #endif
@@ -421,27 +467,36 @@ void SecureDigitalMemoryCard::cmd(SDCommand cmd,
     //sdio_clock_enable(this->sdio_d);
     sdio_set_interrupt(this->sdio_d, rupt);
     sdio_load_arg(this->sdio_d, arg);
+    uint32 cmdreg = SDIO_CMD_CPSMEN | cmd;
     switch (type) {
       case SDIO_RESP_SHORT:
       case SDIO_RESP_TYPE1:
+        switch (cmd) {
+          case READ_SINGLE_BLOCK:
+          case READ_MULTIPLE_BLOCK:
+          case WRITE_BLOCK:
+          case WRITE_MULTIPLE_BLOCK:
+            cmdreg |= SDIO_CMD_WAITPEND; // wait for data
+            break;
+          default:
+            break;
+        }
       case SDIO_RESP_TYPE3:
       case SDIO_RESP_TYPE6:
       case SDIO_RESP_TYPE7:
-        sdio_send_cmd(this->sdio_d,
-                      SDIO_CMD_CPSMEN | cmd | SDIO_CMD_WAITRESP_SHORT);
+        cmdreg |= SDIO_CMD_WAITRESP_SHORT;
         break;
       case SDIO_RESP_LONG:
       case SDIO_RESP_TYPE2:
-        sdio_send_cmd(this->sdio_d,
-                      SDIO_CMD_CPSMEN | cmd | SDIO_CMD_WAITRESP_LONG);
+        cmdreg |= SDIO_CMD_WAITRESP_LONG;
         break;
       case SDIO_RESP_NONE:
-        sdio_send_cmd(this->sdio_d,
-                      SDIO_CMD_CPSMEN | cmd | SDIO_CMD_WAITRESP_NONE);
+        cmdreg |= SDIO_CMD_WAITRESP_NONE;
         break;
       default:
         break;
     }
+    sdio_send_cmd(this->sdio_d, cmdreg);
     if (sdio_is_cmd_act(this->sdio_d)) {
         #if defined(SDIO_DEBUG_ON)
         SDIO_DEBUG.println("SDIO_DBG: Command active");
@@ -502,7 +557,7 @@ void SecureDigitalMemoryCard::cmd(SDCommand cmd,
         #endif
         sdio_get_resp_short(this->sdio_d, resp);
         sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
-    } else if (sdio_get_cmd(this->sdio_d) == 0x3F) { //FIXME
+    } else if (sdio_get_cmd(this->sdio_d) >= 0x3E) { //FIXME
         switch ((uint8)cmd) {
           case 41:
             #if defined(SDIO_DEBUG_ON)

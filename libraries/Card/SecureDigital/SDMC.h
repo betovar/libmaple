@@ -369,16 +369,16 @@ typedef enum SDIOStatusResponseTag {
  * SD Register Structures
  */
 
-typedef struct OperationConditionsRegister {//little-endian
+typedef struct OperationConditionsRegister { //big-endian
     /** Reserved for low voltage range */
-    unsigned Reserved3              :8;
+    unsigned Reserved1              :8;
     /** VDD Voltage Window: 2.7v - 3.6v */
-    unsigned VOLTAGE_WINDOW         :16;
+    unsigned VOLTAGE_WINDOW         :16; // personal choice
     /** Switch to 1.8v Accepted:
      *  Only UHS-I card supports this bit */
     unsigned S18A                   :1;
     unsigned Reserved2              :4;
-    unsigned Reserved1              :1;
+    unsigned Reserved3              :1;
     /** Card Capacity Status: This bit is valid only when
      *  the card power up status bit is set. 
      *  SDHC and SDXC use the 32-bit argument of memory access commands as
@@ -403,28 +403,28 @@ typedef struct manufacturing_date {
     unsigned MONTH                  :4;
 }__attribute__((packed)) manu_date;
 
-typedef struct CardIdentificationRegister {
-  /** An 8-bit binary number that identifies the card manufacturer */
-  uint8 MID; // Manufacturer ID
-  /** A 2-character ASCII string that identifies the card OEM */
-  char OID[2]; // OEM/Application ID
-  /** The product name is a string, 5-character ASCII string */
-  char PNM[5]; // Product Name
-  /** The product revision is composed of two Binary Coded Decimal (BCD)
-   * digits, four bits each, repre- senting an "n.m" revision number.
-   * The "n" is the most significant nibble and "m" is the least
-   * significant nibble */
-  prod_revn PRN; // Product Revision Number
-  /** The Serial Number is 32 bits of a binary number */
-  uint32 PSN;  // Product Serial Number
-  /** The manufacturing date is composed of two hexadecimal digits, one
-   * is 8 bits representing the year(y) and the other is 4 bits representing
-   * the month (m). The "m" field [11:8] is the month code. 1 = January.
-   * The "y" field [19:12] is the year code. 0 = 2000. */
-  manu_date MDT; // Manufacturing Date, most significant 4 bits are reserved
-  /** CRC7 checksum (7 bits), the  zeroth bit is always 1 */
-  unsigned CRC                      :7; // CRC7 Checksum
-  unsigned Always1                  :1;
+typedef struct CardIdentificationNumber { //big-endian
+    /** An 8-bit binary number that identifies the card manufacturer */
+    uint8 MID; // Manufacturer ID
+    /** A 2-character ASCII string that identifies the card OEM */
+    char OID[2]; // OEM/Application ID
+    /** The product name is a string, 5-character ASCII string */
+    char PNM[5]; // Product Name
+    /** The product revision is composed of two Binary Coded Decimal (BCD)
+     * digits, four bits each, repre- senting an "n.m" revision number.
+     * The "n" is the most significant nibble and "m" is the least
+     * significant nibble */
+    prod_revn PRV; // Product Revision Number
+    /** The Serial Number is 32 bits of a binary number */
+    uint32 PSN;  // Product Serial Number
+    /** The manufacturing date is composed of two hexadecimal digits, one
+     * is 8 bits representing the year(y) and the other is 4 bits representing
+     * the month (m). The "m" field [11:8] is the month code. 1 = January.
+     * The "y" field [19:12] is the year code. 0 = 2000. */
+    manu_date MDT; // Manufacturing Date, most significant 4 bits are reserved
+    /** CRC7 checksum (7 bits), the  zeroth bit is always 1 */
+    unsigned CRC                      :7; // CRC7 Checksum
+    unsigned Always0                  :1; // ST converts this to zero
 }__attribute__((packed)) cid;
 
 //RelativeCardAddress
@@ -437,76 +437,76 @@ typedef struct RelativeCardAddress { //litte-endian
 // DriverStageRegister
 typedef uint16 dsr; // Optional
 
-typedef struct CardSpecificDataV1 {
-    unsigned Always1                :1;
-    unsigned CRC                    :7;
-    unsigned Reserved5              :2;
-    unsigned FILE_FORMAT            :2;
-    unsigned TMP_WRITE_PROTECT      :1;
-    unsigned PERM_WRITE_PROTECT     :1;
-    unsigned COPY                   :1;
-    unsigned FILE_FORMAT_GRP        :1;
-    unsigned Reserved4              :5;
-    unsigned WRITE_BL_PARTIAL       :1;
-    unsigned WRITE_BL_LEN           :4;
-    unsigned R2W_FACTOR             :3;
-    unsigned Reserved3              :2;
-    unsigned WP_GRP_ENABLE          :1;
-    unsigned WP_GRP_SIZE            :7;
-    unsigned SECTOR_SIZE            :7;
-    unsigned ERASE_BLK_EN           :1;
-    unsigned C_SIZE_MULT            :3;
-    unsigned VDD_W_CURR_MAX         :3;
-    unsigned VDD_W_CURR_MIN         :3;
-    unsigned VDD_R_CURR_MAX         :3;
-    unsigned VDD_R_CURR_MIN         :3;
-    unsigned C_SIZE                 :12;
-    unsigned Reserved2              :2;
-    unsigned DSR_IMP                :1;
-    unsigned READ_BLK_MISALIGN      :1;
-    unsigned WRITE_BLK_MISALIGN     :1;
-    unsigned READ_BL_PARTIAL        :1;
-    unsigned READ_BL_LEN            :4;
-    unsigned CCC                    :12;
-    uint8 TRAN_SPEED;
-    uint8 NSAC;
-    uint8 TAAC;
-    unsigned Reserved1              :6;
+typedef struct CardSpecificDataV1 { //big-endian
     unsigned CSD_STRUCTURE          :2;
+    unsigned Reserved1              :6;
+    uint8 TAAC;
+    uint8 NSAC;
+    uint8 TRAN_SPEED;
+    unsigned CCC                    :12;
+    unsigned READ_BL_LEN            :4;
+    unsigned READ_BL_PARTIAL        :1;
+    unsigned WRITE_BLK_MISALIGN     :1;
+    unsigned READ_BLK_MISALIGN      :1;
+    unsigned DSR_IMP                :1;
+    unsigned Reserved2              :2;
+    unsigned C_SIZE                 :12;
+    unsigned VDD_R_CURR_MIN         :3;
+    unsigned VDD_R_CURR_MAX         :3;
+    unsigned VDD_W_CURR_MIN         :3;
+    unsigned VDD_W_CURR_MAX         :3;
+    unsigned C_SIZE_MULT            :3;
+    unsigned ERASE_BLK_EN           :1;
+    unsigned SECTOR_SIZE            :7;
+    unsigned WP_GRP_SIZE            :7;
+    unsigned WP_GRP_ENABLE          :1;
+    unsigned Reserved3              :2;
+    unsigned R2W_FACTOR             :3;
+    unsigned WRITE_BL_LEN           :4;
+    unsigned WRITE_BL_PARTIAL       :1;
+    unsigned Reserved4              :5;
+    unsigned FILE_FORMAT_GRP        :1;
+    unsigned COPY                   :1;
+    unsigned PERM_WRITE_PROTECT     :1;
+    unsigned TMP_WRITE_PROTECT      :1;
+    unsigned FILE_FORMAT            :2;
+    unsigned Reserved5              :2;
+    unsigned CRC                    :7;
+    unsigned Always1                :1;
 }__attribute__((packed)) csdV1;
 
-typedef struct CardSpecificDataV2 {
-    unsigned Always1                :1;
-    unsigned CRC                    :7;
-    unsigned Reserved6              :2;
-    unsigned FILE_FORMAT            :2;
-    unsigned TMP_WRITE_PROTECT      :1;
-    unsigned PERM_WRITE_PROTECT     :1;
-    unsigned COPY                   :1;
-    unsigned FILE_FORMAT_GRP        :1;
-    unsigned Reserved5              :5;
-    unsigned WRITE_BL_PARTIAL       :1;
-    unsigned WRITE_BL_LEN           :4;
-    unsigned R2W_FACTOR             :3;
-    unsigned Reserved4              :2;
-    unsigned WP_GRP_ENABLE          :1;
-    unsigned WP_GRP_SIZE            :7;
-    unsigned SECTOR_SIZE            :7;
-    unsigned ERASE_BLK_EN           :1;
-    unsigned Reserved3              :1;
-    unsigned C_SIZE                 :22;
-    unsigned Reserved2              :6;
-    unsigned DSR_IMP                :1;
-    unsigned READ_BLK_MISALIGN      :1;
-    unsigned WRITE_BLK_MISALIGN     :1;
-    unsigned READ_BL_PARTIAL        :1;
-    unsigned READ_BL_LEN            :4;
-    unsigned CCC                    :12;
-    uint8 TRAN_SPEED;
-    uint8 NSAC;
-    uint8 TAAC;
-    unsigned Reserved1              :6;
+typedef struct CardSpecificDataV2 { //big-endian
     unsigned CSD_STRUCTURE          :2;
+    unsigned Reserved1              :6;
+    uint8 TAAC;
+    uint8 NSAC;
+    uint8 TRAN_SPEED;
+    unsigned CCC                    :12;
+    unsigned READ_BL_LEN            :4;
+    unsigned READ_BL_PARTIAL        :1;
+    unsigned WRITE_BLK_MISALIGN     :1;
+    unsigned READ_BLK_MISALIGN      :1;
+    unsigned DSR_IMP                :1;
+    unsigned Reserved2              :6;
+    unsigned C_SIZE                 :22;
+    unsigned Reserved3              :1;
+    unsigned ERASE_BLK_EN           :1;
+    unsigned SECTOR_SIZE            :7;
+    unsigned WP_GRP_SIZE            :7;
+    unsigned WP_GRP_ENABLE          :1;
+    unsigned Reserved4              :2;
+    unsigned R2W_FACTOR             :3;
+    unsigned WRITE_BL_LEN           :4;
+    unsigned WRITE_BL_PARTIAL       :1;
+    unsigned Reserved5              :5;
+    unsigned FILE_FORMAT_GRP        :1;
+    unsigned COPY                   :1;
+    unsigned PERM_WRITE_PROTECT     :1;
+    unsigned TMP_WRITE_PROTECT      :1;
+    unsigned FILE_FORMAT            :2;
+    unsigned Reserved6              :2;
+    unsigned CRC                    :7;
+    unsigned Always1                :1;
 }__attribute__((packed)) csdV2;
 
 typedef struct CardSpecificData {
