@@ -273,9 +273,19 @@ void SecureDigitalMemoryCard::identification(void) {
               SDIO_RESP_LONG,
               (uint32*)&this->CID);
     #if defined(SDIO_DEBUG_ON)
-    SDIO_DEBUG.print("SDIO_DBG: Card serial number 0x");
+    SDIO_DEBUG.print("SDIO_DBG: Manufaturer ID 0b");
+    SDIO_DEBUG.println(CID.MID, BIN);
+    SDIO_DEBUG.print("SDIO_DBG: Application ID ");
+    SDIO_DEBUG.println(CID.OID);
+    SDIO_DEBUG.print("SDIO_DBG: Product name ");
+    SDIO_DEBUG.println(CID.PNM);
+    SDIO_DEBUG.print("SDIO_DBG: Product revision ");
+    SDIO_DEBUG.print(CID.PRV.N, DEC);
+    SDIO_DEBUG.print(".");
+    SDIO_DEBUG.println(CID.PRV.M, DEC);
+    SDIO_DEBUG.print("SDIO_DBG: Serial number 0x");
     SDIO_DEBUG.println(CID.PSN, HEX);
-    SDIO_DEBUG.print("SDIO_DBG: Date of manufacture ");
+    SDIO_DEBUG.print("SDIO_DBG: Manufacture date ");
     switch (CID.MDT.MONTH) {
       case 1:
         SDIO_DEBUG.print("January ");
@@ -317,15 +327,12 @@ void SecureDigitalMemoryCard::identification(void) {
         break;
     }
     SDIO_DEBUG.println(CID.MDT.YEAR+2000, DEC);
-    SDIO_DEBUG.println(CID.Always0, DEC);
 // -------------------------------------------------------------------------
     SDIO_DEBUG.println("SDIO_DBG: Getting new Relative Card Address");
     #endif
     this->newRCA();
     #if defined(SDIO_DEBUG_ON)
-    SDIO_DEBUG.print("SDIO_DBG: RCA is 0x");
-    SDIO_DEBUG.println(RCA.RCA, HEX);
-    SDIO_DEBUG.println("SDIO_DBG: Card should now be in STANDBY state"); //FIXME
+    SDIO_DEBUG.println("SDIO_DBG: Card should now be in STANDBY state");
     #endif
 }
 
@@ -711,6 +718,10 @@ void SecureDigitalMemoryCard::newRCA(void) {
               0,
               SDIO_RESP_TYPE6,
               (uint32*)&this->RCA);
+    #if defined(SDIO_DEBUG_ON)
+    SDIO_DEBUG.print("SDIO_DBG: RCA is 0x");
+    SDIO_DEBUG.println(this->RCA.RCA, HEX);
+    #endif
 }
 
 /**

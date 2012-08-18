@@ -516,7 +516,7 @@ typedef struct CardSpecificData {
     };
     CsdCardVersion version;
     CsdCardCapacity capacity;
-}__attribute__((packed)) csd;
+} csd;
 
 typedef struct SdConfigurationRegister {
     /** value 0 is for physical layer spec 1.01-3.01 */
