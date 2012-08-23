@@ -59,11 +59,11 @@ typedef enum SDIORespType {
 typedef enum SDIOBusMode {
     SDIO_BUS_1BIT     = 0,
     SDIO_BUS_4BIT     = 1
-  //SDIO_BUS_8BIT     = 2
+  //SDIO_BUS_8BIT     = 2 // used for UHS cards
 } SDIOBusMode;
 
 typedef enum SDIOClockFrequency {
-  //SDIO_36_MHZ   = 0, // High Speed Mode not supported as of May 2012
+  //SDIO_36_MHZ   = 0, // High Speed Mode not yet supported
     SDIO_24_MHZ   = 1,
     SDIO_18_MHZ   = 2,
     SDIO_12_MHZ   = 4,
@@ -369,16 +369,10 @@ typedef enum SDIOStatusResponseTag {
  * SD Register Structures
  */
 
-typedef struct OperationConditionsRegister { //big-endian
-    /** Reserved for low voltage range */
-    unsigned Reserved1              :8;
-    /** VDD Voltage Window: 2.7v - 3.6v */
-    unsigned VOLTAGE_WINDOW         :16; // personal choice
-    /** Switch to 1.8v Accepted:
-     *  Only UHS-I card supports this bit */
-    unsigned S18A                   :1;
-    unsigned Reserved2              :4;
-    unsigned Reserved3              :1;
+typedef struct OperationConditionsRegister { //most significant bit first
+    /** Card power up status bit: This bit is set to LOW if
+     *  the card has not finished the power up routine. */
+    unsigned BUSY                   :1;
     /** Card Capacity Status: This bit is valid only when
      *  the card power up status bit is set. 
      *  SDHC and SDXC use the 32-bit argument of memory access commands as
@@ -387,9 +381,15 @@ typedef struct OperationConditionsRegister { //big-endian
      *  address format. Block length is determined by CMD16
      */
     unsigned CCS                    :1;
-    /** Card power up status bit: This bit is set to LOW if
-     *  the card has not finished the power up routine. */
-    unsigned BUSY                   :1;
+    unsigned Reserved1              :1;
+    unsigned Reserved2              :4;
+    /** Switch to 1.8v Accepted:
+     *  Only UHS-I card supports this bit */
+    unsigned S18A                   :1;
+    /** VDD Voltage Window: 2.7v - 3.6v */
+    unsigned VOLTAGE_WINDOW         :16;
+    /** Reserved for low voltage range */
+    unsigned Reserved3             :8;
 }__attribute__((packed)) ocr;
 
 typedef struct product_revision {
@@ -403,7 +403,7 @@ typedef struct manufacturing_date {
     unsigned MONTH                  :4;
 }__attribute__((packed)) manu_date;
 
-typedef struct CardIdentificationNumber { //big-endian
+typedef struct CardIdentificationNumber { //most significant bit first
     /** An 8-bit binary number that identifies the card manufacturer */
     uint8 MID; // Manufacturer ID
     /** A 2-character ASCII string that identifies the card OEM */
@@ -423,21 +423,20 @@ typedef struct CardIdentificationNumber { //big-endian
      * The "y" field [19:12] is the year code. 0 = 2000. */
     manu_date MDT; // Manufacturing Date, most significant 4 bits are reserved
     /** CRC7 checksum (7 bits), the  zeroth bit is always 1 */
-    unsigned CRC                      :7; // CRC7 Checksum
-    unsigned Always0                  :1; // ST converts this to zero
+    unsigned CRC                      :7;
+    /** ST converts this to zero for some reason */
+    unsigned Always0                  :1;
 }__attribute__((packed)) cid;
 
-//RelativeCardAddress
-typedef struct RelativeCardAddress { //litte-endian
-    uint8 Reserved2;
-    uint8 Reserved1;
+typedef struct RelativeCardAddress { //most significant bit first
     uint16 RCA;
+    uint8 Reserved1;
+    uint8 Reserved2;
 }__attribute__((packed)) rca;
 
-// DriverStageRegister
-typedef uint16 dsr; // Optional
+typedef uint16 dsr; // DriverStageRegister is optional
 
-typedef struct CardSpecificDataV1 { //big-endian
+typedef struct CardSpecificDataV1 { //most significant bit first
     unsigned CSD_STRUCTURE          :2;
     unsigned Reserved1              :6;
     uint8 TAAC;
@@ -475,7 +474,7 @@ typedef struct CardSpecificDataV1 { //big-endian
     unsigned Always1                :1;
 }__attribute__((packed)) csdV1;
 
-typedef struct CardSpecificDataV2 { //big-endian
+typedef struct CardSpecificDataV2 { //most significant bit first
     unsigned CSD_STRUCTURE          :2;
     unsigned Reserved1              :6;
     uint8 TAAC;
@@ -544,40 +543,37 @@ typedef struct SdConfigurationRegister {
  * Response Structures
  */
 
-typedef struct CardStatusResponse { //litte-endian
-    unsigned Reserved6              :2;
-    unsigned Reserved5              :1;
-    unsigned AKE_SEQ_ERROR          :1;
-    unsigned Reserved4              :1;
-    unsigned APP_CMD                :1;
-    unsigned Reserved3              :2;
-
-    unsigned READY_FOR_DATA         :1;
-    unsigned CURRENT_STATE          :4;
-    unsigned ERASE_RESET            :1;
-    unsigned CARD_ECC_DISABLED      :1;
-    unsigned WP_ERASE_SKIP          :1;
-
-    unsigned CSD_OVERWRITE          :1;
-    unsigned Reserved2              :1;
-    unsigned Reserved1              :1;
-    unsigned ERROR                  :1;
-    unsigned CC_ERROR               :1;
-    unsigned CARD_ECC_FAILED        :1;
-    unsigned ILLEGAL_COMMAND        :1;
-    unsigned COM_CRC_ERROR          :1;
-
-    unsigned LOCK_UNLOCK_FAILED     :1;
-    unsigned CARD_IS_LOCKED         :1;
-    unsigned WP_VIOLATION           :1;
-    unsigned ERASE_PARAM            :1;
-    unsigned ERASE_SEQ_ERROR        :1;
-    unsigned BLOCK_LEN_ERROR        :1;
-    unsigned ADDRESS_ERROR          :1;
+typedef struct CardStatusResponse { //most significant bit first
     unsigned OUT_OF_RANGE           :1;
+    unsigned ADDRESS_ERROR          :1;
+    unsigned BLOCK_LEN_ERROR        :1;
+    unsigned ERASE_SEQ_ERROR        :1;
+    unsigned ERASE_PARAM            :1;
+    unsigned WP_VIOLATION           :1;
+    unsigned CARD_IS_LOCKED         :1;
+    unsigned LOCK_UNLOCK_FAILED     :1;
+    unsigned COM_CRC_ERROR          :1;
+    unsigned ILLEGAL_COMMAND        :1;
+    unsigned CARD_ECC_FAILED        :1;
+    unsigned CC_ERROR               :1;
+    unsigned ERROR                  :1;
+    unsigned Reserved1              :1;
+    unsigned Reserved2              :1; //DEFERRED_RESPONSE
+    unsigned CSD_OVERWRITE          :1;
+    unsigned WP_ERASE_SKIP          :1;
+    unsigned CARD_ECC_DISABLED      :1;
+    unsigned ERASE_RESET            :1;
+    unsigned CURRENT_STATE          :4;
+    unsigned READY_FOR_DATA         :1;
+    unsigned Reserved3              :2;
+    unsigned APP_CMD                :1;
+    unsigned Reserved4              :1;
+    unsigned AKE_SEQ_ERROR          :1;
+    unsigned Reserved5              :1;
+    unsigned Reserved6              :2;
 }__attribute__((packed)) csr;
 
-typedef struct SdStatusResponse {
+typedef struct SdStatusResponse { //most significant bit first
     unsigned DAT_BUS_WIDTH          :2;
     unsigned SECURED_MODE           :1;
     unsigned Reserved1              :7;
@@ -594,13 +590,13 @@ typedef struct SdStatusResponse {
     unsigned UHS_SPEED_GRADE        :4;
     unsigned UHS_AU_SIZE            :4;
     uint8 Reserved4[10];
-    uint8 Reserved5[39];
+    uint8 Reserved5[39]; //Reserved for Manufacturer
 }__attribute__((packed)) ssr;
 
 typedef struct InterfaceConditionResponse { //litte-endian
-    unsigned CHECK_PATTERN          :8;
-    unsigned VOLTAGE_ACCEPTED       :4;
     unsigned Reserved1              :20;
+    unsigned VOLTAGE_ACCEPTED       :4;
+    unsigned CHECK_PATTERN          :8;    
 }__attribute__((packed)) icr;
 
 /** SDIO Card Structures, TBD
@@ -636,11 +632,36 @@ class SecureDigitalMemoryCard {
     //---------------- startup functions ------------------
     void begin(void);
     void end(void);
-    //---------------- convenience functions --------------
+    //---------------- general data functions -------------
+    void read(uint32, uint32*, uint32);
+    void write(uint32, const uint32*, uint32);
+    //---------------- card register access functions -----
+    void getCID(void);
+    void getCSD(void);
+    void getSCR(void);
+    void getSSR(uint32*);
+    void setDSR(void);
+
+  protected:
+    sdio_dev *sdio_d;
+    //---------------- setup routines ---------------------
     void idle(void);
+    void initialization(void);
+    void identification(void);
+    void getOCR(void);
+    void newRCA(void);
+    //---------------- convenience functions --------------
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
     void blockSize(SDIOBlockSize);
+    void select(uint16);
+    void deselect(void);
+    //---------------- basic data functions ---------------
+    void stop(void);
+    void readBlock(uint32, uint32*);
+    void writeBlock(uint32, const uint32*);
+
+  private:
     //---------------- command functions ------------------
     void cmd(SDCommand);
     void cmd(SDCommand, uint32);
@@ -651,32 +672,8 @@ class SecureDigitalMemoryCard {
     void cmd(SDAppCommand, uint32, SDIORespType, uint32*);
     void cmd(SDAppCommand, uint32, SDIORespType, uint32*, uint32);
     void response(SDCommand);
-    //---------------- general data functions -------------
-    void stop(void);
-    void read(uint32, uint32*, uint32);
-    void write(uint32, const uint32*, uint32);
-    //---------------- card register access functions -----
-    void getCID(void);
-    void getCSD(void);
-    void getSCR(void);
-    void getSSR(uint32*);
-    void setDSR(void);
 
-  private:
-    sdio_dev *sdio_d;
-    //---------------- begin routines ---------------------
-    void initialization(void);
-    void identification(void);
-    void getOCR(void);
-    void newRCA(void);
-    //---------------- card select functions --------------
-    void select(uint16);
-    void deselect(void);
-    //---------------- basic data functions ---------------
-    void readBlock(uint32, uint32*);
-    void writeBlock(uint32, const uint32*);
-    
-    /** other functions to be developed
+    /** future functions
     void protect(void); // write protect
     void passwordSet(void);
     void passwordReset(void);

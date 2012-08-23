@@ -112,7 +112,7 @@ void SecureDigitalMemoryCard::idle(void) {
         this->cmd(GO_IDLE_STATE);
         if (this->ruptFlag == SDIO_FLAG_CMDSENT) {
             #if defined(SDIO_DEBUG_ON)
-            SDIO_DEBUG.println("SDIO_DBG: Card in IDLE state");
+            SDIO_DEBUG.println("SDIO_DBG: Card should be in IDLE state");
             #endif
             return;
         } else {
@@ -775,12 +775,15 @@ void SecureDigitalMemoryCard::getCSD(void) {
 
 /**
  * @brief 
+ * @note Data packet format for Wide Width Data is most significant byte first
  */
 void SecureDigitalMemoryCard::getSCR(void) {
 }
 
 /**
- * @brief 
+ * @brief Gets Sd Status Register contents
+ * @param buf Buffer to store register data
+ * @note Data packet format for Wide Width Data is most significant byte first
  */
 void SecureDigitalMemoryCard::getSSR(uint32 *buf) {
     this->select(this->RCA.RCA);
@@ -900,10 +903,11 @@ void SecureDigitalMemoryCard::write(uint32 addr,
 
 /**
  * @brief 
- * @param buf Buffer to save data to
- * @param addr Block address to read from
+ * @param addr Card block address to read from
+ * @param dst Local buffer destination for received data
+ * @note Data is send little-endian format
  */
-void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
+void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *dst) {
     //CCS must equal one for block unit addressing
     this->select(this->RCA.RCA);
     //check for busy signal on dat0 line?
@@ -914,7 +918,7 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
                        SDIO_MASK_DATAENDIE | SDIO_MASK_STBITERRIE | 
                        SDIO_MASK_RXFIFOHFIE | SDIO_MASK_RXFIFOFIE |
                        SDIO_MASK_RXFIFOEIE | SDIO_MASK_RXOVERRIE);
-    sdio_cfg_dma_rx(this->sdio_d, buf, SDIO_DATA_BLOCKSIZE);
+    sdio_cfg_dma_rx(this->sdio_d, dst, SDIO_DATA_BLOCKSIZE);
     sdio_set_dcr(this->sdio_d, (0x9 << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN | SDIO_DCTRL_DMAEN);
     csr status17;
@@ -966,7 +970,13 @@ void SecureDigitalMemoryCard::readBlock(uint32 addr, uint32 *buf) {
     sdio_dma_disable(this->sdio_d);
 }
 
-void SecureDigitalMemoryCard::writeBlock(uint32 addr, const uint32 *buf) {
+/**
+ * @brief 
+ * @param addr Card block address to write data to
+  * @param src Local buffer source for data to be written
+ * @note data is send little-endian format
+ */
+void SecureDigitalMemoryCard::writeBlock(uint32 addr, const uint32 *src) {
     /**
     a)  Program the SDIO data length register (SDIO data timer register should
     be already programmed before the card identification process)
@@ -993,7 +1003,7 @@ void SecureDigitalMemoryCard::writeBlock(uint32 addr, const uint32 *buf) {
     if (sdio_get_status(this->sdio_d, SDIO_ICR_CMDRENDC) == 1) {
         //while (sdio_get_fifo_count(this->sdio_d)) 
         for (int i = 0; i < 8; i++) {
-            sdio_write_data(this->sdio_d, buf[i]);
+            sdio_write_data(this->sdio_d, src[i]);
         }
     }
 }
