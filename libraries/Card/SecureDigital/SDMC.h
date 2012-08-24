@@ -134,8 +134,9 @@ typedef enum SDCommand {
 // Basic Commands (class 0)
     /** CMD0 - Resets all cards to idle state */
     GO_IDLE_STATE           = 0,
-    /** CMD1 - reserved MMC */
-  //SEND_OP_COND            = 1,
+    /** CMD1 - Valid for the Thin (1.4mm) Standard Size SD Memory Card only if
+     *  used after re-initializing a card (not after power on reset) */
+    SEND_OP_COND            = 1,
     /** CMD2 - Asks any card to send the CID numbers on the CMD line */
     ALL_SEND_CID            = 2,
     /** CMD3 - Ask the card to publish a new relative address */
@@ -144,8 +145,6 @@ typedef enum SDCommand {
     SET_DSR                 = 4,
     /** CMD5 - reserved for SDIO cards */
   //IO_SEND_OP_COND         = 5,
-
-
     /** CMD7 - toggles a card between the stand-by and transfer
      * states or between the programming and disconnect states */
     SELECT_DESELECT_CARD    = 7,
@@ -251,7 +250,7 @@ typedef enum SDCommand {
   //CMD54                   = 54,
 
 // Switch Function Commands (class 10)
-    /** CMD6 -  */
+    /** CMD6 - Checks switchable function and switches card function */
   //SWITCH_FUNC             = 6,
     /** CMD34 -  */
   //CMD34                   = 34,
@@ -369,7 +368,7 @@ typedef enum SDIOStatusResponseTag {
  * SD Register Structures
  */
 
-typedef struct OperationConditionsRegister { //most significant bit first
+typedef struct OperationConditionsRegister { //MSBit first
     /** Card power up status bit: This bit is set to LOW if
      *  the card has not finished the power up routine. */
     unsigned BUSY                   :1;
@@ -403,7 +402,7 @@ typedef struct manufacturing_date {
     unsigned MONTH                  :4;
 }__attribute__((packed)) manu_date;
 
-typedef struct CardIdentificationNumber { //most significant bit first
+typedef struct CardIdentificationNumber { //MSBit first
     /** An 8-bit binary number that identifies the card manufacturer */
     uint8 MID; // Manufacturer ID
     /** A 2-character ASCII string that identifies the card OEM */
@@ -422,21 +421,30 @@ typedef struct CardIdentificationNumber { //most significant bit first
      * the month (m). The "m" field [11:8] is the month code. 1 = January.
      * The "y" field [19:12] is the year code. 0 = 2000. */
     manu_date MDT; // Manufacturing Date, most significant 4 bits are reserved
-    /** CRC7 checksum (7 bits), the  zeroth bit is always 1 */
+    /** CRC7 checksum (7 bits) */
     unsigned CRC                      :7;
-    /** ST converts this to zero for some reason */
+    /** ST specific: The SDIO_RESP4 register LSBit is always 0b */
     unsigned Always0                  :1;
 }__attribute__((packed)) cid;
 
-typedef struct RelativeCardAddress { //most significant bit first
+typedef struct RelativeCardAddress { //MSBit first
     uint16 RCA;
-    uint8 Reserved1;
-    uint8 Reserved2;
+    unsigned COM_CRC_ERROR          :1;
+    unsigned ILLEGAL_COMMAND        :1;
+    unsigned ERROR                  :1;
+    unsigned CURRENT_STATE          :4;
+    unsigned READY_FOR_DATA         :1;
+    unsigned Reserved3              :2; //copied from CSR
+    unsigned APP_CMD                :1;
+    unsigned Reserved4              :1;
+    unsigned AKE_SEQ_ERROR          :1;
+    unsigned Reserved5              :1;
+    unsigned Reserved6              :2;
 }__attribute__((packed)) rca;
 
 typedef uint16 dsr; // DriverStageRegister is optional
 
-typedef struct CardSpecificDataV1 { //most significant bit first
+typedef struct CardSpecificDataV1 { //MSBit first
     unsigned CSD_STRUCTURE          :2;
     unsigned Reserved1              :6;
     uint8 TAAC;
@@ -517,7 +525,7 @@ typedef struct CardSpecificData {
     CsdCardCapacity capacity;
 } csd;
 
-typedef struct SdConfigurationRegister {
+typedef struct SdConfigurationRegister { //MSBit first
     /** value 0 is for physical layer spec 1.01-3.01 */
     unsigned SCR_STRUCTURE          :4;
     /** SD Memory Card - Spec. Version */
@@ -543,7 +551,7 @@ typedef struct SdConfigurationRegister {
  * Response Structures
  */
 
-typedef struct CardStatusResponse { //most significant bit first
+typedef struct CardStatusResponse { //MSBit first
     unsigned OUT_OF_RANGE           :1;
     unsigned ADDRESS_ERROR          :1;
     unsigned BLOCK_LEN_ERROR        :1;
@@ -573,7 +581,7 @@ typedef struct CardStatusResponse { //most significant bit first
     unsigned Reserved6              :2;
 }__attribute__((packed)) csr;
 
-typedef struct SdStatusResponse { //most significant bit first
+typedef struct SdStatusResponse { //MSBit first for Wide Width Data
     unsigned DAT_BUS_WIDTH          :2;
     unsigned SECURED_MODE           :1;
     unsigned Reserved1              :7;
@@ -593,10 +601,10 @@ typedef struct SdStatusResponse { //most significant bit first
     uint8 Reserved5[39]; //Reserved for Manufacturer
 }__attribute__((packed)) ssr;
 
-typedef struct InterfaceConditionResponse { //litte-endian
+typedef struct InterfaceConditionResponse { //MSBit first
     unsigned Reserved1              :20;
     unsigned VOLTAGE_ACCEPTED       :4;
-    unsigned CHECK_PATTERN          :8;    
+    unsigned CHECK_PATTERN          :8; 
 }__attribute__((packed)) icr;
 
 /** SDIO Card Structures, TBD
@@ -616,6 +624,7 @@ typedef struct CodeStorageArea {} csa;
 
 class SecureDigitalMemoryCard {
   public:
+    icr ICR;
     ocr OCR;
     scr SCR;
     ssr SSR;
@@ -625,8 +634,8 @@ class SecureDigitalMemoryCard {
     dsr DSR; // Default is 0x0404
     csr CSR;
     
-    SDIOInterruptFlag ruptFlag;
-    SDIOInterruptFlag ruptFlag55;
+    SDIOInterruptFlag IRQFlag;
+    SDIOInterruptFlag IRQFlag55;
 
     SecureDigitalMemoryCard(void);
     //---------------- startup functions ------------------
@@ -635,21 +644,21 @@ class SecureDigitalMemoryCard {
     //---------------- general data functions -------------
     void read(uint32, uint32*, uint32);
     void write(uint32, const uint32*, uint32);
-    //---------------- card register access functions -----
-    void getCID(void);
-    void getCSD(void);
-    void getSCR(void);
-    void getSSR(uint32*);
-    void setDSR(void);
-
+    
   protected:
     sdio_dev *sdio_d;
     //---------------- setup routines ---------------------
     void idle(void);
     void initialization(void);
     void identification(void);
+    //---------------- card register access functions -----
     void getOCR(void);
     void newRCA(void);
+    void getCID(void);
+    void getCSD(void);
+    void setDSR(void);
+    void getSCR(void);
+    void getSSR(void);
     //---------------- convenience functions --------------
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
@@ -672,6 +681,7 @@ class SecureDigitalMemoryCard {
     void cmd(SDAppCommand, uint32, SDIORespType, uint32*);
     void cmd(SDAppCommand, uint32, SDIORespType, uint32*, uint32);
     void response(SDCommand);
+    void response(SDAppCommand);
 
     /** future functions
     void protect(void); // write protect

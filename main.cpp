@@ -41,6 +41,31 @@ void loop() {
     }
     */
     SerialUSB.println("*** SDMC test complete ***");
+    uint32 *cp = (uint32*)&SDMC.CID;
+    for(int i=0; i<=3; i++) {
+        SerialUSB.print(i);
+        SerialUSB.print(": ");
+        SerialUSB.println(cp[i], HEX);
+    }
+    cid test;
+    uint32 *tp = (uint32*)&test;
+    for(int i=0; i<=3; i++) {
+        tp[i] = 0;
+    }
+    test.MID = 0xFF;
+    test.OID[0] = 'O';
+    test.OID[1] = 'K';
+    for(int i=0; i<=3; i++) {
+        SerialUSB.print(i);
+        SerialUSB.print(": ");
+        SerialUSB.println(tp[i], HEX);
+    }
+    icr test_icr;
+    uint32 *tip = (uint32*)&test_icr;
+    test_icr.CHECK_PATTERN = 0xAB;
+    test_icr.VOLTAGE_ACCEPTED = 0x1;
+    test_icr.Reserved1 = 0;
+    SerialUSB.println(tip[0], HEX);
 }
 
 // Force init to be called *first*, i.e. before static object allocation.
