@@ -15,6 +15,8 @@
 
 static const uint16 SIZE = 64;
 
+int temp = 0;
+
 SecureDigitalMemoryCard SDMC;
 
 void setup() {
@@ -57,6 +59,7 @@ void loop() {
     SerialUSB.println(tip[0], HEX);
 
     cid test_cid;
+    /**
     test_cid.MID = 0;
     test_cid.OID[1] = 0;
     test_cid.OID[0] = 0;
@@ -70,25 +73,33 @@ void loop() {
     test_cid.MDT.YEAR = 0;
     test_cid.MDT.MONTH = 0;
     test_cid.CRC = 0;
+    test_cid.Always1 = 0;
+    test_cid.Reserved1 = 0;
+    */
     
     uint32 *tcp = (uint32*)&test_cid;
     for(int i=0; i<=3; i++) {
+        tcp[i] = 0;
         SerialUSB.print(i+1);
         SerialUSB.print(": ");
         SerialUSB.println(tcp[i], HEX);
     }
-    test_cid.MID = 0xFE;
-    test_cid.OID[1] = 0xA;
-    test_cid.OID[0] = 0xB;
+
+    test_cid.MID = 0xaA;
+    test_cid.OID[0] = 0xBB;
+    test_cid.OID[1] = 0xCC;
     for(int i=0; i<=4; i++) {
-        test_cid.PNM[i] = i+1;
+        test_cid.PNM[i] = ((i+1)<<8)+(i+1);
     }
-    test_cid.PRV.N = 0x6;
-    test_cid.PRV.M = 0x9;
+    test_cid.PRV.N = 0xD;
+    test_cid.PRV.M = 0xD;
     test_cid.PSN = 0xDEADBEEF;
-    test_cid.MDT.YEAR = 0x7;
-    test_cid.MDT.MONTH = 0x8;
-    test_cid.CRC = 0x7F;
+    test_cid.MDT.YEAR = 0xEE;
+    test_cid.MDT.MONTH = 0x6;
+    SerialUSB.println(temp);
+    test_cid.CRC = temp++;
+    SerialUSB.println(test_cid.CRC, DEC);
+    SerialUSB.println(sizeof(test_cid), DEC);
     SerialUSB.println("testing cid: ");
     for(int i=0; i<=3; i++) {
         SerialUSB.print(i+1);
