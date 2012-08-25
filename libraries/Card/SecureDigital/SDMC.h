@@ -368,10 +368,10 @@ typedef enum SDIOStatusResponseTag {
  * SD Register Structures
  */
 
-typedef struct InterfaceConditionResponse { //MSBit first
-    unsigned CHECK_PATTERN          :8;
+typedef struct InterfaceConditionResponse {
+  //unsigned Reserved1              :20;
     unsigned VOLTAGE_ACCEPTED       :4;
-    unsigned Reserved1              :20;
+    unsigned CHECK_PATTERN          :8;
 }__attribute__((packed)) icr;
 
 typedef struct OperationConditionsRegister { //MSBit first

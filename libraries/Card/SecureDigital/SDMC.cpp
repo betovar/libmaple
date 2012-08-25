@@ -489,6 +489,14 @@ void SecureDigitalMemoryCard::cmd(SDCommand cmd,
     sdio_set_interrupt(this->sdio_d, rupt);
     sdio_load_arg(this->sdio_d, arg);
     uint32 cmdreg = SDIO_CMD_CPSMEN | cmd;
+    switch(cmd) {
+      case GO_IDLE_STATE:
+      case SET_DSR:
+      case GO_INACTIVE_STATE:
+        break;
+      default:
+        break;
+    }
     switch (type) {
       case SDIO_RESP_SHORT:
       case SDIO_RESP_TYPE1:
@@ -576,7 +584,7 @@ void SecureDigitalMemoryCard::cmd(SDCommand cmd,
         SDIO_DEBUG.print("SDIO_DBG: Response from CMD");
         SDIO_DEBUG.println(sdio_get_cmd(this->sdio_d), DEC);
         #endif
-        sdio_get_resp_short(this->sdio_d, resp);
+        *resp = sdio_get_resp(this->sdio_d, 1);
         sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
     } else if (sdio_get_cmd(this->sdio_d) == 0x3F) { //RM0008: pg.576
         switch ((uint8)cmd) {
@@ -584,27 +592,23 @@ void SecureDigitalMemoryCard::cmd(SDCommand cmd,
             #if defined(SDIO_DEBUG_ON)
             SDIO_DEBUG.println("SDIO_DBG: Response from ACMD41");
             #endif
-            //sdio_get_resp_short(this->sdio_d, resp);
             break;
           case 2:
             #if defined(SDIO_DEBUG_ON)
             SDIO_DEBUG.println("SDIO_DBG: Response from CMD2");
             #endif
-            //sdio_get_resp_long(this->sdio_d, resp);
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
             break;
           case 9:
             #if defined(SDIO_DEBUG_ON)
             SDIO_DEBUG.println("SDIO_DBG: Response from CMD9");
             #endif
-            //sdio_get_resp_long(this->sdio_d, resp);
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
             break;
           case 10:
             #if defined(SDIO_DEBUG_ON)
             SDIO_DEBUG.println("SDIO_DBG: Response from CMD10");
             #endif
-            //sdio_get_resp_long(this->sdio_d, resp);
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
             break;
           default:
@@ -706,37 +710,50 @@ void SecureDigitalMemoryCard::response(SDCommand cmd) {
     uint32 temp;
     switch (cmd) {
       case GO_IDLE_STATE:
-        break;
+      case SET_DSR:
+      case GO_INACTIVE_STATE:
+        return;
       case SEND_IF_COND:
-        temp = this->sdio_d->regs->RESP1;
+        temp = sdio_get_resp(this->sdio_d, 1);
         this->ICR.VOLTAGE_ACCEPTED = (0xF00 & temp) >> 8;
         this->ICR.CHECK_PATTERN = (0xFF & temp);
         break;
+      case SEND_RELATIVE_ADDR:
+        temp = sdio_get_resp(this->sdio_d, 1);
+        this->RCA.RCA = (0xFFFF0000 & temp) >> 16;
+        this->RCA.COM_CRC_ERROR = (0x8000 & temp) >> 15;
+        this->RCA.ILLEGAL_COMMAND = (0x2000 & temp) >> 14;
+        this->RCA.ERROR = (0x1000 & temp) >> 13;
+        this->RCA.CURRENT_STATE = (0x1E00 & temp) >> 9;
+        this->RCA.READY_FOR_DATA = (0x100 & temp) >> 8;
+        this->RCA.APP_CMD = (0x20 & temp) >> 5;
+        this->RCA.AKE_SEQ_ERROR = (0x8 & temp) >> 3;
+        break;
       case ALL_SEND_CID:
       case SEND_CID:
-        temp = this->sdio_d->regs->RESP1;
+        temp = sdio_get_resp(this->sdio_d, 1);
         this->CID.MID = (0xFF000000 & temp) >> 24;
         this->CID.OID[0] = (char)((0xFF0000 & temp) >> 16);
         this->CID.OID[0] = (char)((0xFF00 & temp) >> 8);
         this->CID.PNM[0] = (char)(0xFF & temp);
-        temp = this->sdio_d->regs->RESP2;
+        temp = sdio_get_resp(this->sdio_d, 2);
         this->CID.PNM[1] = (char)(0xFF000000 & temp);
         this->CID.PNM[2] = (char)((0xFF0000 & temp) >> 24);
         this->CID.PNM[3] = (char)((0xFF00 & temp) >> 16);
         this->CID.PNM[4] = (char)((0xFF & temp) >> 8);
-        temp = this->sdio_d->regs->RESP4;
+        temp = sdio_get_resp(this->sdio_d, 4);
         this->CID.PSN = (0xFF000000 & temp) >> 24;
         this->CID.MDT.YEAR = (0xFF000 & temp) >> 12;
         this->CID.MDT.MONTH = (0xF00 & temp) >> 8;
         this->CID.CRC = (0xFE & temp) >> 1;
       //this->CID->Always0 = (0x1 & temp);
-        temp = this->sdio_d->regs->RESP3;
+        temp = sdio_get_resp(this->sdio_d, 3);
         this->CID.PRV.N = (0xF0000000 & temp) >> 28;
         this->CID.PRV.M = (0xF000000 & temp) >> 24;
         this->CID.PSN |= (0xFFFFFF & temp) << 8;
         break;
       case SEND_CSD:
-        temp = this->sdio_d->regs->RESP1;
+        temp = sdio_get_resp(this->sdio_d, 1);
         switch ((0xC0000000 &temp) >> 30) {
           case 0:
             this->CSD.version = CSD_VER_1;
@@ -744,12 +761,55 @@ void SecureDigitalMemoryCard::response(SDCommand cmd) {
           case 1:
             this->CSD.version = CSD_VER_2;
             break;
+          case 3:
+          case 4:
+            this->CSD.version = CSD_VER_UNDEF;
           default:
             return;
-        }//FIXME
+        }
+        switch (this->CSD.version) {
+          case CSD_VER_1:
+            temp = sdio_get_resp(this->sdio_d, 1);
+            CSD.V1.CSD_STRUCTURE = (0xC0000000 & temp) >> 30;
+            CSD.V1.TAAC = (0xFF0000 & temp) >> 16;
+            CSD.V1.NSAC = (0xFF00 & temp) >> 8;
+            CSD.V1.TRAN_SPEED = (0xFF & temp);
+            temp = sdio_get_resp(this->sdio_d, 3);
+            CSD.V1.C_SIZE = (0xC0000000 & temp) >> 30;
+            CSD.V1.VDD_R_CURR_MIN = (0x38000000 & temp) >> 27;
+            CSD.V1.VDD_R_CURR_MAX = (0x7000000 & temp) >> 24;
+            CSD.V1.VDD_W_CURR_MIN = (0xE00000 & temp) >> 21;
+            CSD.V1.VDD_W_CURR_MAX = (0x1C0000 & temp) >> 18;
+            CSD.V1.C_SIZE_MULT = (0x38000 & temp) >> 15;
+            CSD.V1.ERASE_BLK_EN = (0x4000 & temp) >> 14;
+            CSD.V1.SECTOR_SIZE = (0x3F80 & temp) >> 7;
+            CSD.V1.WP_GRP_SIZE = (0x7F & temp);
+            temp = sdio_get_resp(this->sdio_d, 2);
+            CSD.V1.CCC = (0xFFF00000 & temp) >> 20;
+            CSD.V1.READ_BL_LEN = (0xF0000 & temp) >> 16;
+            CSD.V1.READ_BL_PARTIAL = (0x8000 & temp) >> 15;
+            CSD.V1.WRITE_BLK_MISALIGN = (0x4000 & temp) >> 14;
+            CSD.V1.READ_BLK_MISALIGN = (0x2000 & temp) >> 13;
+            CSD.V1.DSR_IMP = (0x1000 & temp) >> 12;
+            CSD.V1.C_SIZE |= (0x3FF & temp) << 2;
+            temp = sdio_get_resp(this->sdio_d, 4);
+            CSD.V1.WP_GRP_ENABLE = (0x80000000 & temp) >> 31;
+            CSD.V1.R2W_FACTOR = (0x1C000000 & temp) >> 26;
+            CSD.V1.WRITE_BL_LEN = (0x3C00000 & temp) >> 22;
+            CSD.V1.WRITE_BL_PARTIAL = (0x200000 & temp) >> 21;
+            CSD.V1.FILE_FORMAT_GRP = (0x8000 & temp) >> 15;
+            CSD.V1.COPY = (0x4000 & temp) >> 14;
+            CSD.V1.PERM_WRITE_PROTECT = (0x2000 & temp) >> 13;
+            CSD.V1.TMP_WRITE_PROTECT = (0x1000 & temp) >> 12;
+            CSD.V1.FILE_FORMAT = (0xC00 & temp) >> 10;
+            CSD.V1.CRC = (0xFE & temp) >> 1;
+          case CSD_VER_2:
+          default:
+            break;
+        }
         break;
       default:
-        temp = this->sdio_d->regs->RESP1;
+        temp = sdio_get_resp(this->sdio_d, 1);
         this->CSR.OUT_OF_RANGE = (0x80000000 & temp) >> 31;
         this->CSR.ADDRESS_ERROR = (0x40000000 & temp) >> 30;
         this->CSR.BLOCK_LEN_ERROR = (0x20000000 & temp) >> 29;
@@ -773,7 +833,6 @@ void SecureDigitalMemoryCard::response(SDCommand cmd) {
         this->CSR.AKE_SEQ_ERROR = (0x8 & temp) >> 3;
         break;
     }
-
 }
 
 /**
@@ -810,7 +869,7 @@ void SecureDigitalMemoryCard::response(SDAppCommand cmd) {
 void SecureDigitalMemoryCard::newRCA(void) {
     this->cmd(SEND_RELATIVE_ADDR, //CMD3
               0,
-              SDIO_RESP_TYPE6,
+              SDIO_RESP_SHORT,
               (uint32*)&this->RCA);
     #if defined(SDIO_DEBUG_ON)
     SDIO_DEBUG.print("SDIO_DBG: RESP1 is 0x");

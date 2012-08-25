@@ -249,24 +249,28 @@ uint32 sdio_get_cmd(sdio_dev *dev) {
 }
 
 /**
- * @brief Get short response
+ * @brief Gets response from the SDIO Device
  * @param dev SDIO Device
- * @param buf Pointer to 32-bit response buffer
+ * @param buf Number of the response buffer
+ * @retval Copy of the 32-bit response buffer
  */
-void sdio_get_resp_short(sdio_dev *dev, uint32 *buf) {
-    buf[0] = dev->regs->RESP1;
-}
-
-/**
- * @brief Get long response
- * @param dev SDIO Device 
- * @param buf Pointer to 32-bit response buffer
- */
-void sdio_get_resp_long(sdio_dev *dev, uint32 *buf) {
-    buf[0] = dev->regs->RESP4; //word order swaped for struct endianess
-    buf[1] = dev->regs->RESP3;
-    buf[2] = dev->regs->RESP2;
-    buf[3] = dev->regs->RESP1;
+uint32 sdio_get_resp(sdio_dev *dev, uint32 buf) {
+    switch (buf) {
+      case 1:
+        return dev->regs->RESP1;
+        break;
+      case 2:
+        return dev->regs->RESP2;
+        break;
+      case 3:
+        return dev->regs->RESP3;
+        break;
+      case 4:
+        return dev->regs->RESP4;
+        break;
+      default:
+        return -1; //chosen bc everything should be an error
+    }
 }
 
 /*
