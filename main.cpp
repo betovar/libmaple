@@ -15,8 +15,6 @@
 
 static const uint16 SIZE = 64;
 
-int temp = 0;
-
 SecureDigitalMemoryCard SDMC;
 
 void setup() {
@@ -78,6 +76,7 @@ void loop() {
     */
     
     uint32 *tcp = (uint32*)&test_cid;
+    SerialUSB.println("Initializing test_cid: ");
     for(int i=0; i<=3; i++) {
         tcp[i] = 0;
         SerialUSB.print(i+1);
@@ -96,11 +95,9 @@ void loop() {
     test_cid.PSN = 0xDEADBEEF;
     test_cid.MDT.YEAR = 0xEE;
     test_cid.MDT.MONTH = 0x6;
-    SerialUSB.println(temp);
-    test_cid.CRC = temp++;
-    SerialUSB.println(test_cid.CRC, DEC);
+    SerialUSB.print("Size of CID: ");
     SerialUSB.println(sizeof(test_cid), DEC);
-    SerialUSB.println("testing cid: ");
+    SerialUSB.println("Testing cid: ");
     for(int i=0; i<=3; i++) {
         SerialUSB.print(i+1);
         SerialUSB.print(": ");
@@ -120,15 +117,40 @@ void loop() {
         SerialUSB.print(": ");
         SerialUSB.println(tsp[i], HEX);
     }
-
-    csr test_r1;
-    uint32 *trp = (uint32*)&test_r1;
-    *trp = 0;
-    test_r1.CURRENT_STATE = 14;
-    test_r1.APP_CMD = 1;
-    SerialUSB.print("testing r1: ");
-    SerialUSB.println(trp[0], HEX);
     */
+
+    SerialUSB.println();
+
+    csr test_csr;
+    test_csr.OUT_OF_RANGE       = 0;
+    test_csr.ADDRESS_ERROR      = 0;
+    test_csr.BLOCK_LEN_ERROR    = 0;
+    test_csr.ERASE_SEQ_ERROR    = 0;
+    test_csr.ERASE_PARAM        = 0;
+    test_csr.WP_VIOLATION       = 0;
+    test_csr.CARD_IS_LOCKED     = 0;
+    test_csr.LOCK_UNLOCK_FAILED = 0;
+    test_csr.COM_CRC_ERROR      = 0;
+    test_csr.ILLEGAL_COMMAND    = 0;
+    test_csr.CARD_ECC_FAILED    = 0;
+    test_csr.CC_ERROR           = 0;
+    test_csr.ERROR              = 0;
+    test_csr.CSD_OVERWRITE      = 0;
+    test_csr.WP_ERASE_SKIP      = 0;
+    test_csr.CARD_ECC_DISABLED  = 0;
+    test_csr.ERASE_RESET        = 0;
+    test_csr.CURRENT_STATE      = 0xF;
+    test_csr.READY_FOR_DATA     = 0;
+    test_csr.APP_CMD            = 0;
+    test_csr.AKE_SEQ_ERROR      = 0;
+    uint32 *trp = (uint32*)&test_csr;
+    SerialUSB.println("Initializing test_csr: ");
+    SerialUSB.println(*(trp), HEX);
+    SerialUSB.print("Size of CSR: ");
+    SerialUSB.println(sizeof(test_csr), DEC);
+    SerialUSB.println("Testing r1: ");
+    SerialUSB.println(*(trp), HEX);
+    SerialUSB.println(test_csr.CURRENT_STATE, HEX);
 }
 
 // Force init to be called *first*, i.e. before static object allocation.

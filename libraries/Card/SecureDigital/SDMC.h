@@ -386,15 +386,13 @@ typedef struct OperationConditionsRegister { //MSBit first
      *  address format. Block length is determined by CMD16
      */
     unsigned CCS                    :1;
-    unsigned Reserved1              :1;
-    unsigned Reserved2              :4;
+  //unsigned Reserved1              :1;
+  //unsigned Reserved2              :4;
     /** Switch to 1.8v Accepted:
      *  Only UHS-I card supports this bit */
     unsigned S18A                   :1;
-    /** VDD Voltage Window: 2.7v - 3.6v */
-    unsigned VOLTAGE_WINDOW         :16;
-    /** Reserved for low voltage range */
-    unsigned Reserved3              :8;
+    unsigned VOLTAGE_WINDOW         :16; // 2.7v - 3.6v
+  //unsigned Reserved3              :8; // Reserved for low voltage range
 }__attribute__((packed)) ocr;
 
 typedef struct product_revision {
@@ -440,19 +438,19 @@ typedef struct RelativeCardAddress { //MSBit first
     unsigned ERROR                  :1;
     unsigned CURRENT_STATE          :4;
     unsigned READY_FOR_DATA         :1;
-    unsigned Reserved3              :2; //copied from CSR
+  //unsigned Reserved3              :2; //copied from CSR
     unsigned APP_CMD                :1;
-    unsigned Reserved4              :1;
+  //unsigned Reserved4              :1;
     unsigned AKE_SEQ_ERROR          :1;
-    unsigned Reserved5              :1;
-    unsigned Reserved6              :2;
+  //unsigned Reserved5              :1;
+  //unsigned Reserved6              :2;
 }__attribute__((packed)) rca;
 
 typedef uint16 dsr; // DriverStageRegister is optional
 
 typedef struct CardSpecificDataV1 { //MSBit first
     unsigned CSD_STRUCTURE          :2;
-    unsigned Reserved1              :6;
+  //unsigned Reserved1              :6;
     uint8 TAAC;
     uint8 NSAC;
     uint8 TRAN_SPEED;
@@ -462,7 +460,7 @@ typedef struct CardSpecificDataV1 { //MSBit first
     unsigned WRITE_BLK_MISALIGN     :1;
     unsigned READ_BLK_MISALIGN      :1;
     unsigned DSR_IMP                :1;
-    unsigned Reserved2              :2;
+  //unsigned Reserved2              :2;
     unsigned C_SIZE                 :12;
     unsigned VDD_R_CURR_MIN         :3;
     unsigned VDD_R_CURR_MAX         :3;
@@ -473,24 +471,24 @@ typedef struct CardSpecificDataV1 { //MSBit first
     unsigned SECTOR_SIZE            :7;
     unsigned WP_GRP_SIZE            :7;
     unsigned WP_GRP_ENABLE          :1;
-    unsigned Reserved3              :2;
+  //unsigned Reserved3              :2;
     unsigned R2W_FACTOR             :3;
     unsigned WRITE_BL_LEN           :4;
     unsigned WRITE_BL_PARTIAL       :1;
-    unsigned Reserved4              :5;
+  //unsigned Reserved4              :5;
     unsigned FILE_FORMAT_GRP        :1;
     unsigned COPY                   :1;
     unsigned PERM_WRITE_PROTECT     :1;
     unsigned TMP_WRITE_PROTECT      :1;
     unsigned FILE_FORMAT            :2;
-    unsigned Reserved5              :2;
+  //unsigned Reserved5              :2;
     unsigned CRC                    :7;
-    unsigned Always1                :1;
+  //unsigned Always1                :1;
 }__attribute__((packed)) csdV1;
 
 typedef struct CardSpecificDataV2 { //most significant bit first
     unsigned CSD_STRUCTURE          :2;
-    unsigned Reserved1              :6;
+  //unsigned Reserved1              :6;
     uint8 TAAC;
     uint8 NSAC;
     uint8 TRAN_SPEED;
@@ -500,26 +498,26 @@ typedef struct CardSpecificDataV2 { //most significant bit first
     unsigned WRITE_BLK_MISALIGN     :1;
     unsigned READ_BLK_MISALIGN      :1;
     unsigned DSR_IMP                :1;
-    unsigned Reserved2              :6;
+  //unsigned Reserved2              :6;
     unsigned C_SIZE                 :22;
-    unsigned Reserved3              :1;
+  //unsigned Reserved3              :1;
     unsigned ERASE_BLK_EN           :1;
     unsigned SECTOR_SIZE            :7;
     unsigned WP_GRP_SIZE            :7;
     unsigned WP_GRP_ENABLE          :1;
-    unsigned Reserved4              :2;
+  //unsigned Reserved4              :2;
     unsigned R2W_FACTOR             :3;
     unsigned WRITE_BL_LEN           :4;
     unsigned WRITE_BL_PARTIAL       :1;
-    unsigned Reserved5              :5;
+  //unsigned Reserved5              :5;
     unsigned FILE_FORMAT_GRP        :1;
     unsigned COPY                   :1;
     unsigned PERM_WRITE_PROTECT     :1;
     unsigned TMP_WRITE_PROTECT      :1;
     unsigned FILE_FORMAT            :2;
-    unsigned Reserved6              :2;
+  //unsigned Reserved6              :2;
     unsigned CRC                    :7;
-    unsigned Always1                :1;
+  //unsigned Always1                :1;
 }__attribute__((packed)) csdV2;
 
 typedef struct CardSpecificData {
@@ -549,8 +547,7 @@ typedef struct SdConfigurationRegister { //MSBit first
     unsigned Reserved1              :9;
     /** new command support for newer cards */
     unsigned CMD_SUPPORT            :2;
-    /** Reserved for manufacturer */
-    uint32 Reserved2;
+  //uint32 Reserved2; // Reserved for manufacturer
 }__attribute__((packed)) scr;
 
 /**
@@ -571,40 +568,40 @@ typedef struct CardStatusResponse { //MSBit first
     unsigned CARD_ECC_FAILED        :1;
     unsigned CC_ERROR               :1;
     unsigned ERROR                  :1;
-    unsigned Reserved1              :1;
-    unsigned Reserved2              :1; //DEFERRED_RESPONSE
+  //unsigned Reserved1              :1;
+  //unsigned Reserved2              :1; //DEFERRED_RESPONSE
     unsigned CSD_OVERWRITE          :1;
     unsigned WP_ERASE_SKIP          :1;
     unsigned CARD_ECC_DISABLED      :1;
     unsigned ERASE_RESET            :1;
     unsigned CURRENT_STATE          :4;
     unsigned READY_FOR_DATA         :1;
-    unsigned Reserved3              :2;
+  //unsigned Reserved3              :2;
     unsigned APP_CMD                :1;
-    unsigned Reserved4              :1;
+  //unsigned Reserved4              :1;
     unsigned AKE_SEQ_ERROR          :1;
-    unsigned Reserved5              :1;
-    unsigned Reserved6              :2;
+  //unsigned Reserved5              :1;
+  //unsigned Reserved6              :2;
 }__attribute__((packed)) csr;
 
 typedef struct SdStatusResponse { //MSBit first for Wide Width Data
     unsigned DAT_BUS_WIDTH          :2;
     unsigned SECURED_MODE           :1;
-    unsigned Reserved1              :7;
-    unsigned Reserved2              :6;
+  //unsigned Reserved1              :7;
+  //unsigned Reserved2              :6;
     uint16 SD_CARD_TYPE;
     uint32 SIZE_OF_PROTECTED_AREA;
     uint8 SPEED_CLASS;
     uint8 PERFORMANCE_MOVE;
     unsigned AU_SIZE                :4;
-    unsigned Reserved3              :4;
+  //unsigned Reserved3              :4;
     uint16 ERASE_SIZE;
     unsigned ERASE_TIMEOUT          :6;
     unsigned ERASE_OFFSET           :2;
     unsigned UHS_SPEED_GRADE        :4;
     unsigned UHS_AU_SIZE            :4;
-    uint8 Reserved4[10];
-    uint8 Reserved5[39]; //Reserved for Manufacturer
+  //uint8 Reserved4[10];
+  //uint8 Reserved5[39]; //Reserved for Manufacturer
 }__attribute__((packed)) ssr;
 
 /** SDIO Card Structures, TBD
