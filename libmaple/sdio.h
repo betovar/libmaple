@@ -359,7 +359,6 @@ void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *dst, uint16 count);
 void sdio_load_arg(sdio_dev *dev, uint32 arg);
 void sdio_send_cmd(sdio_dev *dev, uint32 cmd);
 uint32 sdio_get_cmd(sdio_dev *dev);
-uint32 sdio_endianess(uint32 val); //FIXME
 void sdio_get_resp_short(sdio_dev *dev, uint32 *buf);
 void sdio_get_resp_long(sdio_dev *dev, uint32 *buf);
 // SDIO status functions

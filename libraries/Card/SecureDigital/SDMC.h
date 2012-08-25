@@ -368,10 +368,22 @@ typedef enum SDIOStatusResponseTag {
  * SD Register Structures
  */
 
+typedef struct InterfaceConditionResponse { //MSBit first
+    unsigned CHECK_PATTERN          :8;
+    unsigned VOLTAGE_ACCEPTED       :4;
+    unsigned Reserved1              :20;
+}__attribute__((packed)) icr;
+
 typedef struct OperationConditionsRegister { //MSBit first
-    /** Card power up status bit: This bit is set to LOW if
-     *  the card has not finished the power up routine. */
-    unsigned BUSY                   :1;
+    /** Reserved for low voltage range */
+    unsigned Reserved3             :8;
+    /** VDD Voltage Window: 2.7v - 3.6v */
+    unsigned VOLTAGE_WINDOW         :16;
+    /** Switch to 1.8v Accepted:
+     *  Only UHS-I card supports this bit */
+    unsigned S18A                   :1;
+    unsigned Reserved2              :4;
+    unsigned Reserved1              :1;
     /** Card Capacity Status: This bit is valid only when
      *  the card power up status bit is set. 
      *  SDHC and SDXC use the 32-bit argument of memory access commands as
@@ -380,51 +392,45 @@ typedef struct OperationConditionsRegister { //MSBit first
      *  address format. Block length is determined by CMD16
      */
     unsigned CCS                    :1;
-    unsigned Reserved1              :1;
-    unsigned Reserved2              :4;
-    /** Switch to 1.8v Accepted:
-     *  Only UHS-I card supports this bit */
-    unsigned S18A                   :1;
-    /** VDD Voltage Window: 2.7v - 3.6v */
-    unsigned VOLTAGE_WINDOW         :16;
-    /** Reserved for low voltage range */
-    unsigned Reserved3             :8;
+    /** Card power up status bit: This bit is set to LOW if
+     *  the card has not finished the power up routine. */
+    unsigned BUSY                   :1;
 }__attribute__((packed)) ocr;
 
 typedef struct product_revision {
-    unsigned N                      :4;
     unsigned M                      :4;
+    unsigned N                      :4;
 }__attribute__((packed)) prod_revn;
 
 typedef struct manufacturing_date {
-    unsigned Rerserved1             :4;
-    unsigned YEAR                   :8;
     unsigned MONTH                  :4;
+    unsigned YEAR                   :8;
 }__attribute__((packed)) manu_date;
 
 typedef struct CardIdentificationNumber { //MSBit first
-    /** An 8-bit binary number that identifies the card manufacturer */
-    uint8 MID; // Manufacturer ID
-    /** A 2-character ASCII string that identifies the card OEM */
-    char OID[2]; // OEM/Application ID
-    /** The product name is a string, 5-character ASCII string */
-    char PNM[5]; // Product Name
-    /** The product revision is composed of two Binary Coded Decimal (BCD)
-     * digits, four bits each, repre- senting an "n.m" revision number.
-     * The "n" is the most significant nibble and "m" is the least
-     * significant nibble */
-    prod_revn PRV; // Product Revision Number
-    /** The Serial Number is 32 bits of a binary number */
-    uint32 PSN;  // Product Serial Number
+    /** ST specific: The SDIO_RESP4 register LSBit is always 0b */
+    unsigned Always0                  :1;
+    /** CRC7 checksum (7 bits) */
+    unsigned CRC                      :7;
     /** The manufacturing date is composed of two hexadecimal digits, one
      * is 8 bits representing the year(y) and the other is 4 bits representing
      * the month (m). The "m" field [11:8] is the month code. 1 = January.
      * The "y" field [19:12] is the year code. 0 = 2000. */
     manu_date MDT; // Manufacturing Date, most significant 4 bits are reserved
-    /** CRC7 checksum (7 bits) */
-    unsigned CRC                      :7;
-    /** ST specific: The SDIO_RESP4 register LSBit is always 0b */
-    unsigned Always0                  :1;
+    unsigned Reserved1                :4;
+    /** The Serial Number is 32 bits of a binary number */
+    uint32 PSN;  // Product Serial Number
+    /** The product revision is composed of two Binary Coded Decimal (BCD)
+     * digits, four bits each, repre- senting an "n.m" revision number.
+     * The "n" is the most significant nibble and "m" is the least
+     * significant nibble */
+    prod_revn PRV; // Product Revision Number
+    /** The product name is a string, 5-character ASCII string */
+    char PNM[5]; // Product Name
+    /** A 2-character ASCII string that identifies the card OEM */
+    char OID[2]; // OEM/Application ID
+    /** An 8-bit binary number that identifies the card manufacturer */
+    uint8 MID; // Manufacturer ID
 }__attribute__((packed)) cid;
 
 typedef struct RelativeCardAddress { //MSBit first
@@ -600,12 +606,6 @@ typedef struct SdStatusResponse { //MSBit first for Wide Width Data
     uint8 Reserved4[10];
     uint8 Reserved5[39]; //Reserved for Manufacturer
 }__attribute__((packed)) ssr;
-
-typedef struct InterfaceConditionResponse { //MSBit first
-    unsigned Reserved1              :20;
-    unsigned VOLTAGE_ACCEPTED       :4;
-    unsigned CHECK_PATTERN          :8; 
-}__attribute__((packed)) icr;
 
 /** SDIO Card Structures, TBD
 

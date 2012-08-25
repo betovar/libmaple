@@ -263,10 +263,10 @@ void sdio_get_resp_short(sdio_dev *dev, uint32 *buf) {
  * @param buf Pointer to 32-bit response buffer
  */
 void sdio_get_resp_long(sdio_dev *dev, uint32 *buf) {
-    buf[0] = dev->regs->RESP1;
-    buf[1] = dev->regs->RESP2;
-    buf[2] = dev->regs->RESP3;
-    buf[3] = dev->regs->RESP4;
+    buf[0] = dev->regs->RESP4; //word order swaped for struct endianess
+    buf[1] = dev->regs->RESP3;
+    buf[2] = dev->regs->RESP2;
+    buf[3] = dev->regs->RESP1;
 }
 
 /*
