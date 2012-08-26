@@ -58,8 +58,20 @@ static const uint32 SDIO_DATA_BLOCKSIZE         = 512;
  */
 HardwareSDIO::HardwareSDIO(void) {
     this->sdio_d = SDIO;
-    this->RCA.RCA = 0x0;
+    this->RCA.RCA = 0;
     this->CSD.version = CSD_VER_UNDEF;
+    this->CID.MID = 0;
+    this->CID.OID[0] = 0;
+    this->CID.OID[1] = 0;
+    for (int i=0; i<5; i++) {
+        this->CID.PNM[i] = 0;
+    }
+    this->CID.PSN = 0;
+    this->CID.PRV.N = 0;
+    this->CID.PRV.M = 0;
+    this->CID.MDT.YEAR = 0;
+    this->CID.MDT.MONTH = 0;
+    this->CID.CRC = 0;
 }
 
 /**
@@ -262,6 +274,7 @@ void HardwareSDIO::identification(void) {
     SDIO_DEBUG.println("SDIO_DBG: Getting Card Identification Number");
     #endif
     this->command(ALL_SEND_CID); //CMD2
+    this->response(ALL_SEND_CID);
     #if defined(SDIO_DEBUG_ON)
     //SDIO_DEBUG.println(sizeof(this->CID), DEC);
     SDIO_DEBUG.print("SDIO_DBG: RESP1 0x");
@@ -275,10 +288,15 @@ void HardwareSDIO::identification(void) {
     SDIO_DEBUG.print("SDIO_DBG: Manufaturer ID ");
     SDIO_DEBUG.println(CID.MID, DEC);
     SDIO_DEBUG.print("SDIO_DBG: Application ID ");
-    SDIO_DEBUG.print(CID.OID[0]);
-    SDIO_DEBUG.println(CID.OID[1]);
+    for (int i=0; i<2; i++) {
+        SDIO_DEBUG.print(CID.OID[i]);
+    }
+    SDIO_DEBUG.println();
     SDIO_DEBUG.print("SDIO_DBG: Product name ");
-    SDIO_DEBUG.println(CID.PNM);
+    for (int i=0; i<5; i++) {
+        SDIO_DEBUG.print(CID.PNM[i]);
+    }
+    SDIO_DEBUG.println();
     SDIO_DEBUG.print("SDIO_DBG: Product revision ");
     SDIO_DEBUG.print(CID.PRV.N, DEC);
     SDIO_DEBUG.print(".");
@@ -493,6 +511,7 @@ void HardwareSDIO::command(SDCommand cmd, uint32 arg) {
                 SDIO_DEBUG.println("Ignoring CRC for ACMD41");
                 #endif
                 sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
+                delay(1);
                 break;
               case 52:
                 #if defined(SDIO_DEBUG_ON)
@@ -637,7 +656,7 @@ void HardwareSDIO::response(SDCommand cmd) {
         temp = sdio_get_resp(this->sdio_d, 1);
         this->CID.MID = (0xFF000000 & temp) >> 24;
         this->CID.OID[0] = (char)((0xFF0000 & temp) >> 16);
-        this->CID.OID[0] = (char)((0xFF00 & temp) >> 8);
+        this->CID.OID[1] = (char)((0xFF00 & temp) >> 8);
         this->CID.PNM[0] = (char)(0xFF & temp);
         temp = sdio_get_resp(this->sdio_d, 2);
         this->CID.PNM[1] = (char)(0xFF000000 & temp);
@@ -811,6 +830,8 @@ void HardwareSDIO::newRCA(void) {
     #if defined(SDIO_DEBUG_ON)
     SDIO_DEBUG.print("SDIO_DBG: New RCA is 0x");
     SDIO_DEBUG.println(this->RCA.RCA, HEX);
+    SDIO_DEBUG.print("SDIO_DBG: RESP1 0x");
+    SDIO_DEBUG.println(this->sdio_d->regs->RESP1, HEX);
     #endif
 }
 
@@ -845,10 +866,6 @@ void HardwareSDIO::getOCR(void) {
                   SDIO_HOST_CAPACITY_SUPPORT | 
                   (SDIO_VALID_VOLTAGE_WINDOW << 8));
     this->response(SD_SEND_OP_COND);
-    #if defined(SDIO_DEBUG_ON)
-    SDIO_DEBUG.print("SDIO_DBG: RESP1 is 0x");
-    SDIO_DEBUG.println(this->sdio_d->regs->RESP1, HEX);
-    #endif
 }
 
 /**
