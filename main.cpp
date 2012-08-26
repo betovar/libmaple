@@ -15,7 +15,7 @@
 
 static const uint16 SIZE = 64;
 
-SecureDigitalMemoryCard SDMC;
+HardwareSDIO SDMC;
 
 void setup() {
     pinMode(BOARD_LED_PIN, OUTPUT);
@@ -39,7 +39,7 @@ void loop() {
             SerialUSB.println("");
         }
     }
-    */
+*/
     SerialUSB.println("*** SDMC test complete ***");
 }
 

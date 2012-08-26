@@ -357,8 +357,8 @@ void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *dst, uint16 count);
 //void sdio_cfg_dma_tx(sdio_dev *dev, uint32 *src, uint16 count);
 // SDIO command functions
 void sdio_load_arg(sdio_dev *dev, uint32 arg);
-void sdio_send_cmd(sdio_dev *dev, uint32 cmd);
-uint32 sdio_get_cmd(sdio_dev *dev);
+void sdio_send_command(sdio_dev *dev, uint32 cmd);
+uint32 sdio_get_command(sdio_dev *dev);
 uint32 sdio_get_resp(sdio_dev *dev, uint32 buf);
 // SDIO status functions
 uint32 sdio_card_detect(void);

@@ -232,7 +232,7 @@ void sdio_load_arg(sdio_dev *dev, uint32 arg) {
  * @param dev SDIO Device
  * @param cmd SDIO Command to send 
  */
-void sdio_send_cmd(sdio_dev *dev, uint32 cmd) {
+void sdio_send_command(sdio_dev *dev, uint32 cmd) {
     uint32 temp = dev->regs->CMD;
     temp &= SDIO_CMD_RESERVED;
     temp |= (~SDIO_CMD_RESERVED & cmd);
@@ -243,7 +243,7 @@ void sdio_send_cmd(sdio_dev *dev, uint32 cmd) {
  * @brief Get last command that recieved a response
  * @param dev SDIO Device 
  */
-uint32 sdio_get_cmd(sdio_dev *dev) {
+uint32 sdio_get_command(sdio_dev *dev) {
     uint32 resp = dev->regs->RESPCMD;
     return (~SDIO_RESPCMD_RESERVED & resp);
 }

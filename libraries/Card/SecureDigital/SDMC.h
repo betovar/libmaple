@@ -619,7 +619,7 @@ typedef struct CardInformationStructure {} cis;
 typedef struct CodeStorageArea {} csa;
 */
 
-class SecureDigitalMemoryCard {
+class HardwareSDIO {
   public:
     icr ICR;
     ocr OCR;
@@ -630,11 +630,9 @@ class SecureDigitalMemoryCard {
     ssr SSR;
     dsr DSR; // Default is 0x0404
     csr CSR;
-    
     SDIOInterruptFlag IRQFlag;
-    SDIOInterruptFlag IRQFlag55;
 
-    SecureDigitalMemoryCard(void);
+    HardwareSDIO(void);
     //---------------- startup functions ------------------
     void begin(void);
     void end(void);
@@ -649,6 +647,7 @@ class SecureDigitalMemoryCard {
     void initialization(void);
     void identification(void);
     //---------------- card register access functions -----
+    void getICR(void);
     void getOCR(void);
     void newRCA(void);
     void getCID(void);
@@ -669,14 +668,14 @@ class SecureDigitalMemoryCard {
 
   private:
     //---------------- command functions ------------------
-    void cmd(SDCommand);
-    void cmd(SDCommand, uint32);
-    void cmd(SDCommand, uint32, SDIORespType, uint32*);
-    void cmd(SDCommand, uint32, SDIORespType, uint32*, uint32);
-    void cmd(SDAppCommand);
-    void cmd(SDAppCommand, uint32);
-    void cmd(SDAppCommand, uint32, SDIORespType, uint32*);
-    void cmd(SDAppCommand, uint32, SDIORespType, uint32*, uint32);
+    void command(SDCommand);
+    void command(SDCommand, uint32);
+    //void command(SDCommand, uint32, SDIORespType, uint32*);
+    //void command(SDCommand, uint32, SDIORespType, uint32*, uint32);
+    void command(SDAppCommand);
+    void command(SDAppCommand, uint32);
+    //void command(SDAppCommand, uint32, SDIORespType, uint32*);
+    //void command(SDAppCommand, uint32, SDIORespType, uint32*, uint32);
     void response(SDCommand);
     void response(SDAppCommand);
 
