@@ -109,6 +109,7 @@ void HardwareSDIO::end(void) {
  * @brief Send CMD0 to set card into idle state
  */
 void HardwareSDIO::idle(void) {
+    SDIOInterruptFlag temp = this->IRQFlag;
     for (int i=1; i<=3; i++) {
         this->command(GO_IDLE_STATE);
         switch (this->IRQFlag) {
@@ -116,6 +117,7 @@ void HardwareSDIO::idle(void) {
             #if defined(SDIO_DEBUG_ON)
             SDIO_DEBUG.println("SDIO_DBG: Card should be in IDLE state");
             #endif
+            this->IRQFlag = temp;
             return;
           default:
             delay(1);
@@ -363,6 +365,7 @@ void HardwareSDIO::clockFreq(SDIOClockFrequency freq) {
 void HardwareSDIO::busMode(SDIOBusMode width) {
     this->select(this->RCA.RCA);
     this->command(SET_BUS_WIDTH, width); //ACMD6
+    this->response(SET_BUS_WIDTH);
     //this->check(0x8FF9FE20);
     switch (width) {
       case SDIO_BUS_1BIT:
@@ -572,6 +575,7 @@ void HardwareSDIO::command(SDAppCommand acmd) {
 void HardwareSDIO::command(SDAppCommand acmd, uint32 arg) {
     for (uint32 i=1; i<=3; i++) {
         this->command(APP_CMD, (uint32)this->RCA.RCA << 16);
+        this->response(APP_CMD);
         //this->check(0xFF9FC21);
         if (this->CSR.APP_CMD == SDIO_CSR_DISABLED) {
             #if defined(SDIO_DEBUG_ON)
@@ -819,10 +823,11 @@ void HardwareSDIO::getICR(void) {
     this->command(SEND_IF_COND, //CMD8
                 //SDIO_SDXC_POWER_CONTROL |
                   SDIO_VOLTAGE_HOST_SUPPORT | SDIO_CHECK_PATTERN);
+    this->response(SEND_IF_COND);
     for (int i=1; i<=3; i++) {
         switch (this->IRQFlag) {
           case SDIO_FLAG_CMDREND:
-            break;
+            return;
           case SDIO_FLAG_CTIMEOUT: //FIXME
           default:
             idle();
@@ -840,6 +845,10 @@ void HardwareSDIO::getOCR(void) {
                   SDIO_HOST_CAPACITY_SUPPORT | 
                   (SDIO_VALID_VOLTAGE_WINDOW << 8));
     this->response(SD_SEND_OP_COND);
+    #if defined(SDIO_DEBUG_ON)
+    SDIO_DEBUG.print("SDIO_DBG: RESP1 is 0x");
+    SDIO_DEBUG.println(this->sdio_d->regs->RESP1, HEX);
+    #endif
 }
 
 /**
