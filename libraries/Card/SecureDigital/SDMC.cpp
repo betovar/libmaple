@@ -72,7 +72,36 @@ HardwareSDIO::HardwareSDIO(void) {
     this->CID.MDT.YEAR = 0;
     this->CID.MDT.MONTH = 0;
     this->CID.CRC = 0;
+
     this->CSD.CSD_STRUCTURE = 2; //undefined card version
+    this->CSD.TAAC = 0;
+    this->CSD.NSAC = 0;
+    this->CSD.TRAN_SPEED = 0;
+    this->CSD.CCC = 0;
+    this->CSD.READ_BL_LEN = 0;
+    this->CSD.READ_BL_PARTIAL = 0;
+    this->CSD.WRITE_BLK_MISALIGN = 0;
+    this->CSD.READ_BLK_MISALIGN = 0;
+    this->CSD.DSR_IMP = 0;
+    this->CSD.C_SIZE = 0;
+    this->CSD.VDD_R_CURR_MIN = 0;
+    this->CSD.VDD_R_CURR_MAX = 0;
+    this->CSD.VDD_W_CURR_MIN = 0;
+    this->CSD.VDD_W_CURR_MAX = 0;
+    this->CSD.C_SIZE_MULT = 0;
+    this->CSD.ERASE_BLK_EN = 0;
+    this->CSD.SECTOR_SIZE = 0;
+    this->CSD.WP_GRP_SIZE = 0;
+    this->CSD.WP_GRP_ENABLE = 0;
+    this->CSD.R2W_FACTOR = 0;
+    this->CSD.WRITE_BL_LEN = 0;
+    this->CSD.WRITE_BL_PARTIAL = 0;
+    this->CSD.FILE_FORMAT_GRP = 0;
+    this->CSD.COPY = 0;
+    this->CSD.PERM_WRITE_PROTECT = 0;
+    this->CSD.TMP_WRITE_PROTECT = 0;
+    this->CSD.FILE_FORMAT = 0;
+    this->CSD.CRC = 0;
 }
 
 /**
@@ -105,13 +134,14 @@ void HardwareSDIO::begin(void) {
     this->idle();
     this->initialization();
     this->identification();
+    this->getCSD();
 }
 
 /**
  * @brief Reset sdio device
  */
 void HardwareSDIO::end(void) {
-    this->command(GO_INACTIVE_STATE);
+    //this->command(GO_INACTIVE_STATE);
     sdio_reset(this->sdio_d);
     this->RCA.RCA = 0x0;
     this->CSD.CSD_STRUCTURE = 2;
@@ -227,7 +257,7 @@ void HardwareSDIO::initialization(void) {
     #endif
     for (int i=1; i<=10; i++) {
         this->getOCR(); //ACMD41: first ACMD41
-        if (OCR.BUSY == 1) {
+        if (this->OCR.BUSY == 1) {
             #if defined(SDIO_DEBUG_ON)
             SDIO_DEBUG.println("SDIO_DBG: Card is ready <-------------");
             #endif
@@ -626,16 +656,16 @@ void HardwareSDIO::response(SDCommand cmd) {
         return;
     }
     switch (cmd) {
-      case GO_IDLE_STATE:
+      case GO_IDLE_STATE: //NO_RESPONSE
       case SET_DSR:
       case GO_INACTIVE_STATE:
-        return; // these commands do not send a response
-      case SEND_IF_COND:
+        return;
+      case SEND_IF_COND: //TYPE_R7
         temp = sdio_get_resp(this->sdio_d, 1);
         this->ICR.VOLTAGE_ACCEPTED = (0xF00 & temp) >> 8;
         this->ICR.CHECK_PATTERN = (0xFF & temp);
         break;
-      case SEND_RELATIVE_ADDR:
+      case SEND_RELATIVE_ADDR: //TYPE_R6
         temp = sdio_get_resp(this->sdio_d, 1);
         this->RCA.RCA = (0xFFFF0000 & temp) >> 16;
         this->RCA.COM_CRC_ERROR = (0x8000 & temp) >> 15;
@@ -646,7 +676,7 @@ void HardwareSDIO::response(SDCommand cmd) {
         this->RCA.APP_CMD = (0x20 & temp) >> 5;
         this->RCA.AKE_SEQ_ERROR = (0x8 & temp) >> 3;
         break;
-      case ALL_SEND_CID:
+      case ALL_SEND_CID: //TYPE_R2
       case SEND_CID:
         temp = sdio_get_resp(this->sdio_d, 1);
         this->CID.MID = (0xFF000000 & temp) >> 24;
@@ -669,7 +699,7 @@ void HardwareSDIO::response(SDCommand cmd) {
         this->CID.PRV.M = (0xF000000 & temp) >> 24;
         this->CID.PSN |= (0xFFFFFF & temp) << 8;
         break;
-      case SEND_CSD:
+      case SEND_CSD: //TYPE_R2
         temp = sdio_get_resp(this->sdio_d, 1);
         this->CSD.CSD_STRUCTURE = (0xC0000000 & temp) >> 30;
         this->CSD.TAAC = (0xFF0000 & temp) >> 16;
@@ -723,7 +753,8 @@ void HardwareSDIO::response(SDCommand cmd) {
         this->CSD.FILE_FORMAT = (0xC00 & temp) >> 10;
         this->CSD.CRC = (0xFE & temp) >> 1;
         break;
-      default: //FIXME assumed all else are TYPE1 responses
+      case SEND_STATUS:
+      default: //FIXME assumed all others are TYPE_R1
         temp = sdio_get_resp(this->sdio_d, 1);
         this->CSR.OUT_OF_RANGE = (0x80000000 & temp) >> 31;
         this->CSR.ADDRESS_ERROR = (0x40000000 & temp) >> 30;
@@ -762,20 +793,22 @@ void HardwareSDIO::response(SDAppCommand cmd) {
         return;
     }
     switch (cmd) {
-      case SD_SEND_OP_COND:
+      case SD_SEND_OP_COND: //TYPE_R3
         temp = this->sdio_d->regs->RESP1;
         this->OCR.BUSY = (0x80000000 & temp) >> 31;
         this->OCR.CCS = (0x40000000 & temp) >> 30;
         this->OCR.S18A = (0x1000000 & temp) >> 24;
         this->OCR.VOLTAGE_WINDOW = (0xFFFF00 & temp) >> 8;
         break;
+      case SD_STATUS: //TYPE_R2
+
+        break;
       case SET_BUS_WIDTH:
-      case SD_STATUS:
       case SEND_NUM_WR_BLOCKS:
       case SET_WR_BLK_ERASE_COUNT:
       case SET_CLR_CARD_DETECT:
       case SEND_SCR:
-      default:
+      default: //TYPE_R1
         break;
     }
 }
@@ -785,7 +818,7 @@ void HardwareSDIO::response(SDAppCommand cmd) {
  */
 
 /**
- * @brief Sends a command to get the Operating Conditions Register
+ * @brief Card publishes a new Relative Card Address
  */
 void HardwareSDIO::newRCA(void) {
     this->command(SEND_RELATIVE_ADDR); //CMD3
@@ -799,8 +832,8 @@ void HardwareSDIO::newRCA(void) {
 }
 
 /**
- * @brief Gets the Interface Condition Register which tells the host whether
- *        the operating voltage of the host is valid for the card
+ * @brief Gets the Interface Condition Register 
+ *        tells whether the operating voltage of the host is valid for the card
  * @note  Only allowed during identification mode
  */
 void HardwareSDIO::getICR(void) {
@@ -820,7 +853,7 @@ void HardwareSDIO::getICR(void) {
 }
 
 /**
- * @brief Sends a command to get the Operating Conditions Register
+ * @brief Gets the Operating Conditions Register
  * @note  Only allowed during identification mode
  */
 void HardwareSDIO::getOCR(void) {
@@ -832,7 +865,7 @@ void HardwareSDIO::getOCR(void) {
 }
 
 /**
- * @brief Sends an addressed command to get the Card IDentification number
+ * @brief Gets the Card IDentification number
  */
 void HardwareSDIO::getCID(void) {
     this->command(SEND_CID, (uint32)RCA.RCA << 16); //CMD10
@@ -840,22 +873,54 @@ void HardwareSDIO::getCID(void) {
 }
 
 /**
- * @brief Sends an addressed commmand to get the Card Specific Data 
+ * @brief Gets the Card Specific Data 
  */
 void HardwareSDIO::getCSD(void) {
     this->command(SEND_CSD, (uint32)RCA.RCA << 16); //CMD9
     this->response(SEND_CSD);
     #if defined(SDIO_DEBUG_ON)
-    SDIO_DEBUG.print("SDIO_DBG: Card Specific Data version: ");
-
+    SDIO_DEBUG.print("SDIO_DBG: Card version ");
+    switch (this->CSD.CSD_STRUCTURE) {
+      case 0:
+        SDIO_DEBUG.println("1.x");
+        break;
+      case 1:
+        SDIO_DEBUG.println("2.0");
+        break;
+      default:
+        SDIO_DEBUG.println("Undefined");
+        break;
+    }
+    SDIO_DEBUG.print("SDIO_DBG: TAAC ");
+    SDIO_DEBUG.println(this->CSD.TAAC);
+    SDIO_DEBUG.print("SDIO_DBG: NSAC ");
+    SDIO_DEBUG.println(this->CSD.NSAC);
+    SDIO_DEBUG.print("SDIO_DBG: TRAN_SPEED ");
+    SDIO_DEBUG.println(this->CSD.TRAN_SPEED);
+    SDIO_DEBUG.print("SDIO_DBG: CCC ");
+    SDIO_DEBUG.println(this->CSD.CCC);
+    SDIO_DEBUG.print("SDIO_DBG: READ_BL_LEN ");
+    SDIO_DEBUG.println(this->CSD.READ_BL_LEN);
+    SDIO_DEBUG.print("SDIO_DBG: READ_BL_PARTIAL ");
+    SDIO_DEBUG.println(this->CSD.READ_BL_PARTIAL);
+    SDIO_DEBUG.print("SDIO_DBG: WRITE_BLK_MISALIGN ");
+    SDIO_DEBUG.println(this->CSD.WRITE_BLK_MISALIGN);
+    SDIO_DEBUG.print("SDIO_DBG: READ_BLK_MISALIGN ");
+    SDIO_DEBUG.println(this->CSD.READ_BLK_MISALIGN);
+    SDIO_DEBUG.print("SDIO_DBG: DSR_IMP ");
+    SDIO_DEBUG.println(this->CSD.DSR_IMP);
+    SDIO_DEBUG.print("SDIO_DBG: C_SIZE ");
+    SDIO_DEBUG.println(this->CSD.C_SIZE);
     #endif
 }
 
 /**
- * @brief 
+ * @brief Gets the Sd card Configuration Register
  * @note Data packet format for Wide Width Data is most significant byte first
  */
 void HardwareSDIO::getSCR(void) {
+    this->command(SEND_SCR);
+    this->response(SEND_SCR);
 }
 
 /**
@@ -933,6 +998,14 @@ void HardwareSDIO::getSSR(void) {
 }
 
 /**
+ * @brief Card sends its status register
+ */
+void HardwareSDIO::sendStatus(void) {
+    this->command(SEND_STATUS, this->RCA.RCA << 16);
+    this->command(SEND_STATUS);
+}
+
+/**
  * @brief Sends a command to set the Driver Stage Register
  */
 void HardwareSDIO::setDSR(void) {
@@ -968,8 +1041,8 @@ void HardwareSDIO::stop(void) {
 }
 
 /**
- * @brief Read next word from FIFO 
- * @retval Data that was read from FIFO
+ * @brief Read
+
  */
 void HardwareSDIO::read(uint32 addr,
                         uint32 *buf,
@@ -977,8 +1050,7 @@ void HardwareSDIO::read(uint32 addr,
 }
 
 /**
- * @brief Write next word into FIFO
- * @param word Data to write to FIFO
+ * @brief Write
  */
 void HardwareSDIO::write(uint32 addr, 
                          const uint32 *buf,
@@ -997,11 +1069,6 @@ void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
     //check for busy signal on dat0 line?
     sdio_set_data_timeout(this->sdio_d, SDIO_DATA_TIMEOUT);
     sdio_set_data_length(this->sdio_d, SDIO_DATA_BLOCKSIZE);
-    sdio_add_interrupt(this->sdio_d,
-                       SDIO_MASK_RXDAVLIE | SDIO_MASK_DBCKENDIE |
-                       SDIO_MASK_DATAENDIE | SDIO_MASK_STBITERRIE | 
-                       SDIO_MASK_RXFIFOHFIE | SDIO_MASK_RXFIFOFIE |
-                       SDIO_MASK_RXFIFOEIE | SDIO_MASK_RXOVERRIE);
     sdio_cfg_dma_rx(this->sdio_d, dst, SDIO_DATA_BLOCKSIZE);
     sdio_set_dcr(this->sdio_d, (0x9 << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN | SDIO_DCTRL_DMAEN);

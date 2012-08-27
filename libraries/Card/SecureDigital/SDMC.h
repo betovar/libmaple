@@ -607,6 +607,7 @@ class HardwareSDIO {
     void blockSize(SDIOBlockSize);
     void select(uint16);
     void deselect(void);
+    void sendStatus(void);
     //---------------- basic data functions ---------------
     void stop(void);
     void readBlock(uint32, uint32*);
@@ -614,15 +615,11 @@ class HardwareSDIO {
 
   private:
     //---------------- command functions ------------------
-    void command(SDCommand);
     void command(SDCommand, uint32);
-    //void command(SDCommand, uint32, SDIORespType, uint32*);
-    //void command(SDCommand, uint32, SDIORespType, uint32*, uint32);
-    void command(SDAppCommand);
-    void command(SDAppCommand, uint32);
-    //void command(SDAppCommand, uint32, SDIORespType, uint32*);
-    //void command(SDAppCommand, uint32, SDIORespType, uint32*, uint32);
+    void command(SDCommand);
     void response(SDCommand);
+    void command(SDAppCommand, uint32);
+    void command(SDAppCommand);
     void response(SDAppCommand);
 
     /** future functions
