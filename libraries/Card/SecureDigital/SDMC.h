@@ -293,18 +293,12 @@ typedef enum SDAppCommand {
  * SD Structure Specific Enumerations
  */
 
-typedef enum CsdCardVersion {
-    CSD_VER_UNDEF = 0,
-    CSD_VER_1     = 1,
-    CSD_VER_2     = 2
-} CsdCardVersion;
-
-typedef enum CsdCardCapacity {
-    CSD_CAP_UNDEF = 0,
-    CSD_CAP_SDSC  = 1,
-    CSD_CAP_SDHC  = 2,
-    CSD_CAP_SDXC  = 3
-} CsdCardCapacity;
+typedef enum SdCardCapacity {
+    SD_CAP_UNDEF = 0,
+    SD_CAP_SDSC  = 1,
+    SD_CAP_SDHC  = 2,
+    SD_CAP_SDXC  = 3
+} SdCardCapacity;
 
 typedef enum SDIOStatusResponseTag {
     //CardStatusResponse Tags
@@ -409,9 +403,9 @@ typedef struct CardIdentificationNumber { //MSBit first
     /** An 8-bit binary number that identifies the card manufacturer */
     uint8 MID; // Manufacturer ID
     /** A 2-character ASCII string that identifies the card OEM */
-    char OID[2]; // OEM/Application ID
+    char OID[3]; // OEM/Application ID
     /** The product name is a string, 5-character ASCII string */
-    char PNM[5]; // Product Name
+    char PNM[6]; // Product Name
     /** The Serial Number is 32 bits of a binary number */
     uint32 PSN;  // Product Serial Number
     /** The product revision is composed of two Binary Coded Decimal (BCD)
@@ -448,9 +442,9 @@ typedef struct RelativeCardAddress { //MSBit first
 
 typedef uint16 dsr; // DriverStageRegister is optional
 
-typedef struct CardSpecificDataV1 { //MSBit first
+typedef struct CardSpecificData {
+    SdCardCapacity capacity;
     unsigned CSD_STRUCTURE          :2;
-  //unsigned Reserved1              :6;
     uint8 TAAC;
     uint8 NSAC;
     uint8 TRAN_SPEED;
@@ -460,8 +454,7 @@ typedef struct CardSpecificDataV1 { //MSBit first
     unsigned WRITE_BLK_MISALIGN     :1;
     unsigned READ_BLK_MISALIGN      :1;
     unsigned DSR_IMP                :1;
-  //unsigned Reserved2              :2;
-    unsigned C_SIZE                 :12;
+    unsigned C_SIZE                 :22;
     unsigned VDD_R_CURR_MIN         :3;
     unsigned VDD_R_CURR_MAX         :3;
     unsigned VDD_W_CURR_MIN         :3;
@@ -471,63 +464,16 @@ typedef struct CardSpecificDataV1 { //MSBit first
     unsigned SECTOR_SIZE            :7;
     unsigned WP_GRP_SIZE            :7;
     unsigned WP_GRP_ENABLE          :1;
-  //unsigned Reserved3              :2;
     unsigned R2W_FACTOR             :3;
     unsigned WRITE_BL_LEN           :4;
     unsigned WRITE_BL_PARTIAL       :1;
-  //unsigned Reserved4              :5;
     unsigned FILE_FORMAT_GRP        :1;
     unsigned COPY                   :1;
     unsigned PERM_WRITE_PROTECT     :1;
     unsigned TMP_WRITE_PROTECT      :1;
     unsigned FILE_FORMAT            :2;
-  //unsigned Reserved5              :2;
     unsigned CRC                    :7;
-  //unsigned Always1                :1;
-}__attribute__((packed)) csdV1;
-
-typedef struct CardSpecificDataV2 { //most significant bit first
-    unsigned CSD_STRUCTURE          :2;
-  //unsigned Reserved1              :6;
-    uint8 TAAC;
-    uint8 NSAC;
-    uint8 TRAN_SPEED;
-    unsigned CCC                    :12;
-    unsigned READ_BL_LEN            :4;
-    unsigned READ_BL_PARTIAL        :1;
-    unsigned WRITE_BLK_MISALIGN     :1;
-    unsigned READ_BLK_MISALIGN      :1;
-    unsigned DSR_IMP                :1;
-  //unsigned Reserved2              :6;
-    unsigned C_SIZE                 :22;
-  //unsigned Reserved3              :1;
-    unsigned ERASE_BLK_EN           :1;
-    unsigned SECTOR_SIZE            :7;
-    unsigned WP_GRP_SIZE            :7;
-    unsigned WP_GRP_ENABLE          :1;
-  //unsigned Reserved4              :2;
-    unsigned R2W_FACTOR             :3;
-    unsigned WRITE_BL_LEN           :4;
-    unsigned WRITE_BL_PARTIAL       :1;
-  //unsigned Reserved5              :5;
-    unsigned FILE_FORMAT_GRP        :1;
-    unsigned COPY                   :1;
-    unsigned PERM_WRITE_PROTECT     :1;
-    unsigned TMP_WRITE_PROTECT      :1;
-    unsigned FILE_FORMAT            :2;
-  //unsigned Reserved6              :2;
-    unsigned CRC                    :7;
-  //unsigned Always1                :1;
-}__attribute__((packed)) csdV2;
-
-typedef struct CardSpecificData {
-    union {
-        csdV1 V1;
-        csdV2 V2;
-    };
-    CsdCardVersion version;
-    CsdCardCapacity capacity;
-} csd;
+}__attribute__((packed)) csd;
 
 typedef struct SdConfigurationRegister { //MSBit first
     /** value 0 is for physical layer spec 1.01-3.01 */

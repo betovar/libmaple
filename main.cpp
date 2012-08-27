@@ -26,13 +26,15 @@ void loop() {
     waitForButtonPress();
     SerialUSB.println("*** Starting SDMC test ***");
     SDMC.begin();
-/*
+/**
     uint8 myByteArray[SIZE];
     for (int i = 0; i < SIZE; i++) {
         myByteArray[i] = 0;
     }
     SDMC.getSSR((uint32*)&myByteArray);
+    */
     SDMC.end();
+/**
     for (int i = 0; i < SIZE; i++) {
         SerialUSB.print(myByteArray[i], HEX);
         if ((i+1)%4 == 0) {

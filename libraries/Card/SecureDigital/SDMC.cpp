@@ -59,11 +59,11 @@ static const uint32 SDIO_DATA_BLOCKSIZE         = 512;
 HardwareSDIO::HardwareSDIO(void) {
     this->sdio_d = SDIO;
     this->RCA.RCA = 0;
-    this->CSD.version = CSD_VER_UNDEF;
     this->CID.MID = 0;
-    this->CID.OID[0] = 0;
-    this->CID.OID[1] = 0;
-    for (int i=0; i<5; i++) {
+    for (int i=0; i<=2; i++) {
+        this->CID.OID[i] = 0;
+    }
+    for (int i=0; i<=5; i++) {
         this->CID.PNM[i] = 0;
     }
     this->CID.PSN = 0;
@@ -72,6 +72,7 @@ HardwareSDIO::HardwareSDIO(void) {
     this->CID.MDT.YEAR = 0;
     this->CID.MDT.MONTH = 0;
     this->CID.CRC = 0;
+    this->CSD.CSD_STRUCTURE = 2; //undefined card version
 }
 
 /**
@@ -113,7 +114,7 @@ void HardwareSDIO::end(void) {
     this->command(GO_INACTIVE_STATE);
     sdio_reset(this->sdio_d);
     this->RCA.RCA = 0x0;
-    this->CSD.version = CSD_VER_UNDEF;
+    this->CSD.CSD_STRUCTURE = 2;
     delay(1);
 }
 
@@ -175,7 +176,7 @@ void HardwareSDIO::initialization(void) {
             SDIO_DEBUG.println("SDIO_DBG: Valid supplied voltage");
             #endif
         }
-        CSD.version = CSD_VER_2;
+        CSD.CSD_STRUCTURE = 1;
         #if defined(SDIO_DEBUG_ON)
         SDIO_DEBUG.println("SDIO_DBG: Interface condition check passed");
         #endif
@@ -187,7 +188,7 @@ void HardwareSDIO::initialization(void) {
         // the host should set HCS to 0 if the card returns no response
         arg &= ~SDIO_HOST_CAPACITY_SUPPORT;
         // probably version 1.x memory card
-        CSD.version = CSD_VER_1;
+        CSD.CSD_STRUCTURE = 0;
         return;
       case SDIO_FLAG_CCRCFAIL:
         return;
@@ -254,7 +255,7 @@ void HardwareSDIO::initialization(void) {
         return;
     }
     if (OCR.CCS == 0) {
-        CSD.capacity = CSD_CAP_SDSC;
+        CSD.capacity = SD_CAP_SDSC;
         #if defined(SDIO_DEBUG_ON)
         SDIO_DEBUG.println("SDIO_DBG: Card supports SDSC only");
         #endif
@@ -288,15 +289,9 @@ void HardwareSDIO::identification(void) {
     SDIO_DEBUG.print("SDIO_DBG: Manufaturer ID ");
     SDIO_DEBUG.println(CID.MID, DEC);
     SDIO_DEBUG.print("SDIO_DBG: Application ID ");
-    for (int i=0; i<2; i++) {
-        SDIO_DEBUG.print(CID.OID[i]);
-    }
-    SDIO_DEBUG.println();
+    SDIO_DEBUG.println(this->CID.OID);
     SDIO_DEBUG.print("SDIO_DBG: Product name ");
-    for (int i=0; i<5; i++) {
-        SDIO_DEBUG.print(CID.PNM[i]);
-    }
-    SDIO_DEBUG.println();
+    SDIO_DEBUG.println(this->CID.PNM);
     SDIO_DEBUG.print("SDIO_DBG: Product revision ");
     SDIO_DEBUG.print(CID.PRV.N, DEC);
     SDIO_DEBUG.print(".");
@@ -659,10 +654,10 @@ void HardwareSDIO::response(SDCommand cmd) {
         this->CID.OID[1] = (char)((0xFF00 & temp) >> 8);
         this->CID.PNM[0] = (char)(0xFF & temp);
         temp = sdio_get_resp(this->sdio_d, 2);
-        this->CID.PNM[1] = (char)(0xFF000000 & temp);
-        this->CID.PNM[2] = (char)((0xFF0000 & temp) >> 24);
-        this->CID.PNM[3] = (char)((0xFF00 & temp) >> 16);
-        this->CID.PNM[4] = (char)((0xFF & temp) >> 8);
+        this->CID.PNM[1] = (char)((0xFF000000 & temp) >> 24);
+        this->CID.PNM[2] = (char)((0xFF0000 & temp) >> 16);
+        this->CID.PNM[3] = (char)((0xFF00 & temp) >> 8);
+        this->CID.PNM[4] = (char)(0xFF & temp);
         temp = sdio_get_resp(this->sdio_d, 4);
         this->CID.PSN = (0xFF000000 & temp) >> 24;
         this->CID.MDT.YEAR = (0xFF000 & temp) >> 12;
@@ -676,89 +671,57 @@ void HardwareSDIO::response(SDCommand cmd) {
         break;
       case SEND_CSD:
         temp = sdio_get_resp(this->sdio_d, 1);
-        switch ((0xC0000000 &temp) >> 30) {
+        this->CSD.CSD_STRUCTURE = (0xC0000000 & temp) >> 30;
+        this->CSD.TAAC = (0xFF0000 & temp) >> 16;
+        this->CSD.NSAC = (0xFF00 & temp) >> 8;
+        this->CSD.TRAN_SPEED = (0xFF & temp);
+        temp = sdio_get_resp(this->sdio_d, 3);
+        switch (this->CSD.CSD_STRUCTURE) { // only diff in csd versions
           case 0:
-            this->CSD.version = CSD_VER_1;
+            this->CSD.C_SIZE = (0xC0000000 & temp) >> 30;
+            this->CSD.VDD_R_CURR_MIN = (0x38000000 & temp) >> 27;
+            this->CSD.VDD_R_CURR_MAX = (0x7000000 & temp) >> 24;
+            this->CSD.VDD_W_CURR_MIN = (0xE00000 & temp) >> 21;
+            this->CSD.VDD_W_CURR_MAX = (0x1C0000 & temp) >> 18;
             break;
           case 1:
-            this->CSD.version = CSD_VER_2;
+            this->CSD.C_SIZE = (0xFFFF0000 & temp) >> 16;
             break;
-          case 3:
-          case 4:
-            this->CSD.version = CSD_VER_UNDEF;
-          default: // return if undefined
-            return;
-        }
-        switch (this->CSD.version) {
-          case CSD_VER_1:
-            //temp = sdio_get_resp(this->sdio_d, 1);
-            CSD.V1.CSD_STRUCTURE = (0xC0000000 & temp) >> 30;
-            CSD.V1.TAAC = (0xFF0000 & temp) >> 16;
-            CSD.V1.NSAC = (0xFF00 & temp) >> 8;
-            CSD.V1.TRAN_SPEED = (0xFF & temp);
-            temp = sdio_get_resp(this->sdio_d, 3);
-            CSD.V1.C_SIZE = (0xC0000000 & temp) >> 30;
-            CSD.V1.VDD_R_CURR_MIN = (0x38000000 & temp) >> 27;
-            CSD.V1.VDD_R_CURR_MAX = (0x7000000 & temp) >> 24;
-            CSD.V1.VDD_W_CURR_MIN = (0xE00000 & temp) >> 21;
-            CSD.V1.VDD_W_CURR_MAX = (0x1C0000 & temp) >> 18;
-            CSD.V1.C_SIZE_MULT = (0x38000 & temp) >> 15;
-            CSD.V1.ERASE_BLK_EN = (0x4000 & temp) >> 14;
-            CSD.V1.SECTOR_SIZE = (0x3F80 & temp) >> 7;
-            CSD.V1.WP_GRP_SIZE = (0x7F & temp);
-            temp = sdio_get_resp(this->sdio_d, 2);
-            CSD.V1.CCC = (0xFFF00000 & temp) >> 20;
-            CSD.V1.READ_BL_LEN = (0xF0000 & temp) >> 16;
-            CSD.V1.READ_BL_PARTIAL = (0x8000 & temp) >> 15;
-            CSD.V1.WRITE_BLK_MISALIGN = (0x4000 & temp) >> 14;
-            CSD.V1.READ_BLK_MISALIGN = (0x2000 & temp) >> 13;
-            CSD.V1.DSR_IMP = (0x1000 & temp) >> 12;
-            CSD.V1.C_SIZE |= (0x3FF & temp) << 2;
-            temp = sdio_get_resp(this->sdio_d, 4);
-            CSD.V1.WP_GRP_ENABLE = (0x80000000 & temp) >> 31;
-            CSD.V1.R2W_FACTOR = (0x1C000000 & temp) >> 26;
-            CSD.V1.WRITE_BL_LEN = (0x3C00000 & temp) >> 22;
-            CSD.V1.WRITE_BL_PARTIAL = (0x200000 & temp) >> 21;
-            CSD.V1.FILE_FORMAT_GRP = (0x8000 & temp) >> 15;
-            CSD.V1.COPY = (0x4000 & temp) >> 14;
-            CSD.V1.PERM_WRITE_PROTECT = (0x2000 & temp) >> 13;
-            CSD.V1.TMP_WRITE_PROTECT = (0x1000 & temp) >> 12;
-            CSD.V1.FILE_FORMAT = (0xC00 & temp) >> 10;
-            CSD.V1.CRC = (0xFE & temp) >> 1;
-          case CSD_VER_2:
-            //temp = sdio_get_resp(this->sdio_d, 1);
-            CSD.V2.CSD_STRUCTURE = (0xC0000000 & temp) >> 30;
-            CSD.V2.TAAC = (0xFF0000 & temp) >> 16;
-            CSD.V2.NSAC = (0xFF00 & temp) >> 8;
-            CSD.V2.TRAN_SPEED = (0xFF & temp);
-            temp = sdio_get_resp(this->sdio_d, 3);
-            CSD.V2.C_SIZE = (0xFFFF0000 & temp) >> 16;
-            CSD.V2.ERASE_BLK_EN = (0x4000 & temp) >> 14;
-            CSD.V2.SECTOR_SIZE = (0x3F80 & temp) >> 7;
-            CSD.V2.WP_GRP_SIZE = (0x7F & temp);
-            temp = sdio_get_resp(this->sdio_d, 2);
-            CSD.V2.CCC = (0xFFF00000 & temp) >> 20;
-            CSD.V2.READ_BL_LEN = (0xF0000 & temp) >> 16;
-            CSD.V2.READ_BL_PARTIAL = (0x8000 & temp) >> 15;
-            CSD.V2.WRITE_BLK_MISALIGN = (0x4000 & temp) >> 14;
-            CSD.V2.READ_BLK_MISALIGN = (0x2000 & temp) >> 13;
-            CSD.V2.DSR_IMP = (0x1000 & temp) >> 12;
-            CSD.V2.C_SIZE |= (0x3F & temp) << 16;
-            temp = sdio_get_resp(this->sdio_d, 4);
-            CSD.V2.WP_GRP_ENABLE = (0x80000000 & temp) >> 31;
-            CSD.V2.R2W_FACTOR = (0x1C000000 & temp) >> 26;
-            CSD.V2.WRITE_BL_LEN = (0x3C00000 & temp) >> 22;
-            CSD.V2.WRITE_BL_PARTIAL = (0x200000 & temp) >> 21;
-            CSD.V2.FILE_FORMAT_GRP = (0x8000 & temp) >> 15;
-            CSD.V2.COPY = (0x4000 & temp) >> 14;
-            CSD.V2.PERM_WRITE_PROTECT = (0x2000 & temp) >> 13;
-            CSD.V2.TMP_WRITE_PROTECT = (0x1000 & temp) >> 12;
-            CSD.V2.FILE_FORMAT = (0xC00 & temp) >> 10;
-            CSD.V2.CRC = (0xFE & temp) >> 1;
-          case CSD_VER_UNDEF:
           default:
             break;
         }
+        this->CSD.C_SIZE_MULT = (0x38000 & temp) >> 15;
+        this->CSD.ERASE_BLK_EN = (0x4000 & temp) >> 14;
+        this->CSD.SECTOR_SIZE = (0x3F80 & temp) >> 7;
+        this->CSD.WP_GRP_SIZE = (0x7F & temp);
+        temp = sdio_get_resp(this->sdio_d, 2);
+        switch (this->CSD.CSD_STRUCTURE) { // only diff in csd versions
+          case 0:
+            this->CSD.C_SIZE |= (0x3FF & temp) << 2;
+            break;
+          case 1:
+            this->CSD.C_SIZE |= (0x3F & temp) << 16;
+            break;
+          default:
+            break;
+        }
+        this->CSD.CCC = (0xFFF00000 & temp) >> 20;
+        this->CSD.READ_BL_LEN = (0xF0000 & temp) >> 16;
+        this->CSD.READ_BL_PARTIAL = (0x8000 & temp) >> 15;
+        this->CSD.WRITE_BLK_MISALIGN = (0x4000 & temp) >> 14;
+        this->CSD.READ_BLK_MISALIGN = (0x2000 & temp) >> 13;
+        this->CSD.DSR_IMP = (0x1000 & temp) >> 12;
+        temp = sdio_get_resp(this->sdio_d, 4);
+        this->CSD.WP_GRP_ENABLE = (0x80000000 & temp) >> 31;
+        this->CSD.R2W_FACTOR = (0x1C000000 & temp) >> 26;
+        this->CSD.WRITE_BL_LEN = (0x3C00000 & temp) >> 22;
+        this->CSD.WRITE_BL_PARTIAL = (0x200000 & temp) >> 21;
+        this->CSD.FILE_FORMAT_GRP = (0x8000 & temp) >> 15;
+        this->CSD.COPY = (0x4000 & temp) >> 14;
+        this->CSD.PERM_WRITE_PROTECT = (0x2000 & temp) >> 13;
+        this->CSD.TMP_WRITE_PROTECT = (0x1000 & temp) >> 12;
+        this->CSD.FILE_FORMAT = (0xC00 & temp) >> 10;
+        this->CSD.CRC = (0xFE & temp) >> 1;
         break;
       default: //FIXME assumed all else are TYPE1 responses
         temp = sdio_get_resp(this->sdio_d, 1);
