@@ -1,7 +1,7 @@
-Card Command Library for Maple (last modified on 23 Aug 2012)
+Card Command Library for Maple (last modified on 4 Sep 2012)
 
 Overview
---------
+========
 
 The goal of this library is to provide an feature set of commands specific to
 each card type. Thereby, a user can implement (at a minimum) read and writes
@@ -22,7 +22,51 @@ This is known as the card initialization and identification process, and it is
 complete and in the testing phase. The begin() function provides this process.
 
 
+Functionality
+=============
 
+Currenly, the only functioning code is the initialization and identification 
+process. This includes all the functions called from within these, like 
+sending cmd8 and acmd41 for checking the interface conditions.
+
+CID Number
+----------
+
+This process also reads the CID which includes data like the 
+serial number and manufactur date. Other card specicfic data is read from the 
+CSD which is also functional. Although, since I have no independent source 
+from which to read these values to verify a proper read, much of this 
+functionality is circumstantial; meaning that the values make some sense eg. 
+the manufacture date is current and in the past.
+
+
+Reading and Writing Blocks
+--------------------------
+
+First up is reading any block on the card, later writing will be tested. This 
+is being done to protect the cards from immature code in the off chance that 
+something is irrevocably damaged. 
+
+Data is transferred on one or four data lines. I will focus on reading with 
+only one data line to start, check that the fifo is working with interrupts, 
+and then expand. The ultimate goal is to have data transferred over DMA, but 
+but a polling scheme might be implemented for a slow speed demo.
+
+Testing
+-------
+
+Here is an example of a command on OSX that reads the one-thousandth block of 
+an SD card mounted as disk4, and writes the result out to a file:
+
+dd if=/dev/disk4 of=test.bin bs=512 count=1 iseek=1000
+
+
+Conflicts (to be conmplete)
+=========
+
+peripheral gpio pins in use
+DMA2 Channel4
+card detection pin
 
 
 mapleFAT Proposal
@@ -38,30 +82,30 @@ Inheritance Structure
 
            +-------------+                  +-------------+
            | SDMode-FAT  |                  | SPIMode-FAT |
-           +-------------+                  +-------------+
+           +-------------+                  +-------------+ high-level
                   |       \                /       |
                   |        \              /        |
                   |         \            /         |
                   |          +----------+          |
                   |          | mapleFAT |          |
-                  |          +----------+          |
+                  |          +----------+ abstract |
                   |                                |
                   |                                |
            +--------------+                 +-------------+
            | HardwareSDIO |                 | HardwareSPI |
-           +--------------+                 +-------------+
+           +--------------+                 +-------------+ low-level
 
 This diagram depicts the five proposed classes. SDMode-FAT will inherit from
 an SDIO specific hardware class _and_ the abstract mapleFAT class. The 
 SPIMode-FAT class will do the same for it's hardware specific functions and 
-both XXMode-FAT classes will have the same public calls so users can simply 
+both XXXMode-FAT classes will have the same public calls so users can simply 
 change the object instantiation line in their code to switch modes (at compile 
 time).
 
 As mentioned, mapleFAT should have definitions for all it's user visible 
 functions, but it's low-level IO calls (like read and write) should be purely 
 virtual. This should ensure that HardwareXXX classes define these basic 
-methods: eg. virtual mapleFAT::write(where, what) = 0. 
+methods: eg. virtual mapleFAT::write(where, what) = 0.
 
 At this point you might be wondering how to separate SD card commands from the 
 FAT library. Well for one, HardwareSDIO should handle that by itself. The 
@@ -77,4 +121,4 @@ Future Work
 This brings us to a design decision. Some commands available in SPI mode are 
 not available in SD mode and vice versa. Furthermore, responses are not 
 formatted the same way and some response bits are left off entirely. I'm 
-proposing that 
+proposing that the higher-level classes handle these cases.

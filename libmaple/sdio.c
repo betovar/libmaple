@@ -62,7 +62,7 @@ sdio_dev *SDIO = &sdio;
 void sdio_init(sdio_dev *dev) {
     rcc_clk_enable(dev->clk_id);
     rcc_reset_dev(dev->clk_id);
-    //nvic_irq_enable(dev->irg_num);
+    nvic_irq_enable(dev->irq_num);
 }
 
 /**
@@ -70,6 +70,7 @@ void sdio_init(sdio_dev *dev) {
  * @param dev SDIO Device
  */
 void sdio_reset(sdio_dev *dev) {
+    nvic_irq_disable(dev->irq_num);
     rcc_reset_dev(dev->clk_id);
     dev->regs->POWER  = 0x00000000;
     dev->regs->CLKCR  = 0x00000000;
@@ -198,7 +199,7 @@ void sdio_dma_disable(sdio_dev *dev) {
 }
 
 /**
- * @brief Configure DMA for receive transfer
+ * @brief Configure DMA for host to receive transfer
  * @param dev SDIO device
  * @param rx_buf pointer to 32-bit memory address
  * @param count Number of transfers to receive
@@ -211,6 +212,7 @@ void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *dst, uint16 count) {
                        dst,                 DMA_SIZE_32BITS,
                        DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
     dma_set_num_transfers(DMA2, DMA_CH4, count);
+    //dma_attach_interrupt(DMA2, DMA_CH4, sdio_irq_dma_rx);
     dma_enable(DMA2, DMA_CH4);
 }
 
@@ -269,7 +271,7 @@ uint32 sdio_get_resp(sdio_dev *dev, uint32 buf) {
         return dev->regs->RESP4;
         break;
       default:
-        return -1; //chosen bc everything should be an error
+        return 0xFFFFFFFF; //chosen bc every status should be an error
     }
 }
 

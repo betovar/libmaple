@@ -13,8 +13,6 @@
 #include "wirish.h"
 #include "libraries/Card/SecureDigital/SDMC.h"
 
-static const uint16 SIZE = 64;
-
 HardwareSDIO SDMC;
 
 void setup() {
@@ -26,22 +24,18 @@ void loop() {
     waitForButtonPress();
     SerialUSB.println("*** Starting SDMC test ***");
     SDMC.begin();
-/**
-    uint8 myByteArray[SIZE];
-    for (int i = 0; i < SIZE; i++) {
-        myByteArray[i] = 0;
-    }
-    SDMC.getSSR((uint32*)&myByteArray);
-    */
+    //SDMC.readBlock(1000, (uint32*)this->cache[0]);
+    SDMC.getSSR();
     SDMC.end();
-/**
-    for (int i = 0; i < SIZE; i++) {
-        SerialUSB.print(myByteArray[i], HEX);
+    /*
+    for (int i = 0; i < 512; i++) {
+        SerialUSB.print(SDMC.cache[i], HEX);
+        SerialUSB.print(" ");
         if ((i+1)%4 == 0) {
             SerialUSB.println("");
         }
     }
-*/
+    */
     SerialUSB.println("*** SDMC test complete ***");
 }
 
