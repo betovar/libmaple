@@ -368,12 +368,12 @@ void HardwareSDIO::identification(void) {
  * @param freq 
  */
 void HardwareSDIO::clockFreq(SDIOClockFrequency freq) {
-    //sdio_clock_disable(this->sdio_d);
+  //sdio_clock_disable(this->sdio_d);
     sdio_cfg_clkcr(this->sdio_d, SDIO_CLKCR_CLKDIV, (uint32)freq);
     #if defined(SDIO_DEBUG_ON)
     float speed = (CYCLES_PER_MICROSECOND*1000.0)/((float)freq+2.0);
     SDIO_DEBUG.println("SDIO_DBG: Clock speed is ");
-    if (speed > 1000) {
+    if (speed > 1000.0) {
         speed /= 1000.0;
         SDIO_DEBUG.print(speed, DEC);
         SDIO_DEBUG.println(" MHz");
@@ -422,6 +422,9 @@ void HardwareSDIO::blockSize(SDIOBlockSize size) {
         #endif
         return;
     }
+    #if defined(SDIO_DEBUG_ON)
+    SDIO_DEBUG.println("SDIO_DBG: Setting block size");
+    #endif
     this->select(this->RCA.RCA);
     this->command(SET_BLOCKLEN, 0x1 << size);
     //this->check(0x2FF9FE00);
@@ -445,7 +448,7 @@ void HardwareSDIO::blockSize(SDIOBlockSize size) {
         #if defined(SDIO_DEBUG_ON)
         SDIO_DEBUG.println("SDIO_DBG: SET_BLOCKLEN completed without error");
         #endif
-        this->blockLength = size;
+        this->blockSz = size;
     }
 }
 
@@ -836,17 +839,29 @@ void HardwareSDIO::transfer(SDCommand cmd) {
     switch (cmd) {
       case READ_SINGLE_BLOCK:
       case READ_MULTIPLE_BLOCK:
+        #if defined(SDIO_DEBUG_ON)
+        SDIO_DEBUG.println("SDIO_DBG: DMA_RX not yet supported");
+        #endif
+        return;
       case WRITE_BLOCK:
       case WRITE_MULTIPLE_BLOCK:
+        #if defined(SDIO_DEBUG_ON)
+        SDIO_DEBUG.println("SDIO_DBG: DMA_TX not yet supported");
+        #endif
+        return;
     //case SEND_TUNING_BLOCK:
       case PROGRAM_CSD:
       case SEND_WRITE_PROT:
       case LOCK_UNLOCK:
       case GEN_CMD:
     //case SWITCH_FUNC:
+        #if defined(SDIO_DEBUG_ON)
+        SDIO_DEBUG.println("SDIO_DBG: Data transfer not yet supported");
+        #endif
+        return;
       default:
         #if defined(SDIO_DEBUG_ON)
-        SDIO_DEBUG.println("SDIO_ERR: Data transfer not supported");
+        SDIO_DEBUG.println("SDIO_ERR: Not an Addressed Data Transfer Command");
         #endif
         return;
     }
@@ -860,13 +875,17 @@ void HardwareSDIO::transfer(SDAppCommand cmd) {
       case SD_STATUS:
       case SEND_SCR:
         #if defined(SDIO_DEBUG_ON)
-        SDIO_DEBUG.println("SDIO_DBG: Polling data transfer");
+        SDIO_DEBUG.println("SDIO_DBG: Data transfer in polling mode");
         #endif
         break;
       case SEND_NUM_WR_BLOCKS:
+        #if defined(SDIO_DEBUG_ON)
+        SDIO_DEBUG.println("SDIO_DBG: Data transfer not yet supported");
+        #endif
+        return;
       default:
         #if defined(SDIO_DEBUG_ON)
-        SDIO_DEBUG.println("SDIO_ERR: Polling data transfer not supported");
+        SDIO_DEBUG.println("SDIO_ERR: Not an Addressed Data Transfer Command");
         #endif
         return;
     }
@@ -1080,21 +1099,77 @@ void HardwareSDIO::getSCR(void) {
     sdio_set_data_timeout(this->sdio_d, SDIO_DTIMER_DATATIME);
     sdio_set_data_length(this->sdio_d, 8); //64-bits or 8-bytes
     sdio_set_dcr(this->sdio_d, 
-                 (blockLength << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 (this->blockSz << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN);
     this->command(SEND_SCR); //ACMD51
     //this->response(SEND_SCR);
     this->transfer(SEND_SCR);
-    /*
+
     #if defined(SDIO_DEBUG_ON)
-    SDIO_DEBUG.print("SDIO_DBG: SCR Structure ");
+    SDIO_DEBUG.print("SDIO_DBG: SCR_STRUCTURE ");
     switch (this->SCR.SCR_STRUCTURE) {
-        SDIO_DEBUG.println(this->);
-        SDIO_DEBUG.print("SDIO_DBG: C_SIZE ");
-        SDIO_DEBUG.println(this->CSD.C_SIZE);
+      case 0:
+        SDIO_DEBUG.print("version 1.0");
+        break;
+      default:
+        SDIO_DEBUG.print("Reserved");
+        break;
+    }
+    SDIO_DEBUG.print("SDIO_DBG: SD_SPEC ");
+    switch (this->SCR.SD_SPEC) {
+      case 0:
+        SDIO_DEBUG.println("Version 1.0 and 1.01");
+        break;
+      case 1:
+        SDIO_DEBUG.println("Version 1.10");
+        break;
+      case 2:
+        switch (this->SCR.SD_SPEC3) {
+          case 0:
+            SDIO_DEBUG.println("Version 2.00");
+            break;
+          case 1:
+            SDIO_DEBUG.println("Version 3.0X");
+            break;
+          default:
+            SDIO_DEBUG.println("Version 2.00 or Version 3.0X");
+            break;
+        }
+        break;
+      default:
+        SDIO_DEBUG.println("Reserved");
+        break;
+    }
+    SDIO_DEBUG.print("SDIO_DBG: DATA_STAT_AFTER_ERASE ");
+    SDIO_DEBUG.println(this->SCR.DATA_STAT_AFTER_ERASE);
+    SDIO_DEBUG.print("SDIO_DBG: SD_SECURITY ");
+    switch (this->SCR.SD_SECURITY) {
+      case 0:
+        SDIO_DEBUG.println("No security");
+        break;
+      case 1:
+        SDIO_DEBUG.println("Not used");
+        break;
+      case 2:
+        SDIO_DEBUG.println("SDSC Card (Security Version 1.01)");
+        break;
+      case 3:
+        SDIO_DEBUG.println("SDHC Card (Security Version 2.00)");
+        break;
+      case 4:
+        SDIO_DEBUG.println("SDXC Card (Security Version 3.xx)");
+        break;
+      default:
+        SDIO_DEBUG.println("Reserved");
+        break;
+    }
+    SDIO_DEBUG.print("SDIO_DBG: EX_SECURITY ");
+    if (this->SCR.EX_SECURITY) {
+        SDIO_DEBUG.println("Extended security is NOT supported");
+    } else {
+        SDIO_DEBUG.println("Extended security is supported");
     }
     #endif
-    */
 }
 
 /**
@@ -1108,12 +1183,66 @@ void HardwareSDIO::getSSR(void) {
     this->blockSize(SDIO_BKSZ_64);
     //this->select(this->RCA.RCA);
     sdio_set_dcr(this->sdio_d, 
-                 (blockLength << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 (this->blockSz << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN);
     this->command(SD_STATUS); //ACMD13
     //this->response(SD_STATUS);
     //this->check(0xFF9FC20);
     this->transfer(SD_STATUS);
+
+    #if defined(SDIO_DEBUG_ON)
+    SDIO_DEBUG.print("SDIO_DBG: DAT_BUS_WIDTH ");
+    switch (this->SSR.DAT_BUS_WIDTH) {
+      case 0:
+        SDIO_DEBUG.println("1-bit width (default)");
+        break;
+      case 2:
+        SDIO_DEBUG.println("4-bit width (wide)");
+        break;
+      default: 
+        SDIO_DEBUG.println("Reserved or Error");
+        break;
+    }
+    SDIO_DEBUG.println("SDIO_DBG: SECURED_MODE ");
+    if (this->SSR.SECURED_MODE) {
+        SDIO_DEBUG.print("In secured mode ");
+    } else {
+        SDIO_DEBUG.print("NOT in secured mode ");
+    }
+    SDIO_DEBUG.print("SDIO_DBG: SD_CARD_TYPE ");
+    switch (this->SSR.SD_CARD_TYPE) {
+      case 0:
+        SDIO_DEBUG.println("Regular SD R/W Card");
+        break;
+      case 1:
+        SDIO_DEBUG.println("SD ROM Card");
+        break;
+      case 2:
+        SDIO_DEBUG.println("OTP");
+        break;
+      default: 
+        SDIO_DEBUG.println("Unknown Card type");
+        break;
+    }
+    SDIO_DEBUG.print("SDIO_DBG: SIZE_OF_PROTECTED_AREA ");
+    SDIO_DEBUG.println(this->SSR.SIZE_OF_PROTECTED_AREA); //FIXME
+    SDIO_DEBUG.print("SDIO_DBG: SPEED_CLASS 0x");
+    SDIO_DEBUG.println(this->SSR.SPEED_CLASS, HEX);
+    SDIO_DEBUG.print("SDIO_DBG: PERFORMANCE_MOVE 0x");
+    SDIO_DEBUG.println(this->SSR.PERFORMANCE_MOVE, HEX);
+    SDIO_DEBUG.print("SDIO_DBG: AU_SIZE 0x");
+    SDIO_DEBUG.println(this->SSR.AU_SIZE, HEX);
+    SDIO_DEBUG.print("SDIO_DBG: ERASE_SIZE ");
+    SDIO_DEBUG.println(this->SSR.ERASE_SIZE);
+    SDIO_DEBUG.print("SDIO_DBG: ERASE_TIMEOUT ");
+    SDIO_DEBUG.println(this->SSR.ERASE_TIMEOUT);
+    SDIO_DEBUG.print("SDIO_DBG: ERASE_OFFSET ");
+    SDIO_DEBUG.println(this->SSR.ERASE_OFFSET);
+    SDIO_DEBUG.print("SDIO_DBG: UHS_SPEED_GRADE 0x");
+    SDIO_DEBUG.println(this->SSR.UHS_SPEED_GRADE, HEX);
+    SDIO_DEBUG.print("SDIO_DBG: UHS_AU_SIZE 0x");
+    SDIO_DEBUG.println(this->SSR.UHS_AU_SIZE, HEX);
+    #endif
 }
 
 /**
@@ -1183,7 +1312,7 @@ void HardwareSDIO::write(uint32 addr,
  * @note Data is send little-endian format
  */
 void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
-    if (this->blockLength != SDIO_BKSZ_512) {
+    if (this->blockSz != SDIO_BKSZ_512) {
         this->blockSize(SDIO_BKSZ_512);
     } //FIXME: handle other block sizes for version 1 cards
     //FIXME: CCS must equal one for block unit addressing
@@ -1193,7 +1322,7 @@ void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
     sdio_set_data_length(this->sdio_d, 512);
     sdio_cfg_dma_rx(this->sdio_d, dst, 512);
     sdio_set_dcr(this->sdio_d,
-                 (this->blockLength << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 (this->blockSz << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN | SDIO_DCTRL_DMAEN);
     this->command(READ_SINGLE_BLOCK, addr);
     //this->check(0xCFF9FE00);

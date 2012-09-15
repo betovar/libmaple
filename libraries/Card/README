@@ -1,5 +1,6 @@
 Card Command Library for Maple (last modified on 4 Sep 2012)
 
+
 Overview
 ========
 
@@ -29,6 +30,7 @@ Currenly, the only functioning code is the initialization and identification
 process. This includes all the functions called from within these, like 
 sending cmd8 and acmd41 for checking the interface conditions.
 
+
 CID Number
 ----------
 
@@ -52,7 +54,8 @@ only one data line to start, check that the fifo is working with interrupts,
 and then expand. The ultimate goal is to have data transferred over DMA, but 
 but a polling scheme might be implemented for a slow speed demo.
 
-Testing
+
+Testing (work in progress)
 -------
 
 Here is an example of a command on OSX that reads the one-thousandth block of 
@@ -61,12 +64,12 @@ an SD card mounted as disk4, and writes the result out to a file:
 dd if=/dev/disk4 of=test.bin bs=512 count=1 iseek=1000
 
 
-Conflicts (to be conmplete)
+Conflicts (to be conmpleted)
 =========
 
 peripheral gpio pins in use
 DMA2 Channel4
-card detection pin
+card detection pin (interrupt based)
 
 
 mapleFAT Proposal
@@ -114,6 +117,7 @@ The SPI peripheral, on the other hand, does not. HardwareSPI is a simple
 wrapper for common settings and basic byte reads so the SPIMode-FAT will have 
 to provide higher-level functionality for these calls. The ultimate goal of 
 this class being block read and write functions.
+
 
 Future Work
 -----------

@@ -563,7 +563,7 @@ class HardwareSDIO {
     csr CSR;
     uint8 cacheBlock[512]; //size of cache is 512-bytes
     SDIOInterruptFlag IRQFlag;
-    SDIOBlockSize blockLength;
+    SDIOBlockSize blockSz;
 
     HardwareSDIO(void);
     //---------------- startup functions ------------------
