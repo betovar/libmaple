@@ -408,9 +408,7 @@ void HardwareSDIO::busMode(SDIOBusMode width) {
  * @param size 
  */
 void HardwareSDIO::blockSize(SDIOBlockSize size) {
-    if ((uin8)size <= 0xF) {
-        this->blockSize = size;
-    } else {
+    if ((size > 0xF) || (size <= 0)) {
         #if defined(SDIO_DEBUG_ON)
         SDIO_DEBUG.println("SDIO_ERR: Invalid block size");
         #endif
@@ -439,9 +437,7 @@ void HardwareSDIO::blockSize(SDIOBlockSize size) {
         #if defined(SDIO_DEBUG_ON)
         SDIO_DEBUG.println("SDIO_DBG: SET_BLOCKLEN completed without error");
         #endif
-        sdio_set_dcr(this->sdio_d, 
-                     (size << SDIO_DCTRL_DBLOCKSIZE_BIT) |
-                     SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN);
+        this->blockLength = size;
     }
 }
 
@@ -825,53 +821,118 @@ void HardwareSDIO::response(SDAppCommand cmd) {
 }
 
 /**
- * @brief Sets up and handles polling data transfer
+ * @brief Sets up and handles polling data transfer for AppCommands
  */
-void HardwareSDIO::transfer(uint32 *buf) {
-    while (sdio_get_data_count() > 0); //wait while data is transfered
+void HardwareSDIO::transfer(SDCommand cmd) {
+  //uint32 *buf = NULL;
+    switch (cmd) {
+      case READ_SINGLE_BLOCK:
+      case READ_MULTIPLE_BLOCK:
+      case WRITE_BLOCK:
+      case WRITE_MULTIPLE_BLOCK:
+    //case SEND_TUNING_BLOCK:
+      case PROGRAM_CSD:
+      case SEND_WRITE_PROT:
+      case LOCK_UNLOCK:
+      case GEN_CMD:
+    //case SWITCH_FUNC:
+      default:
+        #if defined(SDIO_DEBUG_ON)
+        SDIO_DEBUG.println("SDIO_ERR: Data transfer not supported");
+        #endif
+        return;
+    }
+}
+
+/**
+ * @brief Sets up and handles polling data transfer for AppCommands
+ */
+void HardwareSDIO::transfer(SDAppCommand cmd) {
+    switch (cmd) {
+      case SD_STATUS:
+      case SEND_SCR:
+        #if defined(SDIO_DEBUG_ON)
+        SDIO_DEBUG.println("SDIO_DBG: Polling data transfer");
+        #endif
+        break;
+      case SEND_NUM_WR_BLOCKS:
+      default:
+        #if defined(SDIO_DEBUG_ON)
+        SDIO_DEBUG.println("SDIO_ERR: Polling data transfer not supported");
+        #endif
+        return;
+    }
 
     if (this->CSR.READY_FOR_DATA == SDIO_CSR_READY) {
         #if defined(SDIO_DEBUG_ON)
         SDIO_DEBUG.println("SDIO_DBG: Ready to receive data");
         #endif
     }
-    if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
-        #if defined(SDIO_DEBUG_ON)
-        SDIO_DEBUG.println("SDIO_ERR: Data timeout");
-        #endif
-        sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DTIMEOUTC);
-        return;
-    } else if (sdio_get_status(this->sdio_d, SDIO_STA_DCRCFAIL)) {
-        #if defined(SDIO_DEBUG_ON)
-        SDIO_DEBUG.println("SDIO_ERR: Data CRC fail");
-        #endif
-        sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DCRCFAILC);
-        return;
-    } else if (sdio_get_status(this->sdio_d, SDIO_STA_STBITERR)) {
-        #if defined(SDIO_DEBUG_ON)
-        SDIO_DEBUG.println("SDIO_ERR: Data start-bit");
-        #endif
-        return;
-    } else if (sdio_get_status(this->sdio_d, SDIO_STA_RXOVERR)) {
-        #if defined(SDIO_DEBUG_ON)
-        SDIO_DEBUG.println("SDIO_ERR: Data FIFO overrun");
-        #endif
-        return;
-    } else {
-        #if defined(SDIO_DEBUG_ON)
-        SDIO_DEBUG.println("SDIO_DBG: No errors in transfer");
-        #endif
+
+    while (sdio_get_data_count(this->sdio_d) > 0) {
+        if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
+            #if defined(SDIO_DEBUG_ON)
+            SDIO_DEBUG.println("SDIO_ERR: Data timeout");
+            #endif
+            sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DTIMEOUTC);
+            return;
+        }
+        if (sdio_get_status(this->sdio_d, SDIO_STA_DCRCFAIL)) {
+            #if defined(SDIO_DEBUG_ON)
+            SDIO_DEBUG.println("SDIO_ERR: Data CRC fail");
+            #endif
+            sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DCRCFAILC);
+            return;
+        }
+        if (sdio_get_status(this->sdio_d, SDIO_STA_STBITERR)) {
+            #if defined(SDIO_DEBUG_ON)
+            SDIO_DEBUG.println("SDIO_ERR: Data start-bit");
+            #endif
+            return;
+        }
+        if (sdio_get_status(this->sdio_d, SDIO_STA_RXOVERR)) {
+            #if defined(SDIO_DEBUG_ON)
+            SDIO_DEBUG.println("SDIO_ERR: Data FIFO overrun");
+            #endif
+            return;
+        }
     }
 
+    #if defined(SDIO_DEBUG_ON)
+    SDIO_DEBUG.println("SDIO_DBG: Transfer complete, no errors encounted");
+    #endif
+
+    uint32 buf[16]; //max 64-bytes or 512-bits in 32-bit words
     int rxed = 0;
-    uint32 *buf = (uint32*)&this->SCR;
-    while (sdio_get_fifo_count() > 0) {
+    while (sdio_get_fifo_count(this->sdio_d) > 0) {
         buf[rxed++] = sdio_read_data(this->sdio_d);
     }
     #if defined(SDIO_DEBUG_ON)
     SDIO_DEBUG.print("SDIO_DBG: Bytes received ");
     SDIO_DEBUG.println(rxed*4, DEC);
     #endif
+
+    switch (cmd) {
+      case SD_STATUS:
+
+        break;
+      case SEND_SCR:
+        this->SCR.SCR_STRUCTURE = (0xF0000000 & buf[0]) >> 28;
+        this->SCR.SD_SPEC = (0xF000000 & buf[0]) >> 24;
+        this->SCR.DATA_STAT_AFTER_ERASE = (0x800000 & buf[0]) >> 23;
+        this->SCR.SD_SECURITY = (0x700000 & buf[0]) >> 20;
+        this->SCR.SD_BUS_WIDTHS = (0xF0000 & buf[0]) >> 16;
+        this->SCR.SD_SPEC3 = (0x8000 & buf[0]) >> 15;
+        this->SCR.EX_SECURITY = (0x7800 & buf[0]) >> 11;
+        this->SCR.CMD_SUPPORT = (0x3 & buf[0]);
+        break;
+      case SEND_NUM_WR_BLOCKS:
+      default:
+        #if defined(SDIO_DEBUG_ON)
+        SDIO_DEBUG.println("SDIO_ERR: Polling data transfer not supported");
+        #endif
+        return;
+    }
 }
 
 /**
@@ -1007,13 +1068,25 @@ void HardwareSDIO::getCSD(void) {
  * @note Data packet format for Wide Width Data is most significant byte first
  */
 void HardwareSDIO::getSCR(void) {
+    this->blockSize(SDIO_BKSZ_8);
     sdio_set_data_timeout(this->sdio_d, SDIO_DTIMER_DATATIME);
     sdio_set_data_length(this->sdio_d, 8); //64-bits or 8-bytes
-    this->blockSize(SDIO_BKSZ_8);
-    this->select(this->RCA.RCA);
+    sdio_set_dcr(this->sdio_d, 
+                 (blockLength << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN);
     this->command(SEND_SCR); //ACMD51
     //this->response(SEND_SCR);
-    this->transfer((uint32*)&this->SCR);
+    this->transfer(SEND_SCR);
+    /*
+    #if defined(SDIO_DEBUG_ON)
+    SDIO_DEBUG.print("SDIO_DBG: SCR Structure ");
+    switch (this->SCR.SCR_STRUCTURE) {
+        SDIO_DEBUG.println(this->);
+        SDIO_DEBUG.print("SDIO_DBG: C_SIZE ");
+        SDIO_DEBUG.println(this->CSD.C_SIZE);
+    }
+    #endif
+    */
 }
 
 /**
@@ -1024,12 +1097,15 @@ void HardwareSDIO::getSCR(void) {
 void HardwareSDIO::getSSR(void) {
     sdio_set_data_timeout(this->sdio_d, SDIO_DTIMER_DATATIME);
     sdio_set_data_length(this->sdio_d, 64); //512-bits or 64-bytes
-    this->blockSize(SDIO_BKSZ_64); 
-    this->select(this->RCA.RCA);
+    this->blockSize(SDIO_BKSZ_64);
+    //this->select(this->RCA.RCA);
+    sdio_set_dcr(this->sdio_d, 
+                 (blockLength << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN);
     this->command(SD_STATUS); //ACMD13
     //this->response(SD_STATUS);
     //this->check(0xFF9FC20);
-    this->transfer((uint32*)&this->SSR);
+    this->transfer(SD_STATUS);
 }
 
 /**
@@ -1099,7 +1175,7 @@ void HardwareSDIO::write(uint32 addr,
  * @note Data is send little-endian format
  */
 void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
-    if (this->blockSize != SDIO_BKSZ_512) {
+    if (this->blockLength != SDIO_BKSZ_512) {
         this->blockSize(SDIO_BKSZ_512);
     } //FIXME: handle other block sizes for version 1 cards
     //FIXME: CCS must equal one for block unit addressing
@@ -1109,7 +1185,7 @@ void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
     sdio_set_data_length(this->sdio_d, 512);
     sdio_cfg_dma_rx(this->sdio_d, dst, 512);
     sdio_set_dcr(this->sdio_d,
-                 (this->blockSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 (this->blockLength << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN | SDIO_DCTRL_DMAEN);
     this->command(READ_SINGLE_BLOCK, addr);
     //this->check(0xCFF9FE00);
@@ -1181,15 +1257,7 @@ void HardwareSDIO::writeBlock(uint32 addr, const uint32 *src) {
     Other fields are don’t care.
     e)  Wait for SDIO_STA[10] = DBCKEND
     */
-    sdio_set_interrupt(this->sdio_d, SDIO_MASK_TXFIFOFIE |
-                       SDIO_MASK_TXFIFOEIE | SDIO_MASK_TXFIFOHEIE |
-                       SDIO_MASK_TXDAVLIE | SDIO_MASK_TXUNDERRIE);
+
     //uint32 count = 512/4;
     this->command(WRITE_BLOCK, addr);
-    if (sdio_get_status(this->sdio_d, SDIO_ICR_CMDRENDC) == 1) {
-        //while (sdio_get_fifo_count(this->sdio_d)) 
-        for (int i=0; i<8; i++) {
-            sdio_write_data(this->sdio_d, src[i]);
-        }
-    }
 }

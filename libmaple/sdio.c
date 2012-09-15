@@ -466,5 +466,5 @@ void sdio_add_interrupt(sdio_dev *dev, uint32 mask) {
  * @param mask Interrupt sources to enable
  */
 void sdio_set_interrupt(sdio_dev *dev, uint32 mask) {
-    dev->regs->MASK = mask;
+    dev->regs->MASK = ~SDIO_MASK_RESERVED & mask;
 }

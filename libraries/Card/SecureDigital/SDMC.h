@@ -351,7 +351,7 @@ typedef enum SDIOStatusResponseTag {
 typedef struct InterfaceConditionResponse {
     unsigned VOLTAGE_ACCEPTED       :4;
     unsigned CHECK_PATTERN          :8;
-} icr; //__attribute__((packed)) icr;
+} icr;
 
 typedef struct OperationConditionsRegister { //MSBit first
     /** Card power up status bit: This bit is set to LOW if
@@ -370,7 +370,7 @@ typedef struct OperationConditionsRegister { //MSBit first
     unsigned S18A                   :1;
     unsigned VOLTAGE_WINDOW         :16; // 2.7v - 3.6v
   //unsigned Reserved               :8; // Reserved for low voltage range
-}ocr; //__attribute__((packed)) ocr;
+}ocr;
 
 typedef struct product_revision {
     unsigned N                      :4;
@@ -406,7 +406,7 @@ typedef struct CardIdentificationNumber { //MSBit first
     unsigned CRC                      :7;
     /** ST specific: The SDIO_RESP4 register LSBit is always 0b */
   //unsigned Always1                  :1;
-} cid //__attribute__((packed)) cid;
+} cid;
 
 typedef struct RelativeCardAddress { //MSBit first
     uint16 RCA;
@@ -415,15 +415,20 @@ typedef struct RelativeCardAddress { //MSBit first
     unsigned ERROR                  :1;
     unsigned CURRENT_STATE          :4;
     unsigned READY_FOR_DATA         :1;
+  //unsigned Reserved3              :2; //copied from CSR
     unsigned APP_CMD                :1;
+  //unsigned Reserved4              :1;
     unsigned AKE_SEQ_ERROR          :1;
-} rca; //__attribute__((packed)) rca;
+  //unsigned Reserved5              :1;
+  //unsigned Reserved6              :2;
+} rca;
 
 typedef uint16 dsr; // DriverStageRegister is optional
 
 typedef struct CardSpecificData {
     SdCardCapacity capacity;
     unsigned CSD_STRUCTURE          :2;
+  //unsigned Reserved1              :6;
     uint8 TAAC;
     uint8 NSAC;
     uint8 TRAN_SPEED;
@@ -452,7 +457,8 @@ typedef struct CardSpecificData {
     unsigned TMP_WRITE_PROTECT      :1;
     unsigned FILE_FORMAT            :2;
     unsigned CRC                    :7;
-} csd; //__attribute__((packed)) csd;
+  //unsigned Always1                :1;
+} csd;
 
 typedef struct SdConfigurationRegister { //MSBit first
     /** value 0 is for physical layer spec 1.01-3.01 */
@@ -469,11 +475,11 @@ typedef struct SdConfigurationRegister { //MSBit first
     unsigned SD_SPEC3               :1;
     /** Extended Security support */
     unsigned EX_SECURITY            :4;
-    unsigned Reserved1              :9;
+  //unsigned Reserved1              :9;
     /** new command support for newer cards */
     unsigned CMD_SUPPORT            :2;
   //uint32 Reserved2; // Reserved for manufacturer
-} scr; //__attribute__((packed)) scr;
+} scr;
 
 /**
  * Response Structures
@@ -493,30 +499,41 @@ typedef struct CardStatusResponse { //MSBit first
     unsigned CARD_ECC_FAILED        :1;
     unsigned CC_ERROR               :1;
     unsigned ERROR                  :1;
+  //unsigned Reserved1              :1;
+  //unsigned Reserved2              :1; //DEFERRED_RESPONSE
     unsigned CSD_OVERWRITE          :1;
     unsigned WP_ERASE_SKIP          :1;
     unsigned CARD_ECC_DISABLED      :1;
     unsigned ERASE_RESET            :1;
     unsigned CURRENT_STATE          :4;
     unsigned READY_FOR_DATA         :1;
+  //unsigned Reserved3              :2;
     unsigned APP_CMD                :1;
+  //unsigned Reserved4              :1;
     unsigned AKE_SEQ_ERROR          :1;
-} csr; //__attribute__((packed)) csr;
+  //unsigned Reserved5              :1;
+  //unsigned Reserved6              :2;
+} csr;
 
 typedef struct SdStatusResponse { //MSBit first for Wide Width Data
     unsigned DAT_BUS_WIDTH          :2;
     unsigned SECURED_MODE           :1;
+  //Reserved1                       :7; //Reserved for Security Functions
+  //Reserved2                       :6;
     uint16 SD_CARD_TYPE;
     uint32 SIZE_OF_PROTECTED_AREA;
     uint8 SPEED_CLASS;
     uint8 PERFORMANCE_MOVE;
     unsigned AU_SIZE                :4;
+  //unsigned Reserved3              :4;
     uint16 ERASE_SIZE;
     unsigned ERASE_TIMEOUT          :6;
     unsigned ERASE_OFFSET           :2;
     unsigned UHS_SPEED_GRADE        :4;
     unsigned UHS_AU_SIZE            :4;
-} ssr; //__attribute__((packed)) ssr;
+  //uint8 Reserved4[10];
+  //uint8 Reserved5[39]; //Reserved for Manufacturer
+} ssr;
 
 /** SDIO Card Structures, TBD
 
@@ -546,7 +563,7 @@ class HardwareSDIO {
     csr CSR;
     uint8 cache[512]; //size of cache block is 512-bytes
     SDIOInterruptFlag IRQFlag;
-    SDIOBlockSize blockSize;
+    SDIOBlockSize blockLength;
 
     HardwareSDIO(void);
     //---------------- startup functions ------------------
@@ -588,14 +605,12 @@ class HardwareSDIO {
     void command(SDCommand, uint32);
     void command(SDCommand);
     void response(SDCommand);
-  //void transfer(SDCommand);
+    void transfer(SDCommand);
     
     void command(SDAppCommand, uint32);
     void command(SDAppCommand);
     void response(SDAppCommand);
-  //void transfer(SDAppCommand);
-
-    void transfer(uint32*);
+    void transfer(SDAppCommand);
 
     /** future functions
     void protect(void); // write protect
