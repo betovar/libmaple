@@ -56,7 +56,15 @@ static const uint32 SDIO_VALID_VOLTAGE_WINDOW   = 0x3000; //3.2-3.4 volts
  */
 HardwareSDIO::HardwareSDIO(void) {
     this->sdio_d = SDIO;
-    this->RCA.RCA = 0;
+
+    this->RCA.RCA = 0; //zero addresses all cards
+    this->RCA.COM_CRC_ERROR = 0;
+    this->RCA.ILLEGAL_COMMAND = 0;
+    this->RCA.CURRENT_STATE = 0;
+    this->RCA.READY_FOR_DATA = 0;
+    this->RCA.APP_CMD = 0;
+    this->RCA.AKE_SEQ_ERROR = 0;
+
     this->CID.MID = 0;
     for (int i=0; i<=2; i++) { //OID is a NULL terminated string
         this->CID.OID[i] = 0;
@@ -102,7 +110,7 @@ HardwareSDIO::HardwareSDIO(void) {
     this->CSD.CRC = 0;
 
     for (int i = 0; i < 512; i++) {
-        this->cache[i] = 0;
+        this->cacheBlock[i] = 0; //zero-out cache block
     }
 }
 

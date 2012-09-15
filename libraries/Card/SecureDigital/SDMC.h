@@ -561,7 +561,7 @@ class HardwareSDIO {
     ssr SSR;
     dsr DSR; // Default is 0x0404
     csr CSR;
-    uint8 cache[512]; //size of cache block is 512-bytes
+    uint8 cacheBlock[512]; //size of cache is 512-bytes
     SDIOInterruptFlag IRQFlag;
     SDIOBlockSize blockLength;
 
