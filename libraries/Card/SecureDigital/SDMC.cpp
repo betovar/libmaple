@@ -1109,10 +1109,10 @@ void HardwareSDIO::getSCR(void) {
     SDIO_DEBUG.print("SDIO_DBG: SCR_STRUCTURE ");
     switch (this->SCR.SCR_STRUCTURE) {
       case 0:
-        SDIO_DEBUG.print("version 1.0");
+        SDIO_DEBUG.println("version 1.0");
         break;
       default:
-        SDIO_DEBUG.print("Reserved");
+        SDIO_DEBUG.println("Reserved");
         break;
     }
     SDIO_DEBUG.print("SDIO_DBG: SD_SPEC ");

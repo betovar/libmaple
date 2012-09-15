@@ -24,12 +24,13 @@ void loop() {
     waitForButtonPress();
     SerialUSB.println("*** Starting SDMC test ***");
     SDMC.begin();
-    //SDMC.readBlock(1000, (uint32*)this->cache[0]);
-    SDMC.getSSR();
+    SDMC.getSCR();
+  //SDMC.getSSR();
+  //SDMC.readBlock(1000, (uint32*)this->cacheBlock[0]);
     SDMC.end();
     /*
     for (int i = 0; i < 512; i++) {
-        SerialUSB.print(SDMC.cache[i], HEX);
+        SerialUSB.print(SDMC.cacheBlock[i], HEX);
         SerialUSB.print(" ");
         if ((i+1)%4 == 0) {
             SerialUSB.println("");
