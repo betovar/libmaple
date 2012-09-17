@@ -54,11 +54,11 @@ static const uint32 SDIO_VALID_VOLTAGE_WINDOW   = 0x3000; //3.2-3.4 volts
 #endif
 
 /**
- * @brief Constructor
+ * @brief Constructor for Wirish SDIO peripheral support
  */
-HardwareSDIO::HardwareSDIO(void) {
+HardwareSDIO::HardwareSDIO(sdio_dev*) {
     this->sdio_d = SDIO;
-
+    //initialze RCA
     this->RCA.RCA = 0; //zero addresses all cards
     this->RCA.COM_CRC_ERROR = 0;
     this->RCA.ILLEGAL_COMMAND = 0;
@@ -66,7 +66,7 @@ HardwareSDIO::HardwareSDIO(void) {
     this->RCA.READY_FOR_DATA = 0;
     this->RCA.APP_CMD = 0;
     this->RCA.AKE_SEQ_ERROR = 0;
-
+    //initialze CID
     this->CID.MID = 0;
     for (int i=0; i<=2; i++) { //OID is a NULL terminated string
         this->CID.OID[i] = 0;
@@ -80,7 +80,7 @@ HardwareSDIO::HardwareSDIO(void) {
     this->CID.MDT.YEAR = 0;
     this->CID.MDT.MONTH = 0;
     this->CID.CRC = 0;
-
+    //initialze CSD
     this->CSD.CSD_STRUCTURE = 3; //undefined card version
     this->CSD.TAAC = 0;
     this->CSD.NSAC = 0;
@@ -110,10 +110,17 @@ HardwareSDIO::HardwareSDIO(void) {
     this->CSD.TMP_WRITE_PROTECT = 0;
     this->CSD.FILE_FORMAT = 0;
     this->CSD.CRC = 0;
-
+    //initialze cache block
     for (int i = 0; i < 512; i++) {
         this->cacheBlock[i] = 0; //zero-out cache block
     }
+}
+
+/**
+ * @brief General constructor
+ */
+HardwareSDIO::HardwareSDIO(void) {
+    this->HardwareSDIO(SDIO);
 }
 
 /**
@@ -1381,22 +1388,31 @@ void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
  */
 void HardwareSDIO::writeBlock(uint32 addr, const uint32 *src) {
     /**
-    a)  Program the SDIO data length register (SDIO data timer register should
-    be already programmed before the card identification process)
-    b)  Program the SDIO argument register with the address location of the
-    card where data is to be transferred
-    c)  Program the SDIO command register: CmdIndex with 24 (WRITE_BLOCK);
-    WaitResp with ‘1’ (SDIO card host waits for a response); CPSMEN with ‘1’
-    (SDIO card host enabled to send a command). Other fields are at their
-    reset value.
-    d)  Wait for SDIO_STA[6] = CMDREND interrupt, then program the SDIO data
-    control register: DTEN with ‘1’ (SDIO card host enabled to send data);
-    DTDIR with ‘0’ (from controller to card); DTMODE with ‘0’ (block data 
-    transfer); DMAEN with ‘1’ (DMA enabled); DBLOCKSIZE with 0x9 (512 bytes).
-    Other fields are don’t care.
+    1.  Do the card identification process 
+    2.  Increase the SDIO_CK frequency 
+    3.  Select the card by sending CMD7 
+    4.  Configure the DMA2
+    5.  Send CMD24 (WRITE_BLOCK) as follows:
+    a)  Program the SDIO data length register (SDIO data timer register should 
+        be already programmed before the card identification process)
+    b)  Program the SDIO argument register with the address location of the 
+        card where data is to be transferred
+    c)  Program the SDIO command register: CmdIndex with 24 (WRITE_BLOCK); 
+        WaitResp with ‘1’ (SDIO card host waits for a response); 
+        CPSMEN with ‘1’ (SDIO card host enabled to send a command). 
+        Other fields are at their reset value.
+    d)  Wait for SDIO_STA[6] = CMDREND interrupt, 
+        then program the SDIO data control register: DTEN with ‘1’ 
+        (SDIO card host enabled to send data); 
+        DTDIR with ‘0’ (from controller to card); 
+        DTMODE with ‘0’ (block data transfer); DMAEN with ‘1’ (DMA enabled); 
+        DBLOCKSIZE with 0x9 (512 bytes). Other fields are don’t care.
     e)  Wait for SDIO_STA[10] = DBCKEND
+    6.  Check that no channels are still enabled by polling the 
+    DMA Enabled Channel Status register.
     */
 
-    //uint32 count = 512/4;
+    this->select();
+    sdio_cfg_dma_tx();
     this->command(WRITE_BLOCK, addr);
 }

@@ -38,7 +38,7 @@
 #ifndef _SDMC_H_
 #define _SDMC_H_
 
-/**
+/*
  * SDIO Enumerations
  */
 
@@ -112,170 +112,170 @@ typedef enum SDIOInterruptFlag {
     SDIO_FLAG_ERROR
 } SDIOInterruptFlag;
 
-/**
+/*
  * SD Command Enumerations
  */
 
 typedef enum SDCommand {
 // Basic Commands (class 0)
-    /** CMD0 - Resets all cards to idle state */
+    /* CMD0 - Resets all cards to idle state */
     GO_IDLE_STATE           = 0,
-    /** CMD1 - Valid for the Thin (1.4mm) Standard Size SD Memory Card only if
-     *  used after re-initializing a card (not after power on reset) */
+    /* CMD1 - Valid for the Thin (1.4mm) Standard Size SD Memory Card only if
+     * used after re-initializing a card (not after power on reset) */
     SEND_OP_COND            = 1,
-    /** CMD2 - Asks any card to send the CID numbers on the CMD line */
+    /* CMD2 - Asks any card to send the CID numbers on the CMD line */
     ALL_SEND_CID            = 2,
-    /** CMD3 - Ask the card to publish a new relative address */
+    /* CMD3 - Ask the card to publish a new relative address */
     SEND_RELATIVE_ADDR      = 3,
-    /** CMD4 - Programs the DSR of all cards */
+    /* CMD4 - Programs the DSR of all cards */
     SET_DSR                 = 4,
-    /** CMD5 - reserved for SDIO cards */
+    /* CMD5 - reserved for SDIO cards */
   //IO_SEND_OP_COND         = 5,
-    /** CMD7 - toggles a card between the stand-by and transfer
+    /* CMD7 - toggles a card between the stand-by and transfer
      * states or between the programming and disconnect states */
     SELECT_DESELECT_CARD    = 7,
-    /** CMD8 - SD Memory Card interface condition */
+    /* CMD8 - SD Memory Card interface condition */
     SEND_IF_COND            = 8,
-    /** CMD9 - Addressed card sends its card-specific data (CSD)
+    /* CMD9 - Addressed card sends its card-specific data (CSD)
      * on the CMD line */
     SEND_CSD                = 9,
-    /** CMD10 - Addressed card sends its card identification (CID)
+    /* CMD10 - Addressed card sends its card identification (CID)
      * on the CMD line */
     SEND_CID                = 10,
-    /** CMD11 - Switch to 1.8V bus signaling level */
+    /* CMD11 - Switch to 1.8V bus signaling level */
   //VOLTAGE_SWITCH          = 11,
-    /** CMD12 - Forces the card to stop transmission */
+    /* CMD12 - Forces the card to stop transmission */
     STOP_TRANSMISSION       = 12,
-    /** CMD13 - Addressed card sends its status register */
+    /* CMD13 - Addressed card sends its status register */
     SEND_STATUS             = 13,
-    /** CMD14 - Reserved */
+    /* CMD14 - Reserved */
   //CMD14                   = 14,
-    /** CMD15 - Sends an addressed card into the Inactive State */
+    /* CMD15 - Sends an addressed card into the Inactive State */
     GO_INACTIVE_STATE       = 15,
 
 // Block-Oriented Read Commands (class 2)
-    /** CMD16 -  */
+    /* CMD16 -  */
     SET_BLOCKLEN            = 16,
-    /** CMD17 -  */
+    /* CMD17 -  */
     READ_SINGLE_BLOCK       = 17,
-    /** CMD18 -  */
+    /* CMD18 -  */
     READ_MULTIPLE_BLOCK     = 18,
-    /** CMD19 - Reserved */
+    /* CMD19 - Reserved */
   //SEND_TUNING_BLOCK       = 19,
-    /** CMD20 - Reserved */
+    /* CMD20 - Reserved */
   //SPEED_CLASS_CONTROL     = 20,
-    /** CMD21 - Reserved */
+    /* CMD21 - Reserved */
   //CMD21                   = 21,
-    /** CMD22 - Reserved */
+    /* CMD22 - Reserved */
   //CMD22                   = 22,
-    /** CMD23 -  */
+    /* CMD23 -  */
     SET_BLOCK_COUNT         = 23,
 
 // Block-Oriented Write Commands (class 4)
-    /** CMD16 - Repeated from class 2 */
+    /* CMD16 - Repeated from class 2 */
   //SET_BLOCKLEN            = 16,
-    /** CMD20 - Repeated from class 2 */
+    /* CMD20 - Repeated from class 2 */
   //SPEED_CLASS_CONTROL     = 20,
-    /** CMD23 - Repeated from class 2 */
+    /* CMD23 - Repeated from class 2 */
   //SET_BLOCK_COUNT         = 23,
-    /** CMD24 -  */
+    /* CMD24 -  */
     WRITE_BLOCK             = 24,
-    /** CMD25 -  */
+    /* CMD25 -  */
     WRITE_MULTIPLE_BLOCK    = 25,
-    /** CMD26 - Reserved for manufacturer */
+    /* CMD26 - Reserved for manufacturer */
   //PROGRAM_CID             = 26,
-    /** CMD27 -  */
+    /* CMD27 -  */
     PROGRAM_CSD             = 27,
 
 // Block Oriented Write Protection Commands (class 6)
-    /** CMD28 - Set Write Protect */
+    /* CMD28 - Set Write Protect */
     SET_WRITE_PROT          = 28,
-    /** CMD29 - Clear Write Protect */
+    /* CMD29 - Clear Write Protect */
     CLR_WRITE_PROT          = 29,
-    /** CMD30 - Send Write Protect */
+    /* CMD30 - Send Write Protect */
     SEND_WRITE_PROT         = 30,
-    /** CMD31 - Reserved */
+    /* CMD31 - Reserved */
   //CMD31                   = 31,
 
 // Erase Commands (class 5)
-    /** CMD32 -  */
+    /* CMD32 -  */
     ERASE_WR_BLK_START_ADDR = 32,
-    /** CMD33 -  */
+    /* CMD33 -  */
     ERASE_WR_BLK_END_ADDR   = 33,
-    /** CMD38 -  */
+    /* CMD38 -  */
     ERASE                   = 38,
-    /** CMD39 -  */
+    /* CMD39 -  */
   //CMD39                   = 39,
-    /** CMD41 - Reserved */
+    /* CMD41 - Reserved */
   //CMD41                   = 41,
 
 // Lock Card (class 7)
-    /** CMD16 - Repeated from class 2 */
+    /* CMD16 - Repeated from class 2 */
   //SET_BLOCKLEN            = 16,
-    /** CMD40 -  */
+    /* CMD40 -  */
   //CMD40                   = 40,
-    /** CMD42 -  */
+    /* CMD42 -  */
     LOCK_UNLOCK             = 42,
-    /** CMD43-49, 51 - Reserved */
+    /* CMD43-49, 51 - Reserved */
 
 // Application Specific Commands (class 8)
-    /** CMD55 -  */
+    /* CMD55 -  */
     APP_CMD                 = 55,
-    /** CMD56 -  */
+    /* CMD56 -  */
     GEN_CMD                 = 56
-    /** CMD58 - Reserved */
+    /* CMD58 - Reserved */
   //READ_OCR                = 58,
-    /** CMD59 - Reserved */
+    /* CMD59 - Reserved */
   //CRC_ON_OFF              = 59,
-    /** CMD60-63 - Reserved for manufacturer */
+    /* CMD60-63 - Reserved for manufacturer */
 
 // I/O Mode Commands (class 9)
-    /** CMD52-54 - Commands for SDIO */
+    /* CMD52-54 - Commands for SDIO */
   //IO_RW_DIRECT            = 52,
   //IO_RW_EXTENDED          = 53,
   //CMD54                   = 54,
 
 // Switch Function Commands (class 10)
-    /** CMD6 - Checks switchable function and switches card function */
+    /* CMD6 - Checks switchable function and switches card function */
   //SWITCH_FUNC             = 6,
-    /** CMD34 -  */
+    /* CMD34 -  */
   //CMD34                   = 34,
-    /** CMD35 -  */
+    /* CMD35 -  */
   //CMD35                   = 35,
-    /** CMD36 -  */
+    /* CMD36 -  */
   //CMD36                   = 36,
-    /** CMD37 -  */
+    /* CMD37 -  */
   //CMD37                   = 37,
-    /** CMD50 -  */
+    /* CMD50 -  */
   //CMD50                   = 50,
-    /** CMD57 -  */
+    /* CMD57 -  */
   //CMD57                   = 57,
 } SDCommand;
 
 typedef enum SDAppCommand {
 // Application Specific Commands used/reserved by SD Memory Card (class n/a)
-    /** ACMD1-5 - Reserved */
-    /** ACMD6 -  */
+    /* ACMD1-5 - Reserved */
+    /* ACMD6 -  */
     SET_BUS_WIDTH           = 6,
-    /** ACMD7-12 - Reserved */
-    /** ACMD13 -  */
+    /* ACMD7-12 - Reserved */
+    /* ACMD13 -  */
     SD_STATUS               = 13,
-    /** ACMD14-21 - Reserved */
-    /** ACMD22 -  */
+    /* ACMD14-21 - Reserved */
+    /* ACMD22 -  */
     SEND_NUM_WR_BLOCKS      = 22,
-    /** ACMD23 -  */
+    /* ACMD23 -  */
     SET_WR_BLK_ERASE_COUNT  = 23,
-    /** ACMD24-40 - Reserved */
-    /** ACMD41 -  */
+    /* ACMD24-40 - Reserved */
+    /* ACMD41 -  */
     SD_SEND_OP_COND         = 41,
-    /** ACMD42 -  */
+    /* ACMD42 -  */
     SET_CLR_CARD_DETECT     = 42,
-    /** ACMD51 -  */
+    /* ACMD51 -  */
     SEND_SCR                = 51
-    /** ACMD52-59 - Reserved */
+    /* ACMD52-59 - Reserved */
 } SDAppCommand;
 
-/**
+/*
  * SD Structure Specific Enumerations
  */
 
@@ -344,7 +344,7 @@ typedef enum SDIOStatusResponseTag {
     SDIO_SSR_AU_SIZE_64MB    = 15,
 } SDIOStatusResponseTag;
 
-/**
+/*
  * SD Register Structures
  */
 
@@ -354,19 +354,19 @@ typedef struct InterfaceConditionResponse {
 } icr;
 
 typedef struct OperationConditionsRegister { //MSBit first
-    /** Card power up status bit: This bit is set to LOW if
-     *  the card has not finished the power up routine. */
+    /* Card power up status bit: This bit is set to LOW if
+     * the card has not finished the power up routine. */
     unsigned BUSY                   :1;
-    /** Card Capacity Status: This bit is valid only when
-     *  the card power up status bit is set. 
-     *  SDHC and SDXC use the 32-bit argument of memory access commands as
-     *  block address format. Block length is fixed to 512 bytes regardless
-     *  CMD16, SDSC uses the 32-bit argument of memory access commands as byte
-     *  address format. Block length is determined by CMD16
+    /* Card Capacity Status: This bit is valid only when
+     * the card power up status bit is set. 
+     * SDHC and SDXC use the 32-bit argument of memory access commands as
+     * block address format. Block length is fixed to 512 bytes regardless
+     * CMD16, SDSC uses the 32-bit argument of memory access commands as byte
+     * address format. Block length is determined by CMD16
      */
     unsigned CCS                    :1;
-    /** Switch to 1.8v Accepted:
-     *  Only UHS-I card supports this bit */
+    /* Switch to 1.8v Accepted:
+     * Only UHS-I card supports this bit */
     unsigned S18A                   :1;
     unsigned VOLTAGE_WINDOW         :16; // 2.7v - 3.6v
   //unsigned Reserved               :8; // Reserved for low voltage range
@@ -383,28 +383,28 @@ typedef struct manufacturing_date {
 }__attribute__((packed)) manu_date;
 
 typedef struct CardIdentificationNumber { //MSBit first
-    /** An 8-bit binary number that identifies the card manufacturer */
+    /* An 8-bit binary number that identifies the card manufacturer */
     uint8 MID; // Manufacturer ID
-    /** A 2-character ASCII string that identifies the card OEM */
-    char OID[3]; // OEM/Application ID
+    /* A 2-character ASCII string that identifies the card OEM */
+    char OID[3]; // OEM/Application ID, modified to be a NULL terminated string
     /** The product name is a string, 5-character ASCII string */
-    char PNM[6]; // Product Name
-    /** The Serial Number is 32 bits of a binary number */
+    char PNM[6]; // Product Name, modified to be a NULL terminated string
+    /* The Serial Number is 32 bits of a binary number */
     uint32 PSN;  // Product Serial Number
-    /** The product revision is composed of two Binary Coded Decimal (BCD)
+    /* The product revision is composed of two Binary Coded Decimal (BCD)
      * digits, four bits each, repre- senting an "n.m" revision number.
      * The "n" is the most significant nibble and "m" is the least
      * significant nibble */
     prod_revn PRV; // Product Revision Number
   //unsigned Reserved1                :4;
-    /** The manufacturing date is composed of two hexadecimal digits, one
+    /* The manufacturing date is composed of two hexadecimal digits, one
      * is 8 bits representing the year(y) and the other is 4 bits representing
      * the month (m). The "m" field [11:8] is the month code. 1 = January.
      * The "y" field [19:12] is the year code. 0 = 2000. */
     manu_date MDT; // Manufacturing Date, most significant 4 bits are reserved
     /** CRC7 checksum (7 bits) */
     unsigned CRC                      :7;
-    /** ST specific: The SDIO_RESP4 register LSBit is always 0b */
+    /* ST specific: The SDIO_RESP4 register LSBit is always 0b */
   //unsigned Always1                  :1;
 } cid;
 
@@ -461,27 +461,27 @@ typedef struct CardSpecificData {
 } csd;
 
 typedef struct SdConfigurationRegister { //MSBit first
-    /** value 0 is for physical layer spec 1.01-3.01 */
+    /* value 0 is for physical layer spec 1.01-3.01 */
     unsigned SCR_STRUCTURE          :4;
-    /** SD Memory Card - Spec. Version */
+    /* SD Memory Card - Spec. Version */
     unsigned SD_SPEC                :4;
-    /** The data status is card vendor dependent */
+    /* The data status is card vendor dependent */
     unsigned DATA_STAT_AFTER_ERASE  :1;
-    /** CPRM Security Specification Version */
+    /* CPRM Security Specification Version */
     unsigned SD_SECURITY            :3;
-    /** DAT bus widths that are supported by the card */
+    /* DAT bus widths that are supported by the card */
     unsigned SD_BUS_WIDTHS          :4;
-    /** Spec. Version 3.00 or higher */
+    /* Spec. Version 3.00 or higher */
     unsigned SD_SPEC3               :1;
-    /** Extended Security support */
+    /* Extended Security support */
     unsigned EX_SECURITY            :4;
   //unsigned Reserved1              :9;
-    /** new command support for newer cards */
+    /* new command support for newer cards */
     unsigned CMD_SUPPORT            :2;
   //uint32 Reserved2; // Reserved for manufacturer
 } scr;
 
-/**
+/*
  * Response Structures
  */
 
@@ -535,8 +535,7 @@ typedef struct SdStatusResponse { //MSBit first for Wide Width Data
   //uint8 Reserved5[39]; //Reserved for Manufacturer
 } ssr;
 
-/** SDIO Card Structures, TBD
-
+/* SDIO Card Structures, TBD
 //CardCommonControlRegister
 typedef struct CardCommonControlRegister {} cccr;
 
@@ -565,6 +564,7 @@ class HardwareSDIO {
     SDIOInterruptFlag IRQFlag;
     SDIOBlockSize blockSz;
 
+    HardwareSDIO(sdio_dev*);
     HardwareSDIO(void);
     //---------------- startup functions ------------------
     void begin(void);
@@ -612,7 +612,7 @@ class HardwareSDIO {
     void response(SDAppCommand);
     void transfer(SDAppCommand);
 
-    /** future functions
+    /* future functions
     void protect(void); // write protect
     void passwordSet(void);
     void passwordReset(void);

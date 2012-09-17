@@ -182,6 +182,10 @@ void sdio_clock_disable(sdio_dev *dev) {
     bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 0);
 }
 
+/*
+ * SDIO DMA functions
+ */
+
 /**
  * @brief Enable DMA requests
  * @param dev SDIO device
@@ -199,21 +203,83 @@ void sdio_dma_disable(sdio_dev *dev) {
 }
 
 /**
- * @brief Configure DMA for host to receive transfer
+ * @brief Configure DMA for host to receive data
  * @param dev SDIO device
  * @param rx_buf pointer to 32-bit memory address
  * @param count Number of transfers to receive
  * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
  */
 void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *dst, uint16 count) {
-    dma_init(DMA2);
-    dma_setup_transfer(DMA2, DMA_CH4, //constant for STM32F1 line
+    dma_init(SDIO_DMA_DEVICE);
+    dma_setup_transfer(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL,
                        &dev->regs->FIFO,    DMA_SIZE_32BITS,
                        dst,                 DMA_SIZE_32BITS,
                        DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
+    dma_set_num_transfers(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, count);
+    dma_attach_interrupt(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, sdio_dma_rx_irq);
+    dma_enable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
+}
+
+/**
+ * @brief Configure DMA for host to trasmit data
+ * @param rx_buf pointer to 32-bit memory address
+ * @param count Number of transfers to receive
+ * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
+ */
+void sdio_cfg_dma_tx(sdio_dev *dev, uint32 *src, uint16 count) {
+    /*
+    4.  Configure the DMA2 as follows:
+    a)  Enable DMA2 controller and clear any pending interrupts
+    b)  Program the DMA2_Channel4 source address register with the memory 
+        location’s base address and DMA2_Channel4 destination address register 
+        with the SDIO_FIFO register address
+    c)  Program DMA2_Channel4 control register (memory increment, not 
+        peripheral increment, peripheral and source width is word size)
+    d)  Enable DMA2_Channel4
+    */
+    dma_init(SDIO_DMA_DEVICE);
+    dma_setup_transfer(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, 
+                       &dev->regs->FIFO,    DMA_SIZE_32BITS,
+                       src,                 DMA_SIZE_32BITS,
+                       DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
     dma_set_num_transfers(DMA2, DMA_CH4, count);
-  //dma_attach_interrupt(DMA2, DMA_CH4, sdio_irq_dma_rx);
-    dma_enable(DMA2, DMA_CH4);
+    dma_attach_interrupt(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, sdio_dma_tx_irq);
+    dma_enable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
+}
+
+/**
+ * @brief  
+ */
+void sdio_dma_rx_irq(void) {
+    uint32 temp = SDIO->regs->STA;
+
+    if (temp & SDIO_STA_RXACT) {}
+    if (temp & SDIO_STA_RXDAVL) {}
+  //if (temp & SDIO_STA_RXFIFOE) {}
+    if (temp & SDIO_STA_RXFIFOF) {}
+    if (temp & SDIO_STA_RXFIFOHF) {}
+    if (temp & SDIO_STA_RXOVERR) {}
+    if (temp & SDIO_STA_DATAEND) {}
+    if (temp & SDIO_STA_DTIMEOUT) {}
+    if (temp & SDIO_STA_DCRCFAIL) {}
+    if (temp & SDIO_STA_STBITERR) {}
+}
+
+/**
+ * @brief  
+ */
+void sdio_dma_tx_irq(void) {
+    uint32 temp = SDIO->regs->STA;
+
+    if (temp & SDIO_STA_TXACT) {}
+    if (temp & SDIO_STA_TXFIFOE) {}        
+    if (temp & SDIO_STA_TXFIFOF) {}
+    if (temp & SDIO_STA_TXFIFOHE) {}
+    if (temp & SDIO_STA_TXUNDERR) {}
+    if (temp & SDIO_STA_DATAEND) {}
+    if (temp & SDIO_STA_DTIMEOUT) {}
+    if (temp & SDIO_STA_DCRCFAIL) {}
+    if (temp & SDIO_STA_STBITERR) {}
 }
 
 /*

@@ -116,16 +116,27 @@ Conflicts (to be conmpleted)
 * card detection pin (interrupt based)
 
 
-mapleFAT Proposal (to be discussed)
-=================
+Proposals
+=========
+
+SDIO device
+-----------
+
+It has recently come to my attention that the C functions specific to the sdio 
+peripheral, while modeled off the spi.h device, do not require a pointer to 
+the SDIO device. This is because there is never a need for multiple sdio 
+peripherals in a microcontroller. I am proposing that each function remove 
+the argument in their call and simply reference the SDIO device globally.
+
+mapleFAT
+--------
 
 High-density performance line devices have one SDIO peripheral and up to three
 SPI peripherals. This document seeks to explain the design specifications for 
 a FAT filesystem on such devices. It will focus (for the moment) on a 
 high-level description of the classes involved and their inheritance schemes.
 
-Inheritance Structure
----------------------
+Inheritance diagram:
 
 >         +-------------+                  +-------------+
 >         | SDMode-FAT  |                  | SPIMode-FAT |
@@ -161,10 +172,6 @@ The SPI peripheral, on the other hand, does not. HardwareSPI is a simple
 wrapper for common settings and basic byte reads so the SPIMode-FAT will have 
 to provide higher-level functionality for these calls. The ultimate goal of 
 this class being block read and write functions.
-
-
-Future Work
------------
 
 This brings us to a design decision. Some commands available in SPI mode are 
 not available in SD mode and vice versa. Furthermore, responses are not 
