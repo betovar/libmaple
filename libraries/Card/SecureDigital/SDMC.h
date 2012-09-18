@@ -562,7 +562,7 @@ class HardwareSDIO {
     void end(void);
     //---------------- general data functions -------------
     void read(uint32, uint32*, uint32);
-    void write(uint32, const uint32*, uint32);
+    void write(uint32, uint32*, uint32);
     
 //protected:
     sdio_dev *sdio_d;

@@ -59,75 +59,70 @@ sdio_dev *SDIO = &sdio;
  * @brief Initialize and reset an SDIO device
  * @param dev Device to initialize and reset
  */
-void sdio_init(sdio_dev *dev) {
-    rcc_clk_enable(dev->clk_id);
-    rcc_reset_dev(dev->clk_id);
-  //nvic_irq_enable(dev->irq_num);
+void sdio_init(void) {
+    rcc_clk_enable(SDIO->clk_id);
+    rcc_reset_dev(SDIO->clk_id);
+  //nvic_irq_enable(SDIO->irq_num);
 }
 
 /**
  * @brief Reset an SDIO Device
- * @param dev SDIO Device
  */
-void sdio_reset(sdio_dev *dev) {
-  //nvic_irq_disable(dev->irq_num);
-    rcc_reset_dev(dev->clk_id);
-    dev->regs->POWER  = 0x00000000;
-    dev->regs->CLKCR  = 0x00000000;
-    dev->regs->ARG    = 0x00000000;
-    dev->regs->CMD    = 0x00000000;
-    dev->regs->DTIMER = 0x00000000;
-    dev->regs->DLEN   = 0x00000000;
-    dev->regs->DCTRL  = 0x00000000;
-    dev->regs->ICR    = 0x00C007FF;
-    dev->regs->MASK   = 0x00000000;
+void sdio_reset(void) {
+  //nvic_irq_disable(SDIO->irq_num);
+    rcc_reset_dev(SDIO->clk_id);
+    SDIO->regs->POWER  = 0x00000000;
+    SDIO->regs->CLKCR  = 0x00000000;
+    SDIO->regs->ARG    = 0x00000000;
+    SDIO->regs->CMD    = 0x00000000;
+    SDIO->regs->DTIMER = 0x00000000;
+    SDIO->regs->DLEN   = 0x00000000;
+    SDIO->regs->DCTRL  = 0x00000000;
+    SDIO->regs->ICR    = 0x00C007FF;
+    SDIO->regs->MASK   = 0x00000000;
 }
 
 /**
  * @brief Power on the SDIO Device
- * @param dev SDIO Device
  * @note At least seven HCLK clock periods are needed between two write
  *       accesses to this register.
  */
-void sdio_power_on(sdio_dev *dev) {
-    dev->regs->POWER = (~SDIO_POWER_RESERVED & SDIO_POWER_ON);
+void sdio_power_on(void) {
+    SDIO->regs->POWER = (~SDIO_POWER_RESERVED & SDIO_POWER_ON);
 }
 
 /**
  * @brief Power off the SDIO Device
- * @param dev SDIO Device
  * @note At least seven HCLK clock periods are needed between two write
  *       accesses to this register.
  */
-void sdio_power_off(sdio_dev *dev) {
-    dev->regs->POWER = (~SDIO_POWER_RESERVED & SDIO_POWER_OFF);
+void sdio_power_off(void) {
+    SDIO->regs->POWER = (~SDIO_POWER_RESERVED & SDIO_POWER_OFF);
 }
 
 /**
  * @brief Set the Clock Control Register
- * @param dev SDIO Device
  * @param val Value of Clock Control Register data
  * @note seven HCLK clock periods are needed between two write accesses
  */
-void sdio_set_clkcr(sdio_dev *dev, uint32 val) {
-    dev->regs->CLKCR = (~SDIO_CLKCR_RESERVED & val);
+void sdio_set_clkcr(uint32 val) {
+    SDIO->regs->CLKCR = (~SDIO_CLKCR_RESERVED & val);
 }
 
 /**
  * @brief Configure the Command Path State Machine
- * @param dev SDIO Device
  * @param spc Register space to clear
  * @param val Value of Clock Control Register data to load into spc
  * @note seven HCLK clock periods are needed between two write accesses
  * @note This assumes you're on a LeafLabs-style board
  *       (CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
  */
-void sdio_cfg_clkcr(sdio_dev *dev, uint32 spc, uint32 val) {
+void sdio_cfg_clkcr(uint32 spc, uint32 val) {
     spc = (~SDIO_CLKCR_RESERVED & spc);
-    uint32 temp = dev->regs->CLKCR;
+    uint32 temp = SDIO->regs->CLKCR;
     temp &= ~spc;
     temp |= (spc & val);
-    dev->regs->CLKCR = temp;
+    SDIO->regs->CLKCR = temp;
 }
 
 /**
@@ -152,34 +147,30 @@ void sdio_cfg_gpio(void) {
 
 /**
  * @brief Enable SDIO Data Transfer
- * @param dev SDIO Device
  */
-void sdio_dt_enable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 1);
+void sdio_dt_enable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 1);
 }
 
 /**
  * @brief Disable SDIO Data Transfer
- * @param dev SDIO Device
  */
-void sdio_dt_disable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 0);
+void sdio_dt_disable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 0);
 }
 
 /**
  * @brief Enable SDIO peripheral clock
- * @param dev SDIO Device
  */
-void sdio_clock_enable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 1);
+void sdio_clock_enable(void) {
+    bb_peri_set_bit(&SDIO->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 1);
 }
 
 /**
  * @brief Disable SDIO peripheral clock
- * @param dev SDIO Device
  */
-void sdio_clock_disable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 0);
+void sdio_clock_disable(void) {
+    bb_peri_set_bit(&SDIO->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 0);
 }
 
 /*
@@ -188,31 +179,29 @@ void sdio_clock_disable(sdio_dev *dev) {
 
 /**
  * @brief Enable DMA requests
- * @param dev SDIO device
  */
-void sdio_dma_enable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
+void sdio_dma_enable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
 }
 
 /**
  * @brief Disable DMA requests
- * @param dev SDIO device
  */
-void sdio_dma_disable(sdio_dev *dev) {
-    bb_peri_set_bit(&dev->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 0);
+void sdio_dma_disable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 0);
+    dma_disable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
 }
 
 /**
  * @brief Configure DMA for host to receive data
- * @param dev SDIO device
  * @param rx_buf pointer to 32-bit memory address
  * @param count Number of transfers to receive
  * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
  */
-void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *dst, uint16 count) {
+void sdio_cfg_dma_rx(uint32 *dst, uint16 count) {
     dma_init(SDIO_DMA_DEVICE);
     dma_setup_transfer(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL,
-                       &dev->regs->FIFO,    DMA_SIZE_32BITS,
+                       &SDIO->regs->FIFO,    DMA_SIZE_32BITS,
                        dst,                 DMA_SIZE_32BITS,
                        DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
     dma_set_num_transfers(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, count);
@@ -226,7 +215,7 @@ void sdio_cfg_dma_rx(sdio_dev *dev, uint32 *dst, uint16 count) {
  * @param count Number of transfers to receive
  * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
  */
-void sdio_cfg_dma_tx(sdio_dev *dev, uint32 *src, uint16 count) {
+void sdio_cfg_dma_tx(uint32 *src, uint16 count) {
     /*
     4.  Configure the DMA2 as follows:
     a)  Enable DMA2 controller and clear any pending interrupts
@@ -239,7 +228,7 @@ void sdio_cfg_dma_tx(sdio_dev *dev, uint32 *src, uint16 count) {
     */
     dma_init(SDIO_DMA_DEVICE);
     dma_setup_transfer(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, 
-                       &dev->regs->FIFO,    DMA_SIZE_32BITS,
+                       &SDIO->regs->FIFO,    DMA_SIZE_32BITS,
                        src,                 DMA_SIZE_32BITS,
                        DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
     dma_set_num_transfers(DMA2, DMA_CH4, count);
@@ -288,53 +277,49 @@ void sdio_dma_tx_irq(void) {
 
 /**
  * @brief Load argument into SDIO Argument Register
- * @param dev SDIO Device
  * @param arg Argument Data
  */
-void sdio_load_arg(sdio_dev *dev, uint32 arg) {
-    dev->regs->ARG = arg;
+void sdio_load_arg(uint32 arg) {
+    SDIO->regs->ARG = arg;
 }
 
 /**
  * @brief Send command to external card
- * @param dev SDIO Device
  * @param cmd SDIO Command to send 
  */
-void sdio_send_command(sdio_dev *dev, uint32 cmd) {
-    uint32 temp = dev->regs->CMD;
+void sdio_send_command(uint32 cmd) {
+    uint32 temp = SDIO->regs->CMD;
     temp &= SDIO_CMD_RESERVED;
     temp |= (~SDIO_CMD_RESERVED & cmd);
-    dev->regs->CMD = temp;
+    SDIO->regs->CMD = temp;
 }
 
 /**
- * @brief Get last command that recieved a response
- * @param dev SDIO Device 
+ * @brief Get last command that recieved a response 
  */
-uint32 sdio_get_command(sdio_dev *dev) {
-    uint32 resp = dev->regs->RESPCMD;
+uint32 sdio_get_command(void) {
+    uint32 resp = SDIO->regs->RESPCMD;
     return (~SDIO_RESPCMD_RESERVED & resp);
 }
 
 /**
  * @brief Gets response from the SDIO Device
- * @param dev SDIO Device
  * @param buf Number of the response buffer
  * @retval Copy of the 32-bit response buffer
  */
-uint32 sdio_get_resp(sdio_dev *dev, uint32 buf) {
+uint32 sdio_get_resp(uint32 buf) {
     switch (buf) {
       case 1:
-        return dev->regs->RESP1;
+        return SDIO->regs->RESP1;
         break;
       case 2:
-        return dev->regs->RESP2;
+        return SDIO->regs->RESP2;
         break;
       case 3:
-        return dev->regs->RESP3;
+        return SDIO->regs->RESP3;
         break;
       case 4:
-        return dev->regs->RESP4;
+        return SDIO->regs->RESP4;
         break;
       default:
         return 0xFFFFFFFF; //chosen bc every status should be an error
@@ -358,10 +343,10 @@ uint32 sdio_card_detect(void) {
     return 0;
 }
 
-uint32 sdio_card_powered(sdio_dev *dev) {
+uint32 sdio_card_powered(void) {
     int i;
     for (i = 1; i <=5; i++) {
-        if (dev->regs->POWER == SDIO_POWER_ON) {
+        if (SDIO->regs->POWER == SDIO_POWER_ON) {
             return 1;
         }
     }
@@ -370,42 +355,37 @@ uint32 sdio_card_powered(sdio_dev *dev) {
 
 /**
  * @brief 
- * @param dev SDIO Device
  */
-uint32 sdio_is_rx_data_aval(sdio_dev *dev) {
-    return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_RXDAVL_BIT);
+uint32 sdio_is_rx_data_aval(void) {
+    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_RXDAVL_BIT);
 }
 
 /**
  * @brief 
- * @param dev SDIO Device
  */
-uint32 sdio_is_tx_data_aval(sdio_dev *dev) {
-    return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_TXDAVL_BIT);
+uint32 sdio_is_tx_data_aval(void) {
+    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_TXDAVL_BIT);
 }
 
 /**
  * @brief 
- * @param dev SDIO Device
  */
-uint32 sdio_is_rx_act(sdio_dev *dev) {
-    return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_RXACT_BIT);
+uint32 sdio_is_rx_act(void) {
+    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_RXACT_BIT);
 }
 
 /**
  * @brief 
- * @param dev SDIO Device
  */
-uint32 sdio_is_tx_act(sdio_dev *dev) {
-    return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_TXACT_BIT);
+uint32 sdio_is_tx_act(void) {
+    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_TXACT_BIT);
 }
 
 /**
  * @brief 
- * @param dev SDIO Device
  */
-uint32 sdio_is_cmd_act(sdio_dev *dev) {
-    return bb_peri_get_bit(&dev->regs->STA, SDIO_STA_CMDACT_BIT);
+uint32 sdio_is_cmd_act(void) {
+    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_CMDACT_BIT);
 }
 
 /*
@@ -414,80 +394,72 @@ uint32 sdio_is_cmd_act(sdio_dev *dev) {
 
 /**
  * @brief Configure the Data Control Register
- * @param dev SDIO Device
  * @param spc Register space to clear
  * @param val Value of Data Control Register data to load into spc
  */
-void sdio_cfg_dcr(sdio_dev *dev, uint32 spc, uint32 val) {
-    uint32 temp = dev->regs->DCTRL;
+void sdio_cfg_dcr(uint32 spc, uint32 val) {
+    uint32 temp = SDIO->regs->DCTRL;
     temp &= ~spc;
-    dev->regs->DCTRL |= (~SDIO_DCTRL_RESERVED & (spc & val));
+    SDIO->regs->DCTRL |= (~SDIO_DCTRL_RESERVED & (spc & val));
 }
 
 /**
  * @brief Set the Data Control Register
- * @param dev SDIO Device
  * @param val Value of Data Control Register data to load
  */
-void sdio_set_dcr(sdio_dev *dev, uint32 val) {
-    dev->regs->DCTRL = (~SDIO_DCTRL_RESERVED & val);
+void sdio_set_dcr(uint32 val) {
+    SDIO->regs->DCTRL = (~SDIO_DCTRL_RESERVED & val);
 }
 
 /**
  * @brief Set data length value
- * @param dev SDIO Device 
  * @param length Length of data to transfer
  */
-void sdio_set_data_length(sdio_dev *dev, uint32 length) {
-    dev->regs->DLEN = (~SDIO_DLEN_RESERVED & length);
+void sdio_set_data_length(uint32 length) {
+    SDIO->regs->DLEN = (~SDIO_DLEN_RESERVED & length);
 }
 
 /**
  * @brief Set response timeout
- * @param dev SDIO Device 
  * @param timeout Timeout value for the data path state machine
  */
-void sdio_set_data_timeout(sdio_dev *dev, uint32 timeout) {
-    dev->regs->DTIMER = timeout;
+void sdio_set_data_timeout(uint32 timeout) {
+    SDIO->regs->DTIMER = timeout;
 }
 
 /**
  * @brief  Part of the data path state machine, this (read-only)register
  *         loads the value from the data length register and decrements
  *         until 0.
- * @param  dev SDIO Device
  * @retval Number of remaining data bytes to be transferred 
  */
-uint32 sdio_get_data_count(sdio_dev *dev) {
-    return dev->regs->DCOUNT;
+uint32 sdio_get_data_count(void) {
+    return SDIO->regs->DCOUNT;
 }
 
 /**
  * @brief  Returns the number of words left to be written to or read from FIFO
- * @param dev SDIO Device
  * @retval Remaining number of words
  */
-uint32 sdio_get_fifo_count(sdio_dev *dev) {
-    return dev->regs->FIFOCNT;
+uint32 sdio_get_fifo_count(void) {
+    return SDIO->regs->FIFOCNT;
 }
 
 /**
  * @brief  Read one data word from Rx FIFO
- * @param dev SDIO Device
  * @retval Data received
  */
-uint32 sdio_read_data(sdio_dev *dev) {
-    return dev->regs->FIFO;
+uint32 sdio_read_data(void) {
+    return SDIO->regs->FIFO;
 }
 
 /**
  * @brief  Write one data word to Tx FIFO
- * @param dev SDIO Device
  * @param  data 32-bit data word to write
  * @retval None
  */
-void sdio_write_data(sdio_dev *dev, uint32 data) {
-    dev->regs->FIFO = data;
+void sdio_write_data(uint32 data) {
+    SDIO->regs->FIFO = data;
 }
 
 /*
@@ -496,12 +468,11 @@ void sdio_write_data(sdio_dev *dev, uint32 data) {
 
 /**
  * @brief Checks whether the specified SDIO interrupt has occurred or not
- * @param dev SDIO Device
  * @param rupt Specifies the SDIO interrupt source to check
  * @retval Status of the interrupt, asserted: 1, deasserted: 0
  */
-uint32 sdio_get_status(sdio_dev *dev, uint32 flag) { 
-    if (dev->regs->STA & flag) {
+uint32 sdio_get_status(uint32 flag) { 
+    if (SDIO->regs->STA & flag) {
         return 1;
     } else {
         return 0;
@@ -514,27 +485,24 @@ uint32 sdio_check_status(void) {
 
 /**
  * @brief Clears the SDIO's pending interrupt flags
- * @param dev SDIO Device
  * @param flag Specifies the flag to clear
  */
-void sdio_clear_interrupt(sdio_dev *dev, uint32 flag) {
-    dev->regs->ICR = ~SDIO_ICR_RESERVED & flag;
+void sdio_clear_interrupt(uint32 flag) {
+    SDIO->regs->ICR = ~SDIO_ICR_RESERVED & flag;
 }
 
 /**
  * @brief Add interrupt flag to generate an interrupt request
- * @param dev SDIO Device
  * @param mask Interrupt sources to enable
  */
-void sdio_add_interrupt(sdio_dev *dev, uint32 mask) {
-    dev->regs->MASK |= mask;
+void sdio_add_interrupt(uint32 mask) {
+    SDIO->regs->MASK |= mask;
 }
 
 /**
  * @brief Writes interrupt mask to generate an interrupt request
- * @param dev SDIO Device
  * @param mask Interrupt sources to enable
  */
-void sdio_set_interrupt(sdio_dev *dev, uint32 mask) {
-    dev->regs->MASK = ~SDIO_MASK_RESERVED & mask;
+void sdio_set_interrupt(uint32 mask) {
+    SDIO->regs->MASK = ~SDIO_MASK_RESERVED & mask;
 }
