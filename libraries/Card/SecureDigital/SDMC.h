@@ -552,6 +552,7 @@ class HardwareSDIO {
     ssr SSR;
     dsr DSR; // Default is 0x0404
     csr CSR;
+    SDAppCommand appCmd;
     SDIOInterruptFlag IRQFlag;
     SDIOBlockSize blockSize;
 
