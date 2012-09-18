@@ -13,30 +13,47 @@
 #include "wirish.h"
 #include "libraries/Card/SecureDigital/SDMC.h"
 
+#define SIZEOF_CACHE 512
+
 HardwareSDIO SDMC;
+uint8 cacheBlock[SIZEOF_CACHE];
+
 
 void setup() {
     pinMode(BOARD_LED_PIN, OUTPUT);
     digitalWrite(BOARD_LED_PIN, HIGH);
+    //initialze cache block
+    for (int i = 0; i < SIZEOF_CACHE; i++) {
+        cacheBlock[i] = 0; //zero-out cache block
+    }
 }
 
 void loop() {
     waitForButtonPress();
     SerialUSB.println("*** Starting SDMC test ***");
     SDMC.begin();
-    SDMC.getSCR();
-  //SDMC.getSSR();
-  //SDMC.readBlock(1000, (uint32*)this->cacheBlock[0]);
-    SDMC.end();
     /*
-    for (int i = 0; i < 512; i++) {
-        SerialUSB.print(SDMC.cacheBlock[i], HEX);
+    SDMC.getSCR();
+    SDMC.getSSR();
+    SDMC.readBlock(1000, (uint32*)this->cacheBlock[0]);
+
+    for (int i = 0; i < SIZEOF_CACHE; i++) {
+        SerialUSB.print(cacheBlock[i], HEX);
         SerialUSB.print(" ");
         if ((i+1)%4 == 0) {
             SerialUSB.println("");
         }
     }
     */
+    for (int i = 0; i < SIZEOF_CACHE; i++) {
+        cacheBlock[i++] = 0x1E;
+        cacheBlock[i++] = 0xAF;
+        cacheBlock[i++] = 0x1A;
+        cacheBlock[i++] = 0xB5; //LEAFLABS!
+    }
+    SDMC.writeBlock(1000, (uint32*)cacheBlock[0]);
+
+    SDMC.end();
     SerialUSB.println("*** SDMC test complete ***");
 }
 

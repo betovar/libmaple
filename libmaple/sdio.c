@@ -508,6 +508,10 @@ uint32 sdio_get_status(sdio_dev *dev, uint32 flag) {
     }
 }
 
+uint32 sdio_check_status(void) {
+    return SDIO->regs->STA;
+}
+
 /**
  * @brief Clears the SDIO's pending interrupt flags
  * @param dev SDIO Device

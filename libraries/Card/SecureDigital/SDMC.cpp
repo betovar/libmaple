@@ -110,17 +110,13 @@ HardwareSDIO::HardwareSDIO(sdio_dev*) {
     this->CSD.TMP_WRITE_PROTECT = 0;
     this->CSD.FILE_FORMAT = 0;
     this->CSD.CRC = 0;
-    //initialze cache block
-    for (int i = 0; i < 512; i++) {
-        this->cacheBlock[i] = 0; //zero-out cache block
-    }
 }
 
 /**
  * @brief General constructor
  */
 HardwareSDIO::HardwareSDIO(void) {
-    this->HardwareSDIO(SDIO);
+    HardwareSDIO(SDIO);
 }
 
 /**
@@ -399,7 +395,7 @@ void HardwareSDIO::clockFreq(SDIOClockFrequency freq) {
  * @note Card bus width can only be changed when card is unlocked
  */
 void HardwareSDIO::busMode(SDIOBusMode width) {
-    this->select(this->RCA.RCA);
+    this->select();
     this->command(SET_BUS_WIDTH, width); //ACMD6
     this->response(SET_BUS_WIDTH);
     //this->check(0x8FF9FE20);
@@ -424,7 +420,7 @@ void HardwareSDIO::busMode(SDIOBusMode width) {
  * @brief Set data block size for data commands
  * @param size 
  */
-void HardwareSDIO::blockSize(SDIOBlockSize size) {
+void HardwareSDIO::blockLength(SDIOBlockSize size) {
     if ((size > 0xF) || (size <= 0)) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.println("SDIO_ERR: Invalid block size");
@@ -434,7 +430,7 @@ void HardwareSDIO::blockSize(SDIOBlockSize size) {
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.println("SDIO_DBG: Setting block size");
     #endif
-    this->select(this->RCA.RCA);
+    this->select();
     this->command(SET_BLOCKLEN, 0x1 << size);
     //this->check(0x2FF9FE00);
     this->response(SET_BLOCKLEN);
@@ -457,7 +453,7 @@ void HardwareSDIO::blockSize(SDIOBlockSize size) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.println("SDIO_DBG: SET_BLOCKLEN completed without error");
         #endif
-        this->blockSz = size;
+        this->blockSize = size;
     }
 }
 
@@ -483,8 +479,7 @@ void HardwareSDIO::command(SDCommand cmd, uint32 arg) {
     DEBUG_DEVICE.print("SDIO_DBG: Sending CMD");
     DEBUG_DEVICE.println(cmd, DEC);
     #endif
-    //sdio_clock_enable(this->sdio_d);
-    sdio_set_interrupt(this->sdio_d, ~SDIO_MASK_RESERVED);
+    sdio_set_interrupt(this->sdio_d, 0x3FFFFF); //almost all interrupts
     sdio_load_arg(this->sdio_d, arg);
     uint32 cmdreg = SDIO_CMD_CPSMEN | cmd;
     switch(cmd) { //set response type
@@ -507,70 +502,82 @@ void HardwareSDIO::command(SDCommand cmd, uint32 arg) {
         cmdreg |= SDIO_CMD_WAITRESP_SHORT;
         break;
     }
+    sdio_clock_enable(this->sdio_d);
     sdio_send_command(this->sdio_d, cmdreg);
 
     if (sdio_is_cmd_act(this->sdio_d)) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.println("SDIO_DBG: Command active");
         #endif
+    } else {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("SDIO_EER: SOMETHING WENT WRONG");
+        #endif
     }
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.print("SDIO_DBG: Wait for interrupt... ");
     #endif
-    while (1) {
-        if (sdio_get_status(this->sdio_d, SDIO_STA_CTIMEOUT)) {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("Command timeout");
-            #endif
-            sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CTIMEOUTC);
-            this->IRQFlag = SDIO_FLAG_CTIMEOUT;
-            return;
-        } else if (sdio_get_status(this->sdio_d, SDIO_STA_CMDREND)) {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("Response recieved");
-            #endif
-            break;
-        } else if (sdio_get_status(this->sdio_d, SDIO_STA_CMDSENT)) {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("Command sent");
-            #endif
-            this->IRQFlag = SDIO_FLAG_CMDSENT;
-            return;
-        } else if (sdio_get_status(this->sdio_d, SDIO_STA_CCRCFAIL)) {
-            switch ((uint8)cmd) {
-              case 41: // special response format from ACMD41
-                #if defined(SDIO_DEBUG_ON)
-                DEBUG_DEVICE.println("Ignoring CRC for ACMD41");
-                #endif
-                sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
-                delay(1);
-                break;
-              case 52:
-                #if defined(SDIO_DEBUG_ON)
-                DEBUG_DEVICE.println("Ignoring CRC for CMD52");
-                #endif
-                sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
-                break;
-              default:
-                #if defined(SDIO_DEBUG_ON)
-                DEBUG_DEVICE.println("Command CRC failure");
-                #endif
-                sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
-                this->IRQFlag = SDIO_FLAG_CCRCFAIL;
-                return;
-            } //end of switch statement
-            break;
-        } //end of if statement
-    } //end of while statement
-
-    this->IRQFlag = SDIO_FLAG_CMDREND;
-    if (sdio_get_command(this->sdio_d) == (uint32)cmd) {
+    uint32 status = 0;
+    while (!status) { //wait for interrupt
+        status = sdio_check_status();
+    }
+    if (status & SDIO_STA_CTIMEOUT) {
         #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.print("SDIO_DBG: Response from CMD");
-        DEBUG_DEVICE.println(sdio_get_command(this->sdio_d), DEC);
+        DEBUG_DEVICE.println("Response timeout");
+        #endif
+        sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CTIMEOUTC);
+        this->IRQFlag = SDIO_FLAG_CTIMEOUT;
+        return;
+    } else if (status & SDIO_STA_CMDSENT) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("Command sent");
+        #endif
+        sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDSENTC);
+        this->IRQFlag = SDIO_FLAG_CMDSENT;
+        return;
+    } else if (status & SDIO_STA_CCRCFAIL) {
+        switch ((uint8)cmd) {
+          case 41: // special response format from ACMD41
+            #if defined(SDIO_DEBUG_ON)
+            DEBUG_DEVICE.println("Ignoring CRC for ACMD41");
+            #endif
+            break;
+          case 52:
+            #if defined(SDIO_DEBUG_ON)
+            DEBUG_DEVICE.println("Ignoring CRC for CMD52");
+            #endif
+            break;
+          default:
+            #if defined(SDIO_DEBUG_ON)
+            DEBUG_DEVICE.println("Command CRC failure");
+            #endif
+            this->IRQFlag = SDIO_FLAG_CCRCFAIL;
+            return;
+        }
+        sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CCRCFAILC);
+        this->IRQFlag = SDIO_FLAG_CMDREND;
+        delay(1);
+    } else if (status & SDIO_STA_CMDREND) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("Response received");
         #endif
         sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
-    } else if (sdio_get_command(this->sdio_d) == 0x3F) { //RM0008: pg.576
+        this->IRQFlag = SDIO_FLAG_CMDREND;
+    } else {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("Unexpected command/response status");
+        #endif
+        this->IRQFlag = SDIO_FLAG_ERROR;
+        return;
+    }
+
+    uint8 respcmd = sdio_get_command(this->sdio_d);
+    if (respcmd == (uint32)cmd) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.print("SDIO_DBG: Response from CMD");
+        DEBUG_DEVICE.println(respcmd, DEC);
+        #endif
+    } else if (respcmd == 0x3F) { //RM0008: pg.576
         switch ((uint8)cmd) {
           case 41:
             #if defined(SDIO_DEBUG_ON)
@@ -578,36 +585,26 @@ void HardwareSDIO::command(SDCommand cmd, uint32 arg) {
             #endif
             break;
           case 2:
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_DBG: Response from CMD2");
-            #endif
-            sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
-            break;
           case 9:
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_DBG: Response from CMD9");
-            #endif
-            sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
-            break;
           case 10:
             #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_DBG: Response from CMD10");
+            DEBUG_DEVICE.print("SDIO_DBG: Response from CMD");
+            DEBUG_DEVICE.println(cmd, DEC);
             #endif
-            sdio_clear_interrupt(this->sdio_d, SDIO_ICR_CMDRENDC);
             break;
           default:
-            break;
+            #if defined(SDIO_DEBUG_ON)
+            DEBUG_DEVICE.print("SDIO_DBG: Response from CMD");
+            DEBUG_DEVICE.println(respcmd, DEC);
+            #endif
         }
     } else {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.print("SDIO_ERR: Command mismatch, response from CMD");
-        DEBUG_DEVICE.println(sdio_get_command(this->sdio_d), DEC);
+        DEBUG_DEVICE.println(respcmd, DEC);
         #endif
         this->IRQFlag = SDIO_FLAG_ERROR;
     }
-    sdio_clear_interrupt(this->sdio_d, 
-                         SDIO_ICR_CMDSENTC | SDIO_ICR_CMDRENDC |
-                         SDIO_ICR_CTIMEOUTC | SDIO_ICR_CCRCFAILC);
 }
 
 /**
@@ -905,7 +902,7 @@ void HardwareSDIO::transfer(SDAppCommand cmd) {
         #endif
     }
 
-    while (sdio_get_data_count(this->sdio_d) > 0) {
+    while (1) {
         if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
             #if defined(SDIO_DEBUG_ON)
             DEBUG_DEVICE.println("SDIO_ERR: Data timeout");
@@ -1104,11 +1101,11 @@ void HardwareSDIO::getCSD(void) {
  * @note Data packet format for Wide Width Data is most significant byte first
  */
 void HardwareSDIO::getSCR(void) {
-    this->blockSize(SDIO_BKSZ_8);
+    this->blockLength(SDIO_BKSZ_8);
     sdio_set_data_timeout(this->sdio_d, SDIO_DTIMER_DATATIME);
     sdio_set_data_length(this->sdio_d, 8); //64-bits or 8-bytes
     sdio_set_dcr(this->sdio_d, 
-                 (this->blockSz << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 (this->blockSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN);
     this->command(SEND_SCR); //ACMD51
     //this->response(SEND_SCR);
@@ -1189,10 +1186,10 @@ void HardwareSDIO::getSCR(void) {
 void HardwareSDIO::getSSR(void) {
     sdio_set_data_timeout(this->sdio_d, SDIO_DTIMER_DATATIME);
     sdio_set_data_length(this->sdio_d, 64); //512-bits or 64-bytes
-    this->blockSize(SDIO_BKSZ_64);
-    //this->select(this->RCA.RCA);
+    this->blockLength(SDIO_BKSZ_64);
+    //this->select();
     sdio_set_dcr(this->sdio_d, 
-                 (this->blockSz << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 (this->blockSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN);
     this->command(SD_STATUS); //ACMD13
     //this->response(SD_STATUS);
@@ -1275,6 +1272,14 @@ void HardwareSDIO::select(uint16 card) {
 }
 
 /**
+ * @brief Selects the card with the memeber Relative Card Address
+ */
+void HardwareSDIO::select(void) {
+    this->command(SELECT_DESELECT_CARD, this->RCA.RCA << 16); //CMD7
+    //this->check(0xFF9FF00);
+}
+
+/**
  * @brief Deselects all cards, synonymous with select(0)
  */
 void HardwareSDIO::deselect(void) {
@@ -1321,17 +1326,17 @@ void HardwareSDIO::write(uint32 addr,
  * @note Data is send little-endian format
  */
 void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
-    if (this->blockSz != SDIO_BKSZ_512) {
-        this->blockSize(SDIO_BKSZ_512);
+    if (this->blockSize != SDIO_BKSZ_512) {
+        this->blockLength(SDIO_BKSZ_512);
     } //FIXME: handle other block sizes for version 1 cards
     //FIXME: CCS must equal one for block unit addressing
-    this->select(this->RCA.RCA);
+    this->select();
     //check for busy signal on dat0 line?
     sdio_set_data_timeout(this->sdio_d, SDIO_DTIMER_DATATIME);
     sdio_set_data_length(this->sdio_d, 512);
     sdio_cfg_dma_rx(this->sdio_d, dst, 512);
     sdio_set_dcr(this->sdio_d,
-                 (this->blockSz << SDIO_DCTRL_DBLOCKSIZE_BIT) |
+                 (this->blockSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR | SDIO_DCTRL_DTEN | SDIO_DCTRL_DMAEN);
     this->command(READ_SINGLE_BLOCK, addr);
     //this->check(0xCFF9FE00);
@@ -1346,7 +1351,7 @@ void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
         #endif
         return;
     }
-    while (sdio_get_data_count(this->sdio_d) > 0) {
+    while (1) {
         if (sdio_get_status(this->sdio_d, SDIO_STA_DTIMEOUT)) {
             sdio_clear_interrupt(this->sdio_d, SDIO_ICR_DTIMEOUTC);
             #if defined(SDIO_DEBUG_ON)
@@ -1386,7 +1391,7 @@ void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
   * @param src Local buffer source for data to be written
  * @note data is send little-endian format
  */
-void HardwareSDIO::writeBlock(uint32 addr, const uint32 *src) {
+void HardwareSDIO::writeBlock(uint32 addr, uint32 *src) {
     /**
     1.  Do the card identification process 
     2.  Increase the SDIO_CK frequency 
@@ -1413,6 +1418,6 @@ void HardwareSDIO::writeBlock(uint32 addr, const uint32 *src) {
     */
 
     this->select();
-    sdio_cfg_dma_tx();
+    sdio_cfg_dma_tx(this->sdio_d, src, 0x1 << this->blockSize);
     this->command(WRITE_BLOCK, addr);
 }

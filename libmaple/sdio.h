@@ -385,6 +385,7 @@ uint32 sdio_read_data(sdio_dev *dev);
 void sdio_write_data(sdio_dev *dev, uint32 data);
 // SDIO interrupt functions
 uint32 sdio_get_status(sdio_dev *dev, uint32 flag);
+uint32 sdio_check_status(void);
 void sdio_clear_interrupt(sdio_dev *dev, uint32 flag);
 void sdio_add_interrupt(sdio_dev *dev, uint32 mask);
 void sdio_set_interrupt(sdio_dev *dev, uint32 mask);

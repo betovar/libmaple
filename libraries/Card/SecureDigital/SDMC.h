@@ -109,7 +109,7 @@ typedef enum SDIOInterruptFlag {
     SDIO_FLAG_CEATAEND  = 23,
     // added
     SDIO_FLAG_NONE      = 32,
-    SDIO_FLAG_ERROR
+    SDIO_FLAG_ERROR     = 33
 } SDIOInterruptFlag;
 
 /*
@@ -172,12 +172,6 @@ typedef enum SDCommand {
     SET_BLOCK_COUNT         = 23,
 
 // Block-Oriented Write Commands (class 4)
-    /* CMD16 - Repeated from class 2 */
-  //SET_BLOCKLEN            = 16,
-    /* CMD20 - Repeated from class 2 */
-  //SPEED_CLASS_CONTROL     = 20,
-    /* CMD23 - Repeated from class 2 */
-  //SET_BLOCK_COUNT         = 23,
     /* CMD24 -  */
     WRITE_BLOCK             = 24,
     /* CMD25 -  */
@@ -202,18 +196,14 @@ typedef enum SDCommand {
     ERASE_WR_BLK_START_ADDR = 32,
     /* CMD33 -  */
     ERASE_WR_BLK_END_ADDR   = 33,
+    /* CMD35 -  */
+  //ERASE_GROUP_START       = 35,
+    /* CMD36 -  */
+  //ERASE_GROUP_END         = 36,
     /* CMD38 -  */
     ERASE                   = 38,
-    /* CMD39 -  */
-  //CMD39                   = 39,
-    /* CMD41 - Reserved */
-  //CMD41                   = 41,
 
 // Lock Card (class 7)
-    /* CMD16 - Repeated from class 2 */
-  //SET_BLOCKLEN            = 16,
-    /* CMD40 -  */
-  //CMD40                   = 40,
     /* CMD42 -  */
     LOCK_UNLOCK             = 42,
     /* CMD43-49, 51 - Reserved */
@@ -230,6 +220,12 @@ typedef enum SDCommand {
     /* CMD60-63 - Reserved for manufacturer */
 
 // I/O Mode Commands (class 9)
+    /* CMD39 -  */
+  //FAST_IO                 = 39,
+    /* CMD40 -  */
+  //GO_IRQ_STATE            = 40,
+    /* CMD41 - Reserved */
+  //CMD41                   = 41,
     /* CMD52-54 - Commands for SDIO */
   //IO_RW_DIRECT            = 52,
   //IO_RW_EXTENDED          = 53,
@@ -240,11 +236,7 @@ typedef enum SDCommand {
   //SWITCH_FUNC             = 6,
     /* CMD34 -  */
   //CMD34                   = 34,
-    /* CMD35 -  */
-  //CMD35                   = 35,
-    /* CMD36 -  */
-  //CMD36                   = 36,
-    /* CMD37 -  */
+    /* CMD37 - Reserved of MMC */
   //CMD37                   = 37,
     /* CMD50 -  */
   //CMD50                   = 50,
@@ -560,9 +552,8 @@ class HardwareSDIO {
     ssr SSR;
     dsr DSR; // Default is 0x0404
     csr CSR;
-    uint8 cacheBlock[512]; //size of cache is 512-bytes
     SDIOInterruptFlag IRQFlag;
-    SDIOBlockSize blockSz;
+    SDIOBlockSize blockSize;
 
     HardwareSDIO(sdio_dev*);
     HardwareSDIO(void);
@@ -591,14 +582,15 @@ class HardwareSDIO {
     //---------------- convenience functions --------------
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
-    void blockSize(SDIOBlockSize);
+    void blockLength(SDIOBlockSize);
     void select(uint16);
+    void select(void);
     void deselect(void);
     void status(void);
     //---------------- basic data functions ---------------
     void stop(void);
     void readBlock(uint32, uint32*);
-    void writeBlock(uint32, const uint32*);
+    void writeBlock(uint32, uint32*);
 
   private:
     //---------------- command functions ------------------
