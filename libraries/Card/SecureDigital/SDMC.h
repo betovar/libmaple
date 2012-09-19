@@ -33,7 +33,6 @@
 
 #include "sdio.h"
 #include "libmaple_types.h"
-#include "../wirish/Print.h"
 
 #ifndef _SDMC_H_
 #define _SDMC_H_

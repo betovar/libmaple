@@ -62,7 +62,8 @@ sdio_dev *SDIO = &sdio;
 void sdio_init(void) {
     rcc_clk_enable(SDIO->clk_id);
     rcc_reset_dev(SDIO->clk_id);
-  //nvic_irq_enable(SDIO->irq_num);
+    nvic_irq_enable(SDIO->irq_num);
+    //nvic_globalirq_enable();
 }
 
 /**
@@ -200,9 +201,9 @@ void sdio_dma_disable(void) {
  */
 void sdio_cfg_dma_rx(uint32 *dst, uint16 count) {
     dma_init(SDIO_DMA_DEVICE);
-    dma_setup_transfer(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL,
-                       &SDIO->regs->FIFO,    DMA_SIZE_32BITS,
-                       dst,                 DMA_SIZE_32BITS,
+    dma_setup_transfer(SDIO_DMA_DEVICE,   SDIO_DMA_CHANNEL,
+                       &SDIO->regs->FIFO, DMA_SIZE_32BITS,
+                       dst,               DMA_SIZE_32BITS,
                        DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
     dma_set_num_transfers(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, count);
     dma_attach_interrupt(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, sdio_dma_rx_irq);
@@ -227,11 +228,11 @@ void sdio_cfg_dma_tx(uint32 *src, uint16 count) {
     d)  Enable DMA2_Channel4
     */
     dma_init(SDIO_DMA_DEVICE);
-    dma_setup_transfer(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, 
-                       &SDIO->regs->FIFO,    DMA_SIZE_32BITS,
-                       src,                 DMA_SIZE_32BITS,
+    dma_setup_transfer(SDIO_DMA_DEVICE,   SDIO_DMA_CHANNEL, 
+                       &SDIO->regs->FIFO, DMA_SIZE_32BITS,
+                       src,               DMA_SIZE_32BITS,
                        DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
-    dma_set_num_transfers(DMA2, DMA_CH4, count);
+    dma_set_num_transfers(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, count);
     dma_attach_interrupt(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, sdio_dma_tx_irq);
     dma_enable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
 }
@@ -242,33 +243,35 @@ void sdio_cfg_dma_tx(uint32 *src, uint16 count) {
 void sdio_dma_rx_irq(void) {
     uint32 temp = SDIO->regs->STA;
 
-    if (temp & SDIO_STA_RXACT) {}
-    if (temp & SDIO_STA_RXDAVL) {}
-  //if (temp & SDIO_STA_RXFIFOE) {}
+    if (temp & SDIO_STA_DTIMEOUT) {}
+    if (temp & SDIO_STA_STBITERR) {}
+    if (temp & SDIO_STA_RXFIFOE) {}
     if (temp & SDIO_STA_RXFIFOF) {}
     if (temp & SDIO_STA_RXFIFOHF) {}
     if (temp & SDIO_STA_RXOVERR) {}
+    if (temp & SDIO_STA_RXDAVL) {}
+    if (temp & SDIO_STA_DBCKEND) {
+        sdio_dma_disable();
+    }
     if (temp & SDIO_STA_DATAEND) {}
-    if (temp & SDIO_STA_DTIMEOUT) {}
     if (temp & SDIO_STA_DCRCFAIL) {}
-    if (temp & SDIO_STA_STBITERR) {}
 }
 
 /**
  * @brief  
  */
 void sdio_dma_tx_irq(void) {
-    uint32 temp = SDIO->regs->STA;
-
-    if (temp & SDIO_STA_TXACT) {}
-    if (temp & SDIO_STA_TXFIFOE) {}        
-    if (temp & SDIO_STA_TXFIFOF) {}
-    if (temp & SDIO_STA_TXFIFOHE) {}
-    if (temp & SDIO_STA_TXUNDERR) {}
-    if (temp & SDIO_STA_DATAEND) {}
-    if (temp & SDIO_STA_DTIMEOUT) {}
-    if (temp & SDIO_STA_DCRCFAIL) {}
-    if (temp & SDIO_STA_STBITERR) {}
+    dma_irq_cause cause;
+    cause = dma_get_irq_cause(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
+    switch (cause) {
+      case DMA_TRANSFER_HALF_COMPLETE:
+        break;
+      case DMA_TRANSFER_COMPLETE:
+        sdio_dma_disable();       
+        break;
+      default:
+      break;
+    }
 }
 
 /*
@@ -291,7 +294,7 @@ void sdio_send_command(uint32 cmd) {
     uint32 temp = SDIO->regs->CMD;
     temp &= SDIO_CMD_RESERVED;
     temp |= (~SDIO_CMD_RESERVED & cmd);
-    SDIO->regs->CMD = temp;
+    //SDIO->regs->CMD = temp;
 }
 
 /**
@@ -322,7 +325,7 @@ uint32 sdio_get_resp(uint32 buf) {
         return SDIO->regs->RESP4;
         break;
       default:
-        return 0xFFFFFFFF; //chosen bc every status should be an error
+        return 0xFFFFFFFF; //FIXME: chosen bc every status should be an error
     }
 }
 
@@ -339,8 +342,9 @@ uint32 sdio_card_detect(void) {
     delay_us(1000);
     if (gpio_read_bit(GPIOC, 11)) {
         return 1;
+    } else {
+        return 0;        
     }
-    return 0;
 }
 
 uint32 sdio_card_powered(void) {
@@ -466,21 +470,21 @@ void sdio_write_data(uint32 data) {
  * SDIO interrupt functions
  */
 
+inline uint32 sdio_get_status(void) {
+    return SDIO->regs->STA;
+}
+
 /**
  * @brief Checks whether the specified SDIO interrupt has occurred or not
- * @param rupt Specifies the SDIO interrupt source to check
+ * @param flag Specifies the SDIO interrupt source to check
  * @retval Status of the interrupt, asserted: 1, deasserted: 0
  */
-uint32 sdio_get_status(uint32 flag) { 
+uint32 sdio_check_status(uint32 flag) { 
     if (SDIO->regs->STA & flag) {
         return 1;
     } else {
         return 0;
     }
-}
-
-uint32 sdio_check_status(void) {
-    return SDIO->regs->STA;
 }
 
 /**
@@ -505,4 +509,8 @@ void sdio_add_interrupt(uint32 mask) {
  */
 void sdio_set_interrupt(uint32 mask) {
     SDIO->regs->MASK = ~SDIO_MASK_RESERVED & mask;
+}
+
+void __irq_sdio(void) {
+    SDIO->irq_fired = 1;
 }

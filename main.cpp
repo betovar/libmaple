@@ -49,7 +49,7 @@ void loop() {
         cacheBlock[i++] = 0x1E;
         cacheBlock[i++] = 0xAF;
         cacheBlock[i++] = 0x1A;
-        cacheBlock[i++] = 0xB5; //LEAFLABS!
+        cacheBlock[i++] = 0xB5; //0xLEAFLABS!
     }
     SDMC.writeBlock(1000, (uint32*)cacheBlock[0]);
 

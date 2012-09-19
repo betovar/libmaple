@@ -42,11 +42,7 @@
 extern "C" {
 #endif
 
-/** SDIO DMA device and channel (constant for STM32F1 line) */
-#define SDIO_DMA_DEVICE  DMA2 //FIXME: fix for multi- family support
-#define SDIO_DMA_CHANNEL DMA_CH6
-
-/** SDIO register map type */
+/* SDIO register map type */
 typedef struct sdio_reg_map {
     __io uint32 POWER;          ///< Power Control Register
     __io uint32 CLKCR;          ///< Clock Control Register
@@ -68,9 +64,12 @@ typedef struct sdio_reg_map {
     __io uint32 FIFO;           ///< Data FIFO Resgister
 } sdio_reg_map;
 
-/** SDIO register map base pointer */
+/* SDIO register map base pointer */
 #define SDIO_BASE                   ((struct sdio_reg_map*)0x40018000)
-	
+
+/* SDIO DMA device and channel (constant for STM32F1 line) */
+#define SDIO_DMA_DEVICE  DMA2 //FIXME: fix for multi- family support
+#define SDIO_DMA_CHANNEL DMA_CH6	
 	
 /*
  * Register bit definitions
@@ -329,6 +328,7 @@ typedef struct sdio_dev {
     sdio_reg_map *regs;         /**< Register map */
     rcc_clk_id clk_id;          /**< RCC clock information */
     nvic_irq_num irq_num;       /**< NVIC interrupt number */
+    uint32 irq_fired;           /**< ISR fired flag */
 } sdio_dev;
 
 #ifdef STM32_HIGH_DENSITY
@@ -384,8 +384,8 @@ uint32 sdio_get_fifo_count(void);
 uint32 sdio_read_data(void);
 void sdio_write_data(uint32 data);
 // SDIO interrupt functions
-uint32 sdio_get_status(uint32 flag);
-uint32 sdio_check_status(void);
+uint32 sdio_get_status(void);
+uint32 sdio_check_status(uint32 flag);
 void sdio_clear_interrupt(uint32 flag);
 void sdio_add_interrupt(uint32 mask);
 void sdio_set_interrupt(uint32 mask);
