@@ -760,28 +760,7 @@ void HardwareSDIO::response(SDCommand cmd) {
         break;
       case SEND_STATUS:
       default: //FIXME assumed all others are TYPE_R1
-        temp = sdio_get_resp(1);
-        this->CSR.OUT_OF_RANGE = (0x80000000 & temp) >> 31;
-        this->CSR.ADDRESS_ERROR = (0x40000000 & temp) >> 30;
-        this->CSR.BLOCK_LEN_ERROR = (0x20000000 & temp) >> 29;
-        this->CSR.ERASE_SEQ_ERROR = (0x10000000 & temp) >> 28;
-        this->CSR.ERASE_PARAM = (0x8000000 & temp) >> 27;
-        this->CSR.WP_VIOLATION = (0x4000000 & temp) >> 26;
-        this->CSR.CARD_IS_LOCKED = (0x2000000 & temp) >> 25;
-        this->CSR.LOCK_UNLOCK_FAILED = (0x1000000 & temp) >> 24;
-        this->CSR.COM_CRC_ERROR = (0x800000 & temp) >> 23;
-        this->CSR.ILLEGAL_COMMAND = (0x400000 & temp) >> 22;
-        this->CSR.CARD_ECC_FAILED = (0x200000 & temp) >> 21;
-        this->CSR.CC_ERROR = (0x100000 & temp) >> 20;
-        this->CSR.ERROR = (0x80000 & temp) >> 19;
-        this->CSR.CSD_OVERWRITE = (0x10000 & temp) >> 16;
-        this->CSR.WP_ERASE_SKIP = (0x8000 & temp) >> 15;
-        this->CSR.CARD_ECC_DISABLED = (0x4000 & temp) >> 14;
-        this->CSR.ERASE_RESET = (0x2000 & temp) >> 13;
-        this->CSR.CURRENT_STATE = (0x1E00 & temp) >> 9;
-        this->CSR.READY_FOR_DATA = (0x100 & temp) >> 8;
-        this->CSR.APP_CMD = (0x20 & temp) >> 5;
-        this->CSR.AKE_SEQ_ERROR = (0x8 & temp) >> 3;
+        status(&this->CSR, sdio_get_resp(1));
         break;
     }
 }
@@ -791,7 +770,7 @@ void HardwareSDIO::response(SDCommand cmd) {
  */
 void HardwareSDIO::response(SDAppCommand cmd) {
     uint32 respcmd = sdio_get_command();
-    if (respcmd == cmd) {
+    if (respcmd == (uint32)cmd) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.print("SDIO_DBG: Response from CMD");
         DEBUG_DEVICE.println(respcmd, DEC);
@@ -840,28 +819,7 @@ void HardwareSDIO::response(SDAppCommand cmd) {
       case SET_CLR_CARD_DETECT:
       case SEND_SCR:
       default: //FIXME assumed all others are TYPE_R1
-        temp = sdio_get_resp(1);
-        this->CSR.OUT_OF_RANGE = (0x80000000 & temp) >> 31;
-        this->CSR.ADDRESS_ERROR = (0x40000000 & temp) >> 30;
-        this->CSR.BLOCK_LEN_ERROR = (0x20000000 & temp) >> 29;
-        this->CSR.ERASE_SEQ_ERROR = (0x10000000 & temp) >> 28;
-        this->CSR.ERASE_PARAM = (0x8000000 & temp) >> 27;
-        this->CSR.WP_VIOLATION = (0x4000000 & temp) >> 26;
-        this->CSR.CARD_IS_LOCKED = (0x2000000 & temp) >> 25;
-        this->CSR.LOCK_UNLOCK_FAILED = (0x1000000 & temp) >> 24;
-        this->CSR.COM_CRC_ERROR = (0x800000 & temp) >> 23;
-        this->CSR.ILLEGAL_COMMAND = (0x400000 & temp) >> 22;
-        this->CSR.CARD_ECC_FAILED = (0x200000 & temp) >> 21;
-        this->CSR.CC_ERROR = (0x100000 & temp) >> 20;
-        this->CSR.ERROR = (0x80000 & temp) >> 19;
-        this->CSR.CSD_OVERWRITE = (0x10000 & temp) >> 16;
-        this->CSR.WP_ERASE_SKIP = (0x8000 & temp) >> 15;
-        this->CSR.CARD_ECC_DISABLED = (0x4000 & temp) >> 14;
-        this->CSR.ERASE_RESET = (0x2000 & temp) >> 13;
-        this->CSR.CURRENT_STATE = (0x1E00 & temp) >> 9;
-        this->CSR.READY_FOR_DATA = (0x100 & temp) >> 8;
-        this->CSR.APP_CMD = (0x20 & temp) >> 5;
-        this->CSR.AKE_SEQ_ERROR = (0x8 & temp) >> 3;
+        status(&this->CSR, sdio_get_resp(1));
         break;
     }
 }
@@ -1279,6 +1237,15 @@ void HardwareSDIO::getSSR(void) {
 }
 
 /**
+ * @brief Card sends its status register
+ */
+void HardwareSDIO::getCSR(void) {
+    this->command(SEND_STATUS, this->RCA.RCA << 16);
+    this->response(SEND_STATUS);
+}
+
+
+/**
  * @brief Sends a command to set the Driver Stage Register (DSR)
  */
 void HardwareSDIO::setDSR(void) {
@@ -1314,11 +1281,30 @@ void HardwareSDIO::deselect(void) {
 }
 
 /**
- * @brief Card sends its status register
+ * @brief Parses card status from response register into struct
  */
-void HardwareSDIO::status(void) {
-    this->command(SEND_STATUS, this->RCA.RCA << 16);
-    this->response(SEND_STATUS);
+void HardwareSDIO::status(csr* CSR, uint32 temp) {
+    CSR->OUT_OF_RANGE = (0x80000000 & temp) >> 31;
+    CSR->ADDRESS_ERROR = (0x40000000 & temp) >> 30;
+    CSR->BLOCK_LEN_ERROR = (0x20000000 & temp) >> 29;
+    CSR->ERASE_SEQ_ERROR = (0x10000000 & temp) >> 28;
+    CSR->ERASE_PARAM = (0x8000000 & temp) >> 27;
+    CSR->WP_VIOLATION = (0x4000000 & temp) >> 26;
+    CSR->CARD_IS_LOCKED = (0x2000000 & temp) >> 25;
+    CSR->LOCK_UNLOCK_FAILED = (0x1000000 & temp) >> 24;
+    CSR->COM_CRC_ERROR = (0x800000 & temp) >> 23;
+    CSR->ILLEGAL_COMMAND = (0x400000 & temp) >> 22;
+    CSR->CARD_ECC_FAILED = (0x200000 & temp) >> 21;
+    CSR->CC_ERROR = (0x100000 & temp) >> 20;
+    CSR->ERROR = (0x80000 & temp) >> 19;
+    CSR->CSD_OVERWRITE = (0x10000 & temp) >> 16;
+    CSR->WP_ERASE_SKIP = (0x8000 & temp) >> 15;
+    CSR->CARD_ECC_DISABLED = (0x4000 & temp) >> 14;
+    CSR->ERASE_RESET = (0x2000 & temp) >> 13;
+    CSR->CURRENT_STATE = (0x1E00 & temp) >> 9;
+    CSR->READY_FOR_DATA = (0x100 & temp) >> 8;
+    CSR->APP_CMD = (0x20 & temp) >> 5;
+    CSR->AKE_SEQ_ERROR = (0x8 & temp) >> 3;
 }
 
 /**
@@ -1471,3 +1457,4 @@ void HardwareSDIO::writeBlock(uint32 addr, uint32 *src) {
     this->command(WRITE_BLOCK, addr);
     sdio_dma_disable(); //FIXME
 }
+

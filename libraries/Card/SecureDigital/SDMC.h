@@ -579,6 +579,7 @@ class HardwareSDIO {
     void setDSR(void);
     void getSCR(void);
     void getSSR(void);
+    void getCSR(void);
     //---------------- convenience functions --------------
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
@@ -586,7 +587,7 @@ class HardwareSDIO {
     void select(uint16);
     void select(void);
     void deselect(void);
-    void status(void);
+    void status(csr*, uint32);
     //---------------- basic data functions ---------------
     void stop(void);
     void readBlock(uint32, uint32*);
