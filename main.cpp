@@ -51,9 +51,9 @@ void loop() {
         cacheBlock[i++] = 0x1A;
         cacheBlock[i++] = 0xB5; //0xLEAFLABS!
     }
-    SDMC.writeBlock(1000, (uint32*)cacheBlock[0]);
+    SDMC.write(1000, (uint32*)cacheBlock[0], 1);
 
-    SDMC.end();
+    //SDMC.end();
     SerialUSB.println("*** SDMC test complete ***");
 }
 
