@@ -62,8 +62,7 @@ sdio_dev *SDIO = &sdio;
 void sdio_init(void) {
     rcc_clk_enable(SDIO->clk_id);
     rcc_reset_dev(SDIO->clk_id);
-    nvic_irq_enable(SDIO->irq_num);
-    //nvic_globalirq_enable();
+    //nvic_irq_enable(SDIO->irq_num);
 }
 
 /**
@@ -294,7 +293,7 @@ void sdio_send_command(uint32 cmd) {
     uint32 temp = SDIO->regs->CMD;
     temp &= SDIO_CMD_RESERVED;
     temp |= (~SDIO_CMD_RESERVED & cmd);
-    //SDIO->regs->CMD = temp;
+    SDIO->regs->CMD = temp;
 }
 
 /**
@@ -488,29 +487,7 @@ uint32 sdio_check_status(uint32 flag) {
 }
 
 /**
- * @brief Clears the SDIO's pending interrupt flags
- * @param flag Specifies the flag to clear
+ * @brief ISR for SDIO peripheral
  */
-void sdio_clear_interrupt(uint32 flag) {
-    SDIO->regs->ICR = ~SDIO_ICR_RESERVED & flag;
-}
-
-/**
- * @brief Add interrupt flag to generate an interrupt request
- * @param mask Interrupt sources to enable
- */
-void sdio_add_interrupt(uint32 mask) {
-    SDIO->regs->MASK |= mask;
-}
-
-/**
- * @brief Writes interrupt mask to generate an interrupt request
- * @param mask Interrupt sources to enable
- */
-void sdio_set_interrupt(uint32 mask) {
-    SDIO->regs->MASK = ~SDIO_MASK_RESERVED & mask;
-}
-
 void __irq_sdio(void) {
-    SDIO->irq_fired = 1;
 }

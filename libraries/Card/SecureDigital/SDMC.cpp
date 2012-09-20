@@ -433,9 +433,9 @@ void HardwareSDIO::command(SDCommand cmd, uint32 arg) {
     DEBUG_DEVICE.print("SDIO_DBG: Sending CMD");
     DEBUG_DEVICE.println(cmd, DEC);
     #endif
-    sdio_set_interrupt(0x3FFFFF); //almost all interrupts
+    sdio_enable_interrupt(0x3FFFFF); //almost all interrupts
     sdio_load_arg(arg);
-    uint32 cmdreg = cmd | SDIO_CMD_CPSMEN; // | SDIO_CMD_WAITINT;
+    uint32 cmdreg = (cmd & SDIO_CMD_CMDINDEX) | SDIO_CMD_CPSMEN;
 
     switch(cmd) { //set response type and data modes
       case GO_IDLE_STATE:
@@ -484,12 +484,9 @@ void HardwareSDIO::command(SDCommand cmd, uint32 arg) {
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.print("SDIO_DBG: Wait for interrupt... ");
     #endif
-    while (!SDIO->irq_fired) { //wait for interrupt
+    while (!sdio_check_status(SDIO_STA_CMDSENT | SDIO_STA_CTIMEOUT |
+                              SDIO_STA_CMDREND | SDIO_STA_CCRCFAIL)) {
     }
-    SDIO->irq_fired = 0;
-    #if defined(SDIO_DEBUG_ON)
-    DEBUG_DEVICE.print("IRQ fired, ");
-    #endif
     if (sdio_check_status(SDIO_STA_CTIMEOUT)) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.println("Response timeout");

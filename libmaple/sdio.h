@@ -328,7 +328,6 @@ typedef struct sdio_dev {
     sdio_reg_map *regs;         /**< Register map */
     rcc_clk_id clk_id;          /**< RCC clock information */
     nvic_irq_num irq_num;       /**< NVIC interrupt number */
-    uint32 irq_fired;           /**< ISR fired flag */
 } sdio_dev;
 
 #ifdef STM32_HIGH_DENSITY
@@ -386,9 +385,31 @@ void sdio_write_data(uint32 data);
 // SDIO interrupt functions
 uint32 sdio_get_status(void);
 uint32 sdio_check_status(uint32 flag);
-void sdio_clear_interrupt(uint32 flag);
-void sdio_add_interrupt(uint32 mask);
-void sdio_set_interrupt(uint32 mask);
+
+/**
+ * @brief Clears the SDIO's pending interrupt flags
+ * @param flag Specifies the flag to clear
+ */
+inline void sdio_clear_interrupt(uint32 flag) {
+    SDIO->regs->ICR = ~SDIO_ICR_RESERVED & flag;
+}
+
+/**
+ * @brief Add interrupt flag to generate an interrupt request
+ * @param mask Interrupt sources to enable
+ */
+inline void sdio_add_interrupt(uint32 mask) {
+    SDIO->regs->MASK |= mask;
+}
+
+/**
+ * @brief Writes interrupt mask to generate an interrupt request
+ * @param mask Interrupt sources to enable
+ */
+inline void sdio_enable_interrupt(uint32 mask) {
+    SDIO->regs->MASK = ~SDIO_MASK_RESERVED & mask;
+}
+
 #ifdef __cplusplus
 }
 #endif
