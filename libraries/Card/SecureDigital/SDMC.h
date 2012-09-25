@@ -553,24 +553,25 @@ class HardwareSDIO {
     csr CSR;
     SDAppCommand appCmd;
     SDIOInterruptFlag IRQFlag;
-    SDIOBlockSize blockSize;
+    SDIOClockFrequency clkFreq;
+    SDIOBlockSize blkSize;
 
-    HardwareSDIO(sdio_dev*);
     HardwareSDIO(void);
-    //---------------- startup functions ------------------
+    /*----------------------------------------------------- public functions */
+    void begin(SDIOClockFrequency);
     void begin(void);
     void end(void);
-    //---------------- general data functions -------------
+  //void read(uint32, uint32*);
     void read(uint32, uint32*, uint32);
+  //void write(uint32, uint32*);
     void write(uint32, uint32*, uint32);
-    
 //protected:
     sdio_dev *sdio_d;
-    //---------------- setup routines ---------------------
+    /*------------------------------------------------------- setup routines */
     void idle(void);
     void initialization(void);
     void identification(void);
-    //---------------- card register access functions -----
+    /*--------------------------------------- card register access functions */
     void getICR(void);
     void getOCR(void);
     void newRCA(void);
@@ -580,26 +581,29 @@ class HardwareSDIO {
     void getSCR(void);
     void getSSR(void);
     void getCSR(void);
-    //---------------- convenience functions --------------
+    /*----------------------------------------- card register save functions */
+    void convert(csr*, uint32);    
+    void convert(csd*);
+    void convert(cid*);
+    void convert(rca*);
+    /*-----------------------------------------------_ convenience functions */
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
-    void blockLength(SDIOBlockSize);
+    void blockSize(SDIOBlockSize);
     void select(uint16);
     void select(void);
     void deselect(void);
-    void status(csr*, uint32);
-    //---------------- basic data functions ---------------
+    /*------------------------------------------------- basic data functions */
     void stop(void);
     void readBlock(uint32, uint32*);
     void writeBlock(uint32, uint32*);
-
   private:
-    //---------------- command functions ------------------
+    /*---------------------------------------------------- command functions */
     void command(SDCommand, uint32);
     void command(SDCommand);
     void response(SDCommand);
     void transfer(SDCommand);
-    
+    /*------------------------------------------------ app command functions */
     void command(SDAppCommand, uint32);
     void command(SDAppCommand);
     void response(SDAppCommand);

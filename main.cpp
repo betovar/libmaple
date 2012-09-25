@@ -24,7 +24,10 @@ void setup() {
     digitalWrite(BOARD_LED_PIN, HIGH);
     //initialze cache block
     for (int i = 0; i < SIZEOF_CACHE; i++) {
-        cacheBlock[i] = 0; //zero-out cache block
+        cacheBlock[i++] = 0x1E;
+        cacheBlock[i++] = 0xAF;
+        cacheBlock[i++] = 0x1A;
+        cacheBlock[i++] = 0xB5; //0xLEAFLABS!
     }
 }
 
@@ -32,28 +35,8 @@ void loop() {
     waitForButtonPress();
     SerialUSB.println("*** Starting SDMC test ***");
     SDMC.begin();
-    /*
-    SDMC.getSCR();
-    SDMC.getSSR();
-    SDMC.readBlock(1000, (uint32*)this->cacheBlock[0]);
-
-    for (int i = 0; i < SIZEOF_CACHE; i++) {
-        SerialUSB.print(cacheBlock[i], HEX);
-        SerialUSB.print(" ");
-        if ((i+1)%4 == 0) {
-            SerialUSB.println("");
-        }
-    }
-    */
-    for (int i = 0; i < SIZEOF_CACHE; i++) {
-        cacheBlock[i++] = 0x1E;
-        cacheBlock[i++] = 0xAF;
-        cacheBlock[i++] = 0x1A;
-        cacheBlock[i++] = 0xB5; //0xLEAFLABS!
-    }
-    SDMC.write(1000, (uint32*)cacheBlock[0], 1);
-
-    //SDMC.end();
+  //SDMC.write(1000, (uint32*)cacheBlock[0], 1);
+    SDMC.end();
     SerialUSB.println("*** SDMC test complete ***");
 }
 
