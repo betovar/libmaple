@@ -364,7 +364,6 @@ void sdio_dma_tx_irq(void);
 void sdio_load_arg(uint32 arg);
 void sdio_send_command(uint32 cmd);
 uint32 sdio_get_command(void);
-uint32 sdio_get_resp(uint32 buf);
 // SDIO status functions
 uint32 sdio_card_detect(void);
 uint32 sdio_card_powered(void);
@@ -385,6 +384,30 @@ void sdio_write_data(uint32 data);
 // SDIO interrupt functions
 uint32 sdio_get_status(void);
 uint32 sdio_check_status(uint32 flag);
+
+/**
+ * @brief Gets response from the SDIO Device
+ * @param buf Number of the response buffer
+ * @retval Copy of the 32-bit response buffer
+ */
+inline uint32 sdio_get_resp(uint32 buf) {
+    switch (buf) {
+      case 1:
+        return SDIO->regs->RESP1;
+        break;
+      case 2:
+        return SDIO->regs->RESP2;
+        break;
+      case 3:
+        return SDIO->regs->RESP3;
+        break;
+      case 4:
+        return SDIO->regs->RESP4;
+        break;
+      default:
+        return 0xFFFFFFFF; //FIXME: chosen bc every status should be an error
+    }
+}
 
 /**
  * @brief Clears the SDIO's pending interrupt flags

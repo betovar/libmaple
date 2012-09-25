@@ -304,30 +304,6 @@ uint32 sdio_get_command(void) {
     return (~SDIO_RESPCMD_RESERVED & resp);
 }
 
-/**
- * @brief Gets response from the SDIO Device
- * @param buf Number of the response buffer
- * @retval Copy of the 32-bit response buffer
- */
-uint32 sdio_get_resp(uint32 buf) {
-    switch (buf) {
-      case 1:
-        return SDIO->regs->RESP1;
-        break;
-      case 2:
-        return SDIO->regs->RESP2;
-        break;
-      case 3:
-        return SDIO->regs->RESP3;
-        break;
-      case 4:
-        return SDIO->regs->RESP4;
-        break;
-      default:
-        return 0xFFFFFFFF; //FIXME: chosen bc every status should be an error
-    }
-}
-
 /*
  * SDIO status functions
  */

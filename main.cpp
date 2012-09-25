@@ -35,7 +35,7 @@ void loop() {
     waitForButtonPress();
     SerialUSB.println("*** Starting SDMC test ***");
     SDMC.begin();
-  //SDMC.write(1000, (uint32*)cacheBlock[0], 1);
+    SDMC.write(1000, (uint32*)cacheBlock[0], 1);
     SDMC.end();
     SerialUSB.println("*** SDMC test complete ***");
 }
