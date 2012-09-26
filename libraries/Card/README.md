@@ -21,7 +21,7 @@ Most of this work is based on this documentation:
 [SD Card Physical Layer Specification] [2]
 It may also help readers better understand many unknown terms.
 
-The SDIO peripheral, like any other in <libmaple>, is first built around a C
+The SDIO peripheral, like any other in `libmaple`, is first built around a C
  application programming interface (API). A Wirish/C++ API is then built on 
  top of that to handle many of the common requests that users require of SD 
  card communication. For instance, sending a command, parsing a response, and 
@@ -32,20 +32,20 @@ The SDIO peripheral, like any other in <libmaple>, is first built around a C
 
 Examples of such intermediate methods include:
 
-* <getICR()>
-* <getOCR()>
-* <getCID()>
-* <getCSD()>
-* <newRCA()>
-* <initialize()>
-* <identify()>
+* `getICR()`
+* `getOCR()`
+* `getCID()`
+* `getCSD()`
+* `newRCA()`
+* `initialize()`
+* `identify()`
 
 Examples of such highest level methods include:
 
-* <begin()>
-* <end()>
-* <read()>
-* <write()>
+* `begin()`
+* `end()`
+* `read()`
+* `write()`
 
 The goal is to keep this public method list short and simple, while focusing 
 on developing a robust underlying codebase. In the future, new rountines will 
@@ -59,10 +59,10 @@ Status
 Thus far, the status of this library has beento idenitfy a card and read it's 
 card specific registers. This is known as the card initialization and 
 identification process: it has been completed and in the testing phase. 
-The <begin()> method provides this process. The <reset()> method is having 
-trouble and therefore the <end()> method does not fully reboot the card.
+The `begin()` method provides this process. The `reset()` method is having 
+trouble and therefore the `end()` method does not fully reboot the card.
 
-To date, the only working parts are <initialization()> and <identification()> 
+To date, the only working parts are `initialization()` and `identification()` 
 methods. This includes all the functions called from within these, like 
 sending cmd8 and acmd41 for checking the interface conditions. Although these 
 are working, they are not reliable. Sometimes the cards don't initialze 
@@ -76,7 +76,7 @@ Testing (wip)
 Here is an example of a command on OSX that reads the one-thousandth block of 
 an SD card mounted as disk4, and writes the result out to a file:
 
-<dd if=/dev/disk4 of=test.bin bs=512 count=1 iseek=1000>
+`dd if=/dev/diskN of=test.bin bs=512 count=1 iseek=1000`
 
 CID Number
 ----------

@@ -381,9 +381,6 @@ uint32 sdio_get_data_count(void);
 uint32 sdio_get_fifo_count(void);
 uint32 sdio_read_data(void);
 void sdio_write_data(uint32 data);
-// SDIO interrupt functions
-uint32 sdio_get_status(void);
-uint32 sdio_check_status(uint32 flag);
 
 /**
  * @brief Gets response from the SDIO Device
@@ -409,9 +406,29 @@ inline uint32 sdio_get_resp(uint32 buf) {
     }
 }
 
+/*
+ * SDIO interrupt functions
+ */
+
+/**
+ * @brief Returns the status register
+ */
+inline uint32 sdio_get_status(void) {
+    return SDIO->regs->STA;
+}
+
+/**
+ * @brief Checks whether the specified SDIO interrupt has occurred or not
+ * @param mask Specifies the SDIO interrupt source(s) to check
+ * @retval Status of the masked interrupt(s)
+ */
+inline uint32 sdio_check_status(uint32 mask) {
+    return SDIO->regs->STA & mask;
+}
+
 /**
  * @brief Clears the SDIO's pending interrupt flags
- * @param flag Specifies the flag to clear
+ * @param flag Specifies the interrupt to clear
  */
 inline void sdio_clear_interrupt(uint32 flag) {
     SDIO->regs->ICR = ~SDIO_ICR_RESERVED & flag;

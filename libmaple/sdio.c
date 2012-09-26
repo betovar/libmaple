@@ -240,20 +240,18 @@ void sdio_cfg_dma_tx(uint32 *src, uint16 count) {
  * @brief  
  */
 void sdio_dma_rx_irq(void) {
-    uint32 temp = SDIO->regs->STA;
-
-    if (temp & SDIO_STA_DTIMEOUT) {}
-    if (temp & SDIO_STA_STBITERR) {}
-    if (temp & SDIO_STA_RXFIFOE) {}
-    if (temp & SDIO_STA_RXFIFOF) {}
-    if (temp & SDIO_STA_RXFIFOHF) {}
-    if (temp & SDIO_STA_RXOVERR) {}
-    if (temp & SDIO_STA_RXDAVL) {}
-    if (temp & SDIO_STA_DBCKEND) {
+    if (sdio_check_status(SDIO_STA_DTIMEOUT)) {}
+    if (sdio_check_status(SDIO_STA_STBITERR)) {}
+    if (sdio_check_status(SDIO_STA_RXFIFOE)) {}
+    if (sdio_check_status(SDIO_STA_RXFIFOF)) {}
+    if (sdio_check_status(SDIO_STA_RXFIFOHF)) {}
+    if (sdio_check_status(SDIO_STA_RXOVERR)) {}
+    if (sdio_check_status(SDIO_STA_RXDAVL)) {}
+    if (sdio_check_status(SDIO_STA_DATAEND)) {}
+    if (sdio_check_status(SDIO_STA_DCRCFAIL)) {}
+    if (sdio_check_status(SDIO_STA_DBCKEND)) {
         sdio_dma_disable();
     }
-    if (temp & SDIO_STA_DATAEND) {}
-    if (temp & SDIO_STA_DCRCFAIL) {}
 }
 
 /**
@@ -266,7 +264,11 @@ void sdio_dma_tx_irq(void) {
       case DMA_TRANSFER_HALF_COMPLETE:
         break;
       case DMA_TRANSFER_COMPLETE:
-        sdio_dma_disable();       
+        if (sdio_check_status(SDIO_STA_DBCKEND)) {
+            sdio_dma_disable();
+        } else {
+
+        }
         break;
       default:
       break;
@@ -441,29 +443,8 @@ void sdio_write_data(uint32 data) {
     SDIO->regs->FIFO = data;
 }
 
-/*
- * SDIO interrupt functions
- */
-
-inline uint32 sdio_get_status(void) {
-    return SDIO->regs->STA;
-}
-
 /**
- * @brief Checks whether the specified SDIO interrupt has occurred or not
- * @param flag Specifies the SDIO interrupt source to check
- * @retval Status of the interrupt, asserted: 1, deasserted: 0
- */
-uint32 sdio_check_status(uint32 flag) { 
-    if (SDIO->regs->STA & flag) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-/**
- * @brief ISR for SDIO peripheral
+ * @brief IRQ for SDIO peripheral
  */
 void __irq_sdio(void) {
 }
