@@ -382,28 +382,40 @@ uint32 sdio_get_fifo_count(void);
 uint32 sdio_read_data(void);
 void sdio_write_data(uint32 data);
 
+/*
+ * SDIO response functions
+ */
+
 /**
- * @brief Gets response from the SDIO Device
- * @param buf Number of the response buffer
+ * @brief Gets response buffer 1 from the SDIO Device
  * @retval Copy of the 32-bit response buffer
  */
-inline uint32 sdio_get_resp(uint32 buf) {
-    switch (buf) {
-      case 1:
-        return SDIO->regs->RESP1;
-        break;
-      case 2:
-        return SDIO->regs->RESP2;
-        break;
-      case 3:
-        return SDIO->regs->RESP3;
-        break;
-      case 4:
-        return SDIO->regs->RESP4;
-        break;
-      default:
-        return 0xFFFFFFFF; //FIXME: chosen bc every status should be an error
-    }
+inline uint32 sdio_get_resp1() {
+    return SDIO->regs->RESP1;
+}
+
+/**
+ * @brief Gets response buffer 2 from the SDIO Device
+ * @retval Copy of the 32-bit response buffer
+ */
+inline uint32 sdio_get_resp2() {
+    return SDIO->regs->RESP2;
+}
+
+/**
+ * @brief Gets response buffer 3 from the SDIO Device
+ * @retval Copy of the 32-bit response buffer
+ */
+inline uint32 sdio_get_resp3() {
+    return SDIO->regs->RESP3;
+}
+
+/**
+ * @brief Gets response buffer 4 from the SDIO Device
+ * @retval Copy of the 32-bit response buffer
+ */
+inline uint32 sdio_get_resp4() {
+    return SDIO->regs->RESP4;
 }
 
 /*
@@ -411,7 +423,7 @@ inline uint32 sdio_get_resp(uint32 buf) {
  */
 
 /**
- * @brief Returns the status register
+ * @brief Returns the interrupt status register
  */
 inline uint32 sdio_get_status(void) {
     return SDIO->regs->STA;
@@ -438,12 +450,12 @@ inline void sdio_clear_interrupt(uint32 flag) {
  * @brief Add interrupt flag to generate an interrupt request
  * @param mask Interrupt sources to enable
  */
-inline void sdio_add_interrupt(uint32 mask) {
+inline void sdio_add_interrupt(uint32 mask) { //FIXME
     SDIO->regs->MASK |= mask;
 }
 
 /**
- * @brief Writes interrupt mask to generate an interrupt request
+ * @brief Writes to interrupt mask register to generate an interrupt request
  * @param mask Interrupt sources to enable
  */
 inline void sdio_enable_interrupt(uint32 mask) {

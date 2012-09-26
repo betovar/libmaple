@@ -658,7 +658,7 @@ void HardwareSDIO::response(SDCommand cmd) {
     if (this->responseFlag != SDIO_FLAG_CMDREND) {
         return;
     }
-    uint32 temp = sdio_get_resp(1);
+    uint32 temp = sdio_get_resp1();
     switch (cmd) {
       case GO_IDLE_STATE: //NO_RESPONSE
       case SET_DSR:
@@ -680,7 +680,7 @@ void HardwareSDIO::response(SDCommand cmd) {
         break;
       case SEND_STATUS:
       default: //FIXME assumed all others are TYPE_R1
-        this->convert(&this->CSR, sdio_get_resp(1));
+        this->convert(&this->CSR, sdio_get_resp1());
         break;
     }
 }
@@ -726,7 +726,7 @@ void HardwareSDIO::response(SDAppCommand cmd) {
       default:
         return;
     }
-    uint32 temp = sdio_get_resp(1);
+    uint32 temp = sdio_get_resp1();
     switch (cmd) {
       case SD_SEND_OP_COND: //TYPE_R3
         this->OCR.BUSY = (0x80000000 & temp) >> 31;
@@ -741,7 +741,7 @@ void HardwareSDIO::response(SDAppCommand cmd) {
       case SET_CLR_CARD_DETECT:
       case SEND_SCR:
       default: //FIXME: assumed all others are TYPE_R1
-        this->convert(&this->CSR, sdio_get_resp(1));
+        this->convert(&this->CSR, sdio_get_resp1());
         break;
     }
 }
@@ -902,7 +902,7 @@ void HardwareSDIO::newRCA(void) {
     DEBUG_DEVICE.print("SDIO_DBG: New RCA is 0x");
     DEBUG_DEVICE.println(this->RCA.RCA, HEX);
     DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x");
-    DEBUG_DEVICE.println(sdio_get_resp(1), HEX);
+    DEBUG_DEVICE.println(sdio_get_resp1(), HEX);
     #endif
 }
 
@@ -1244,23 +1244,23 @@ void HardwareSDIO::convert(csr* TEMP, uint32 temp) {
  * @brief Converts card identification number from response registers into struct
  */
 void HardwareSDIO::convert(cid* TEMP) {
-    uint32 temp = sdio_get_resp(1);
+    uint32 temp = sdio_get_resp1();
     TEMP->MID                   = (0xFF000000 & temp) >> 24;
     TEMP->OID[0]                = (char)((0xFF0000 & temp) >> 16);
     TEMP->OID[1]                = (char)((0xFF00 & temp) >> 8);
     TEMP->PNM[0]                = (char)(0xFF & temp);
-    temp = sdio_get_resp(2);
+    temp = sdio_get_resp2();
     TEMP->PNM[1]                = (char)((0xFF000000 & temp) >> 24);
     TEMP->PNM[2]                = (char)((0xFF0000 & temp) >> 16);
     TEMP->PNM[3]                = (char)((0xFF00 & temp) >> 8);
     TEMP->PNM[4]                = (char)(0xFF & temp);
-    temp = sdio_get_resp(4);
+    temp = sdio_get_resp4();
     TEMP->PSN                   = (0xFF000000 & temp) >> 24;
     TEMP->MDT.YEAR              = (0xFF000 & temp) >> 12;
     TEMP->MDT.MONTH             = (0xF00 & temp) >> 8;
     TEMP->CRC                   = (0xFE & temp) >> 1;
   //TEMP->Always0 = (0x1 & temp);
-    temp = sdio_get_resp(3);
+    temp = sdio_get_resp3();
     TEMP->PRV.N                 = (0xF0000000 & temp) >> 28;
     TEMP->PRV.M                 = (0xF000000 & temp) >> 24;
     TEMP->PSN                  |= (0xFFFFFF & temp) << 8;
@@ -1270,12 +1270,12 @@ void HardwareSDIO::convert(cid* TEMP) {
  * @brief Converts card specific data from response registers into struct
  */
 void HardwareSDIO::convert(csd* TEMP) {
-    uint32 temp = sdio_get_resp(1);
+    uint32 temp = sdio_get_resp1();
   //TEMP->CSD_STRUCTURE         = (0xC0000000 & temp) >> 30; //FIXME
     TEMP->TAAC                  = (0xFF0000 & temp) >> 16;
     TEMP->NSAC                  = (0xFF00 & temp) >> 8;
     TEMP->TRAN_SPEED            = (0xFF & temp);
-    temp = sdio_get_resp(3);
+    temp = sdio_get_resp3();
     switch (TEMP->CSD_STRUCTURE) { // diff in csd versions
       case 0:
         TEMP->C_SIZE            = (0xC0000000 & temp) >> 30;
@@ -1294,7 +1294,7 @@ void HardwareSDIO::convert(csd* TEMP) {
     TEMP->ERASE_BLK_EN          = (0x4000 & temp) >> 14;
     TEMP->SECTOR_SIZE           = (0x3F80 & temp) >> 7;
     TEMP->WP_GRP_SIZE           = (0x7F & temp);
-    temp = sdio_get_resp(2);
+    temp = sdio_get_resp2();
     switch (TEMP->CSD_STRUCTURE) { // diff in csd versions
       case 0:
         TEMP->C_SIZE           |= (0x3FF & temp) << 2;
@@ -1311,7 +1311,7 @@ void HardwareSDIO::convert(csd* TEMP) {
     TEMP->WRITE_BLK_MISALIGN    = (0x4000 & temp) >> 14;
     TEMP->READ_BLK_MISALIGN     = (0x2000 & temp) >> 13;
     TEMP->DSR_IMP               = (0x1000 & temp) >> 12;
-    temp = sdio_get_resp(4);
+    temp = sdio_get_resp4();
     TEMP->WP_GRP_ENABLE         = (0x80000000 & temp) >> 31;
     TEMP->R2W_FACTOR            = (0x1C000000 & temp) >> 26;
     TEMP->WRITE_BL_LEN          = (0x3C00000 & temp) >> 22;
@@ -1328,7 +1328,7 @@ void HardwareSDIO::convert(csd* TEMP) {
  * @brief Converts relative card address from response register into struct
  */
 void HardwareSDIO::convert(rca* TEMP) {
-    uint32 temp = sdio_get_resp(1);
+    uint32 temp = sdio_get_resp1();
     TEMP->RCA                   = (0xFFFF0000 & temp) >> 16;
     TEMP->COM_CRC_ERROR         = (0x8000 & temp) >> 15;
     TEMP->ILLEGAL_COMMAND       = (0x2000 & temp) >> 14;
