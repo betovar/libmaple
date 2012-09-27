@@ -147,6 +147,7 @@ void HardwareSDIO::begin(SDIOClockFrequency freq) {
     this->idle();
     this->initialization();
     this->identification();
+    this->clockFreq(this->clkFreq);
     this->getCSD();
     this->getCID();
 }
@@ -176,6 +177,7 @@ void HardwareSDIO::idle(void) {
     SDIOInterruptFlag temp = this->responseFlag;
     for (int i=1; i<=3; i++) {
         this->command(GO_IDLE_STATE);
+        this->wait(GO_IDLE_STATE);
         switch (this->responseFlag) {
           case SDIO_FLAG_CMDSENT:
             #if defined(SDIO_DEBUG_ON)
@@ -323,9 +325,6 @@ void HardwareSDIO::identification(void) {
     DEBUG_DEVICE.println("SDIO_DBG: Getting new Relative Card Address");
     #endif
     this->newRCA();
-    #if defined(SDIO_DEBUG_ON)
-    DEBUG_DEVICE.println("SDIO_DBG: Card should now be in STANDBY state");
-    #endif
 }
 
 /**
@@ -333,7 +332,14 @@ void HardwareSDIO::identification(void) {
  * @param freq 
  */
 void HardwareSDIO::clockFreq(SDIOClockFrequency freq) {
-  //sdio_clock_disable();
+    if (freq > SDIO_CLKCR_CLKDIV) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("SDIO_ERR: Invalid clock frequency");
+        #endif
+        return;
+    }
+    sdio_clock_disable();
+    delay(10);
     sdio_cfg_clkcr(SDIO_CLKCR_CLKDIV, (uint32)freq);
     #if defined(SDIO_DEBUG_ON)
     float speed = (CYCLES_PER_MICROSECOND*1000.0)/((float)freq+2.0);
@@ -488,11 +494,10 @@ void HardwareSDIO::command(SDCommand cmd, uint32 arg) {
     }
     delay(10); // wait at least 8 clocks for CPSM to clear
     sdio_send_command(cmdreg);
-    while (sdio_check_status(SDIO_STA_CMDACT)) {
+    if (sdio_check_status(SDIO_STA_CMDACT)) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.println("SDIO_DBG: Command active");
         #endif
-        delay(1000); // wait at least 8 clocks for command to finish
     }
 }
 
@@ -552,7 +557,6 @@ void HardwareSDIO::command(SDAppCommand acmd, uint32 arg) {
  * @param cmd SDCommand enumeration to process response for
  */
 void HardwareSDIO::response(SDCommand cmd) {
-    this->wait(cmd);
     if (this->responseFlag != SDIO_FLAG_CMDREND) {
         return;
     }
@@ -826,6 +830,7 @@ void HardwareSDIO::wait(SDCommand cmd) {
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.print("SDIO_DBG: Wait for interrupt... ");
     #endif
+
     while (1) {
         if (sdio_check_status(SDIO_STA_CTIMEOUT)) {
             #if defined(SDIO_DEBUG_ON)
@@ -857,8 +862,8 @@ void HardwareSDIO::wait(SDCommand cmd) {
                 return;
             }
             sdio_clear_interrupt(SDIO_ICR_CCRCFAILC);
-            this->responseFlag = SDIO_FLAG_CMDREND;
             delay(10);
+            this->responseFlag = SDIO_FLAG_CMDREND;
         } else if (sdio_check_status(SDIO_STA_CMDREND)) {
             switch (cmd) {
               case READ_SINGLE_BLOCK:
@@ -887,11 +892,6 @@ void HardwareSDIO::wait(SDCommand cmd) {
             }
             sdio_clear_interrupt(SDIO_ICR_CMDRENDC);
             this->responseFlag = SDIO_FLAG_CMDREND;
-            break;
-        } else if (sdio_check_status(SDIO_STA_RXACT | SDIO_STA_TXACT)) {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("Data active");
-            #endif
             return;
         } else {
             #if defined(SDIO_DEBUG_ON)
@@ -915,10 +915,45 @@ void HardwareSDIO::wait(SDCommand cmd) {
 void HardwareSDIO::newRCA(void) {
     this->command(SEND_RELATIVE_ADDR); //CMD3
     this->response(SEND_RELATIVE_ADDR);
+    if (this->RCA.COM_CRC_ERROR == SDIO_CSR_ERROR) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("SDIO_ERR: CRC error in RCA response");
+        #endif
+    } else if (this->RCA.ILLEGAL_COMMAND == SDIO_CSR_ERROR) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("SDIO_ERR: Illegal command in RCA response");
+        #endif
+    } else if (this->RCA.ERROR == SDIO_CSR_ERROR) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("SDIO_ERR: Generic error in RCA response");
+        #endif
+    } else if (this->RCA.READY_FOR_DATA == SDIO_CSR_READY) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("SDIO_ERR: Ready for data in RCA response");
+        #endif
+    } else if (this->RCA.APP_CMD == SDIO_CSR_ENABLED) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.println("SDIO_ERR: AppCmd enabled in RCA response");
+        #endif
+    } else {
+        switch (this->RCA.CURRENT_STATE) {
+          case SDIO_CSR_STBY:
+            #if defined(SDIO_DEBUG_ON)
+            DEBUG_DEVICE.println("SDIO_DBG: Card now in STANDBY state");
+            #endif
+            break;
+          default:
+            #if defined(SDIO_DEBUG_ON)
+            DEBUG_DEVICE.println("SDIO_ERR: Card now in UNKNOWN state");
+            #endif
+            break;
+        }
+    }
+
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.print("SDIO_DBG: New RCA is 0x");
     DEBUG_DEVICE.println(this->RCA.RCA, HEX);
-    DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x");
+    DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x"); //FIXME: remove when operational
     DEBUG_DEVICE.println(sdio_get_resp1(), HEX);
     #endif
 }
