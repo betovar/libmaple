@@ -598,6 +598,7 @@ class HardwareSDIO {
     void readBlock(uint32, uint32*);
     void writeBlock(uint32, uint32*);
   private:
+    void wait(SDCommand);
     /*---------------------------------------------------- command functions */
     void command(SDCommand, uint32);
     void command(SDCommand);
