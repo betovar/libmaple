@@ -1538,7 +1538,7 @@ void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
 /**
  * @brief 
  * @param addr Card block address to write data to
-  * @param src Local buffer source for data to be written
+ * @param src Local buffer source for data to be written
  * @note data is send little-endian format
  */
 void HardwareSDIO::writeBlock(uint32 addr, uint32 *src) {
@@ -1549,6 +1549,31 @@ void HardwareSDIO::writeBlock(uint32 addr, uint32 *src) {
     sdio_cfg_dma_tx(src, 0x1 << this->blkSize);
     this->command(WRITE_BLOCK, addr);
     this->response(WRITE_BLOCK);
-    this->transfer(WRITE_BLOCK);
-}
+  //this->transfer(WRITE_BLOCK);
+    uint8 txed = 0;
+    while (!sdio_check_status(SDIO_STA_DBCKEND | SDIO_STA_TXUNDERR |
+                              SDIO_STA_DCRCFAIL | SDIO_STA_DTIMEOUT | 
+                              SDIO_FLAG_STBITERR)) {
+        if (sdio_check_status(SDIO_FLAG_TXFIFOHE)) {
+            if (this->blkSize - txed) {
+                for (int count = 1; count <= 8; count++) {
+                    sdio_write_data(src[txed++]);
+                }
+            }
+        }
+    }
 
+    if (sdio_check_status(SDIO_STA_DTIMEOUT)) {
+        sdio_clear_interrupt(SDIO_STA_DTIMEOUT);
+        return;
+    } else if (sdio_check_status(SDIO_STA_DCRCFAIL)) {
+        sdio_clear_interrupt(SDIO_STA_DCRCFAIL);
+        return;
+    } else if (sdio_check_status(SDIO_STA_TXUNDERR)) {
+        sdio_clear_interrupt(SDIO_STA_TXUNDERR);
+        return;
+    } else if (sdio_check_status(SDIO_STA_STBITERR)) {
+        sdio_clear_interrupt(SDIO_STA_STBITERR);
+        return;
+    }
+}

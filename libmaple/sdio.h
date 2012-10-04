@@ -451,7 +451,7 @@ inline void sdio_clear_interrupt(uint32 flag) {
  * @param mask Interrupt sources to enable
  */
 inline void sdio_add_interrupt(uint32 mask) { //FIXME
-    SDIO->regs->MASK |= mask;
+    SDIO->regs->MASK |= ~SDIO_MASK_RESERVED & mask;
 }
 
 /**
