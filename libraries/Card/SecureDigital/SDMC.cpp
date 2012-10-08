@@ -1533,6 +1533,7 @@ void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
     #endif
     sdio_clear_interrupt(SDIO_ICR_DBCKENDC);
     sdio_dma_disable();
+  //dma_disable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
 }
 
 /**
@@ -1546,9 +1547,12 @@ void HardwareSDIO::writeBlock(uint32 addr, uint32 *src) {
         this->blockSize(SDIO_BKSZ_512);
     }
     this->select();
-    sdio_cfg_dma_tx(src, 0x1 << this->blkSize);
+  //sdio_cfg_dma_tx(src, 0x1 << this->blkSize);
     this->command(WRITE_BLOCK, addr);
     this->response(WRITE_BLOCK);
+    if (this->responseFlag != SDIO_FLAG_CMDREND) {
+        return;
+    }
   //this->transfer(WRITE_BLOCK);
     uint8 txed = 0;
     while (!sdio_check_status(SDIO_STA_DBCKEND | SDIO_STA_TXUNDERR |
@@ -1564,16 +1568,37 @@ void HardwareSDIO::writeBlock(uint32 addr, uint32 *src) {
     }
 
     if (sdio_check_status(SDIO_STA_DTIMEOUT)) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.print("SDIO_ERR: Data transfer timeout");
+        #endif
         sdio_clear_interrupt(SDIO_STA_DTIMEOUT);
         return;
     } else if (sdio_check_status(SDIO_STA_DCRCFAIL)) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.print("SDIO_ERR: Data CRC failure");
+        #endif
         sdio_clear_interrupt(SDIO_STA_DCRCFAIL);
         return;
     } else if (sdio_check_status(SDIO_STA_TXUNDERR)) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.print("SDIO_ERR: TX underrun error");
+        #endif
         sdio_clear_interrupt(SDIO_STA_TXUNDERR);
         return;
     } else if (sdio_check_status(SDIO_STA_STBITERR)) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.print("SDIO_ERR: Start-bit error");
+        #endif
         sdio_clear_interrupt(SDIO_STA_STBITERR);
         return;
-    }
+    } else if (sdio_check_status(SDIO_STA_DBCKEND)) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.print("SDIO_DBG: Transfer complete");
+        #endif
+    } else {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.print("SDIO_ERR: Transfer incomplete");
+        #endif
+        return;
+    } 
 }

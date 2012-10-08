@@ -34,7 +34,6 @@
 #include "gpio.h"
 #include "timer.h"
 #include "delay.h"
-#include "bitband.h"
 #include "dma.h"
 
 /*
@@ -83,24 +82,6 @@ void sdio_reset(void) {
 }
 
 /**
- * @brief Power on the SDIO Device
- * @note At least seven HCLK clock periods are needed between two write
- *       accesses to this register.
- */
-void sdio_power_on(void) {
-    SDIO->regs->POWER = (~SDIO_POWER_RESERVED & SDIO_POWER_ON);
-}
-
-/**
- * @brief Power off the SDIO Device
- * @note At least seven HCLK clock periods are needed between two write
- *       accesses to this register.
- */
-void sdio_power_off(void) {
-    SDIO->regs->POWER = (~SDIO_POWER_RESERVED & SDIO_POWER_OFF);
-}
-
-/**
  * @brief Set the Clock Control Register
  * @param val Value of Clock Control Register data
  * @note seven HCLK clock periods are needed between two write accesses
@@ -142,55 +123,8 @@ void sdio_cfg_gpio(void) {
 }
 
 /*
- * SDIO hardware functions
- */
-
-/**
- * @brief Enable SDIO Data Transfer
- */
-void sdio_dt_enable(void) {
-    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 1);
-}
-
-/**
- * @brief Disable SDIO Data Transfer
- */
-void sdio_dt_disable(void) {
-    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 0);
-}
-
-/**
- * @brief Enable SDIO peripheral clock
- */
-void sdio_clock_enable(void) {
-    bb_peri_set_bit(&SDIO->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 1);
-}
-
-/**
- * @brief Disable SDIO peripheral clock
- */
-void sdio_clock_disable(void) {
-    bb_peri_set_bit(&SDIO->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 0);
-}
-
-/*
  * SDIO DMA functions
  */
-
-/**
- * @brief Enable DMA requests
- */
-void sdio_dma_enable(void) {
-    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
-}
-
-/**
- * @brief Disable DMA requests
- */
-void sdio_dma_disable(void) {
-    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 0);
-    dma_disable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
-}
 
 /**
  * @brief Configure DMA for host to receive data
@@ -303,7 +237,7 @@ void sdio_send_command(uint32 cmd) {
  */
 uint32 sdio_get_command(void) {
     uint32 resp = SDIO->regs->RESPCMD;
-    return (~SDIO_RESPCMD_RESERVED & resp);
+    return resp & SDIO_RESPCMD_RESPCMD;
 }
 
 /*
@@ -332,41 +266,6 @@ uint32 sdio_card_powered(void) {
         }
     }
     return 0;
-}
-
-/**
- * @brief 
- */
-uint32 sdio_is_rx_data_aval(void) {
-    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_RXDAVL_BIT);
-}
-
-/**
- * @brief 
- */
-uint32 sdio_is_tx_data_aval(void) {
-    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_TXDAVL_BIT);
-}
-
-/**
- * @brief 
- */
-uint32 sdio_is_rx_act(void) {
-    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_RXACT_BIT);
-}
-
-/**
- * @brief 
- */
-uint32 sdio_is_tx_act(void) {
-    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_TXACT_BIT);
-}
-
-/**
- * @brief 
- */
-uint32 sdio_is_cmd_act(void) {
-    return bb_peri_get_bit(&SDIO->regs->STA, SDIO_STA_CMDACT_BIT);
 }
 
 /*

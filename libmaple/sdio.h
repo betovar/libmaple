@@ -36,6 +36,7 @@
 #include "rcc.h"
 #include "nvic.h"
 #include "util.h"
+#include "bitband.h"
 #include "libmaple_types.h"
 
 #ifdef __cplusplus
@@ -342,36 +343,20 @@ extern sdio_dev *SDIO;
 // SDIO configure functions
 void sdio_init(void);
 void sdio_reset(void);
-void sdio_power_on(void);
-void sdio_power_off(void);
-// SDIO clock and bus functions
-void sdio_set_clkcr(uint32 val);
-void sdio_cfg_clkcr(uint32 spc, uint32 val);
 void sdio_cfg_gpio(void);
-// SDIO hardware functions
-void sdio_dt_enable(void);
-void sdio_dt_disable(void);
-void sdio_clock_enable(void);
-void sdio_clock_disable(void);
+uint32 sdio_card_detect(void);
+uint32 sdio_card_powered(void);
 // SDIO DMA functions
-void sdio_dma_enable(void);
-void sdio_dma_disable(void);
 void sdio_cfg_dma_rx(uint32 *dst, uint16 count);
 void sdio_cfg_dma_tx(uint32 *src, uint16 count);
 void sdio_dma_rx_irq(void);
 void sdio_dma_tx_irq(void);
 // SDIO command functions
+void sdio_set_clkcr(uint32 val);
+void sdio_cfg_clkcr(uint32 spc, uint32 val);
 void sdio_load_arg(uint32 arg);
 void sdio_send_command(uint32 cmd);
 uint32 sdio_get_command(void);
-// SDIO status functions
-uint32 sdio_card_detect(void);
-uint32 sdio_card_powered(void);
-uint32 sdio_is_rx_data_aval(void);
-uint32 sdio_is_tx_data_aval(void);
-uint32 sdio_is_rx_act(void);
-uint32 sdio_is_tx_act(void);
-uint32 sdio_is_cmd_act(void);
 // SDIO data functions
 void sdio_set_dcr(uint32 val);
 void sdio_cfg_dcr(uint32 spc, uint32 val);
@@ -383,8 +368,68 @@ uint32 sdio_read_data(void);
 void sdio_write_data(uint32 data);
 
 /*
- * SDIO response functions
+ * SDIO inline functions
  */
+
+/**
+ * @brief Power on the SDIO Device
+ * @note At least seven HCLK clock periods are needed between two write
+ *       accesses to this register.
+ */
+inline void sdio_power_on(void) {
+    SDIO->regs->POWER = ~SDIO_POWER_RESERVED & SDIO_POWER_ON;
+}
+
+/**
+ * @brief Power off the SDIO Device
+ * @note At least seven HCLK clock periods are needed between two write
+ *       accesses to this register.
+ */
+inline void sdio_power_off(void) {
+    SDIO->regs->POWER = ~SDIO_POWER_RESERVED & SDIO_POWER_OFF;
+}
+
+/**
+ * @brief Enable SDIO Data Transfer
+ */
+inline void sdio_dt_enable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 1);
+}
+
+/**
+ * @brief Disable SDIO Data Transfer
+ */
+inline void sdio_dt_disable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 0);
+}
+
+/**
+ * @brief Enable SDIO peripheral clock
+ */
+inline void sdio_clock_enable(void) {
+    bb_peri_set_bit(&SDIO->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 1);
+}
+
+/**
+ * @brief Disable SDIO peripheral clock
+ */
+inline void sdio_clock_disable(void) {
+    bb_peri_set_bit(&SDIO->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 0);
+}
+
+/**
+ * @brief Enable DMA requests
+ */
+inline void sdio_dma_enable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
+}
+
+/**
+ * @brief Disable DMA requests
+ */
+inline void sdio_dma_disable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 0);
+}
 
 /**
  * @brief Gets response buffer 1 from the SDIO Device
@@ -418,15 +463,25 @@ inline uint32 sdio_get_resp4() {
     return SDIO->regs->RESP4;
 }
 
-/*
- * SDIO interrupt functions
+/**
+ * @brief Is the command active?
  */
+inline uint32 sdio_is_cmd_active(void) {
+    return SDIO->regs->STA & SDIO_STA_CMDACT;
+}
 
 /**
- * @brief Returns the interrupt status register
+ * @brief Is data transfer active?
  */
-inline uint32 sdio_get_status(void) {
-    return SDIO->regs->STA;
+inline uint32 sdio_is_dt_active(void) {
+    return SDIO->regs->STA & (SDIO_STA_RXACT | SDIO_STA_TXACT);
+}
+
+/**
+ * @brief Is data (available) in FIFO?
+ */
+inline uint32 sdio_is_data_available(void) {
+    return SDIO->regs->STA & (SDIO_STA_RXDAVL | SDIO_STA_TXDAVL);
 }
 
 /**
