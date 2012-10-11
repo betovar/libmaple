@@ -614,9 +614,13 @@ void HardwareSDIO::response(SDCommand cmd) {
       case SEND_CSD: //TYPE_R2
         this->convert(&this->CSD);
         break;
+      case WRITE_BLOCK:
+        this->convert(&this->CSR, temp);
+        if ()
+        break;
       case SEND_STATUS:
       default: //FIXME assumed all others are TYPE_R1
-        this->convert(&this->CSR, sdio_get_resp1());
+        this->convert(&this->CSR, temp);
         break;
     }
 }
@@ -1112,7 +1116,7 @@ void HardwareSDIO::getSCR(void) {
     sdio_set_dcr((this->blkSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR);
     this->command(SEND_SCR); //ACMD51
-  //this->response(SEND_SCR);
+    this->response(SEND_SCR);
   //this->transfer(SEND_SCR);
 
     #if defined(SDIO_DEBUG_ON)
@@ -1306,23 +1310,23 @@ void HardwareSDIO::convert(csr* TEMP, uint32 temp) {
     TEMP->ADDRESS_ERROR         = (0x40000000 & temp) >> 30;
     TEMP->BLOCK_LEN_ERROR       = (0x20000000 & temp) >> 29;
     TEMP->ERASE_SEQ_ERROR       = (0x10000000 & temp) >> 28;
-    TEMP->ERASE_PARAM           = (0x8000000 & temp) >> 27;
-    TEMP->WP_VIOLATION          = (0x4000000 & temp) >> 26;
-    TEMP->CARD_IS_LOCKED        = (0x2000000 & temp) >> 25;
-    TEMP->LOCK_UNLOCK_FAILED    = (0x1000000 & temp) >> 24;
-    TEMP->COM_CRC_ERROR         = (0x800000 & temp) >> 23;
-    TEMP->ILLEGAL_COMMAND       = (0x400000 & temp) >> 22;
-    TEMP->CARD_ECC_FAILED       = (0x200000 & temp) >> 21;
-    TEMP->CC_ERROR              = (0x100000 & temp) >> 20;
-    TEMP->ERROR                 = (0x80000 & temp) >> 19;
-    TEMP->CSD_OVERWRITE         = (0x10000 & temp) >> 16;
-    TEMP->WP_ERASE_SKIP         = (0x8000 & temp) >> 15;
-    TEMP->CARD_ECC_DISABLED     = (0x4000 & temp) >> 14;
-    TEMP->ERASE_RESET           = (0x2000 & temp) >> 13;
-    TEMP->CURRENT_STATE         = (0x1E00 & temp) >> 9;
-    TEMP->READY_FOR_DATA        = (0x100 & temp) >> 8;
-    TEMP->APP_CMD               = (0x20 & temp) >> 5;
-    TEMP->AKE_SEQ_ERROR         = (0x8 & temp) >> 3;
+    TEMP->ERASE_PARAM           =  (0x8000000 & temp) >> 27;
+    TEMP->WP_VIOLATION          =  (0x4000000 & temp) >> 26;
+    TEMP->CARD_IS_LOCKED        =  (0x2000000 & temp) >> 25;
+    TEMP->LOCK_UNLOCK_FAILED    =  (0x1000000 & temp) >> 24;
+    TEMP->COM_CRC_ERROR         =   (0x800000 & temp) >> 23;
+    TEMP->ILLEGAL_COMMAND       =   (0x400000 & temp) >> 22;
+    TEMP->CARD_ECC_FAILED       =   (0x200000 & temp) >> 21;
+    TEMP->CC_ERROR              =   (0x100000 & temp) >> 20;
+    TEMP->ERROR                 =    (0x80000 & temp) >> 19;
+    TEMP->CSD_OVERWRITE         =    (0x10000 & temp) >> 16;
+    TEMP->WP_ERASE_SKIP         =     (0x8000 & temp) >> 15;
+    TEMP->CARD_ECC_DISABLED     =     (0x4000 & temp) >> 14;
+    TEMP->ERASE_RESET           =     (0x2000 & temp) >> 13;
+    TEMP->CURRENT_STATE         =     (0x1E00 & temp) >>  9;
+    TEMP->READY_FOR_DATA        =      (0x100 & temp) >>  8;
+    TEMP->APP_CMD               =       (0x20 & temp) >>  5;
+    TEMP->AKE_SEQ_ERROR         =        (0x8 & temp) >>  3;
 }
 
 /**
@@ -1365,9 +1369,9 @@ void HardwareSDIO::convert(csd* TEMP) {
       case 0:
         TEMP->C_SIZE            = (0xC0000000 & temp) >> 30;
         TEMP->VDD_R_CURR_MIN    = (0x38000000 & temp) >> 27;
-        TEMP->VDD_R_CURR_MAX    = (0x7000000 & temp) >> 24;
-        TEMP->VDD_W_CURR_MIN    = (0xE00000 & temp) >> 21;
-        TEMP->VDD_W_CURR_MAX    = (0x1C0000 & temp) >> 18;
+        TEMP->VDD_R_CURR_MAX    =  (0x7000000 & temp) >> 24;
+        TEMP->VDD_W_CURR_MIN    =   (0xE00000 & temp) >> 21;
+        TEMP->VDD_W_CURR_MAX    =   (0x1C0000 & temp) >> 18;
         break;
       case 1:
         TEMP->C_SIZE            = (0xFFFF0000 & temp) >> 16;
@@ -1375,10 +1379,10 @@ void HardwareSDIO::convert(csd* TEMP) {
       default:
         break;
     }
-    TEMP->C_SIZE_MULT           = (0x38000 & temp) >> 15;
-    TEMP->ERASE_BLK_EN          = (0x4000 & temp) >> 14;
-    TEMP->SECTOR_SIZE           = (0x3F80 & temp) >> 7;
-    TEMP->WP_GRP_SIZE           = (0x7F & temp);
+    TEMP->C_SIZE_MULT           =    (0x38000 & temp) >> 15;
+    TEMP->ERASE_BLK_EN          =     (0x4000 & temp) >> 14;
+    TEMP->SECTOR_SIZE           =     (0x3F80 & temp) >> 7;
+    TEMP->WP_GRP_SIZE           =       (0x7F & temp);
     temp = sdio_get_resp2();
     switch (TEMP->CSD_STRUCTURE) { // diff in csd versions
       case 0:
@@ -1391,22 +1395,22 @@ void HardwareSDIO::convert(csd* TEMP) {
         break;
     }
     TEMP->CCC                   = (0xFFF00000 & temp) >> 20;
-    TEMP->READ_BL_LEN           = (0xF0000 & temp) >> 16;
-    TEMP->READ_BL_PARTIAL       = (0x8000 & temp) >> 15;
-    TEMP->WRITE_BLK_MISALIGN    = (0x4000 & temp) >> 14;
-    TEMP->READ_BLK_MISALIGN     = (0x2000 & temp) >> 13;
-    TEMP->DSR_IMP               = (0x1000 & temp) >> 12;
+    TEMP->READ_BL_LEN           =    (0xF0000 & temp) >> 16;
+    TEMP->READ_BL_PARTIAL       =     (0x8000 & temp) >> 15;
+    TEMP->WRITE_BLK_MISALIGN    =     (0x4000 & temp) >> 14;
+    TEMP->READ_BLK_MISALIGN     =     (0x2000 & temp) >> 13;
+    TEMP->DSR_IMP               =     (0x1000 & temp) >> 12;
     temp = sdio_get_resp4();
     TEMP->WP_GRP_ENABLE         = (0x80000000 & temp) >> 31;
     TEMP->R2W_FACTOR            = (0x1C000000 & temp) >> 26;
-    TEMP->WRITE_BL_LEN          = (0x3C00000 & temp) >> 22;
-    TEMP->WRITE_BL_PARTIAL      = (0x200000 & temp) >> 21;
-    TEMP->FILE_FORMAT_GRP       = (0x8000 & temp) >> 15;
-    TEMP->COPY                  = (0x4000 & temp) >> 14;
-    TEMP->PERM_WRITE_PROTECT    = (0x2000 & temp) >> 13;
-    TEMP->TMP_WRITE_PROTECT     = (0x1000 & temp) >> 12;
-    TEMP->FILE_FORMAT           = (0xC00 & temp) >> 10;
-    TEMP->CRC                   = (0xFE & temp) >> 1;
+    TEMP->WRITE_BL_LEN          =  (0x3C00000 & temp) >> 22;
+    TEMP->WRITE_BL_PARTIAL      =   (0x200000 & temp) >> 21;
+    TEMP->FILE_FORMAT_GRP       =     (0x8000 & temp) >> 15;
+    TEMP->COPY                  =     (0x4000 & temp) >> 14;
+    TEMP->PERM_WRITE_PROTECT    =     (0x2000 & temp) >> 13;
+    TEMP->TMP_WRITE_PROTECT     =     (0x1000 & temp) >> 12;
+    TEMP->FILE_FORMAT           =      (0xC00 & temp) >> 10;
+    TEMP->CRC                   =       (0xFE & temp) >>  1;
 }
 
 /**
@@ -1415,13 +1419,13 @@ void HardwareSDIO::convert(csd* TEMP) {
 void HardwareSDIO::convert(rca* TEMP) {
     uint32 temp = sdio_get_resp1();
     TEMP->RCA                   = (0xFFFF0000 & temp) >> 16;
-    TEMP->COM_CRC_ERROR         = (0x8000 & temp) >> 15;
-    TEMP->ILLEGAL_COMMAND       = (0x2000 & temp) >> 14;
-    TEMP->ERROR                 = (0x1000 & temp) >> 13;
-    TEMP->CURRENT_STATE         = (0x1E00 & temp) >> 9;
-    TEMP->READY_FOR_DATA        = (0x100 & temp) >> 8;
-    TEMP->APP_CMD               = (0x20 & temp) >> 5;
-    TEMP->AKE_SEQ_ERROR         = (0x8 & temp) >> 3;
+    TEMP->COM_CRC_ERROR         =     (0x8000 & temp) >> 15;
+    TEMP->ILLEGAL_COMMAND       =     (0x2000 & temp) >> 14;
+    TEMP->ERROR                 =     (0x1000 & temp) >> 13;
+    TEMP->CURRENT_STATE         =     (0x1E00 & temp) >>  9;
+    TEMP->READY_FOR_DATA        =      (0x100 & temp) >>  8;
+    TEMP->APP_CMD               =       (0x20 & temp) >>  5;
+    TEMP->AKE_SEQ_ERROR         =        (0x8 & temp) >>  3;
 }
 
 /**

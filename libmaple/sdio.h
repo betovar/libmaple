@@ -33,6 +33,7 @@
 #ifndef _SDIO_H_
 #define _SDIO_H_
 
+#include "dma.h"
 #include "rcc.h"
 #include "nvic.h"
 #include "util.h"

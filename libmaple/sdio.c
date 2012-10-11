@@ -34,7 +34,6 @@
 #include "gpio.h"
 #include "timer.h"
 #include "delay.h"
-#include "dma.h"
 
 /*
  * SDIO device
@@ -61,14 +60,13 @@ sdio_dev *SDIO = &sdio;
 void sdio_init(void) {
     rcc_clk_enable(SDIO->clk_id);
     rcc_reset_dev(SDIO->clk_id);
-    //nvic_irq_enable(SDIO->irq_num);
+  //nvic_irq_enable(SDIO->irq_num);
 }
 
 /**
  * @brief Reset an SDIO Device
  */
 void sdio_reset(void) {
-  //nvic_irq_disable(SDIO->irq_num);
     rcc_reset_dev(SDIO->clk_id);
     SDIO->regs->POWER  = 0x00000000;
     SDIO->regs->CLKCR  = 0x00000000;
@@ -79,6 +77,7 @@ void sdio_reset(void) {
     SDIO->regs->DCTRL  = 0x00000000;
     SDIO->regs->ICR    = 0x00C007FF;
     SDIO->regs->MASK   = 0x00000000;
+  //nvic_irq_disable(SDIO->irq_num);
 }
 
 /**
@@ -99,7 +98,7 @@ void sdio_set_clkcr(uint32 val) {
  *       (CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
  */
 void sdio_cfg_clkcr(uint32 spc, uint32 val) {
-    spc = (~SDIO_CLKCR_RESERVED & spc);
+    spc = ~SDIO_CLKCR_RESERVED & spc;
     uint32 temp = SDIO->regs->CLKCR;
     temp &= ~spc;
     temp |= (spc & val);
