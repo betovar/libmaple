@@ -1,11 +1,15 @@
-Card Library: A Wirish class for reading and writing to SD cards
+Card Library
+===============================================================================
+
+A Wirish class for reading and writing to SD cards
 
 * Author: Brian Tovar
 * Email: betovar@leaflabs.com
 * Modified: 15 Sep 2012
 
+
 Overview
-========
+===============================================================================
 
 The goal of this library is to provide a feature set of commands for SD cards. 
 The project's first priority will be development of the SDIO peripheral on ARM
@@ -14,12 +18,11 @@ class and possibly even a SPI based class with mirrored functionality.
 
 
 How It Works
-============
+===============================================================================
 
 Most of this work is based on this documentation:
-[Reference Manual for STM32F103ZE] [1]
-[SD Card Physical Layer Specification] [2]
-It may also help readers better understand many unknown terms.
+* [Reference Manual for STM32F103ZE] [1]
+* [SD Card Physical Layer Specification] [2]
 
 The SDIO peripheral, like any other in `libmaple`, is first built around a C
  application programming interface (API). A Wirish/C++ API is then built on 
@@ -71,7 +74,7 @@ requires a manual reset of the entire board.
 
 
 Testing (wip)
-=======
+===============================================================================
 
 Here is an example of a command on OSX that reads the one-thousandth block of 
 an SD card mounted as disk4, and writes the result out to a file:
@@ -109,7 +112,7 @@ but a polling scheme might be implemented for a slow speed demo.
 
 
 Conflicts (to be conmpleted)
-=========
+===============================================================================
 
 * peripheral gpio pins in use
 * DMA2 Channel4 (specific to F1 line)
@@ -117,7 +120,7 @@ Conflicts (to be conmpleted)
 
 
 Proposals
-=========
+===============================================================================
 
 SDIO device
 -----------
@@ -180,8 +183,8 @@ proposing that the higher-level classes handle these cases.
 
 
 References
-==========
+===============================================================================
 
-[1]: <http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/REFERENCE_MANUAL/CD00171190.pdf>
+[1]: http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/REFERENCE_MANUAL/CD00171190.pdf
 
-[2]: <https://www.sdcard.org/downloads/pls/simplified_specs/Part_1_Physical_Layer_Simplified_Specification_Ver_3.01_Final_100518.pdf>
+[2]: https://www.sdcard.org/downloads/pls/simplified_specs/Part_1_Physical_Layer_Simplified_Specification_Ver_3.01_Final_100518.pdf
