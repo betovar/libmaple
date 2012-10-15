@@ -2,7 +2,7 @@ Example Card Analysis
 ==============================================================================
 
 /**
- * @file example-4GBcard.md
+ * @file example-8GBcard.md
  * @author Brian E Tovar
  * @modified 24 Sep 2012
  */
@@ -32,31 +32,26 @@ Built in SD Card Reader:
 
 SDHC Card (Class 4):
 
-  Product Name:	          SDSU04G
+  Product Name:	          SDSU08G
   Manufacturer ID:	      0x03
   Revision:	              8.0
-  Serial Number:          360732848
-  Manufacturing Date:	    2012-01
+  Serial Number:	        33855119
+  Manufacturing Date:	    2012-05
   Specification Version:	3.0
-  Capacity:	              3.97 GB (3,965,190,144 bytes)
+  Capacity:	              7.95 GB (7,948,206,080 bytes)
   Removable Media:	      Yes
   BSD Name:	              disk2
-  Partition Map Type:	    GPT (GUID Partition Table)
+  Partition Map Type:	    MBR (Master Boot Record)
   S.M.A.R.T. status:	    Not Supported
   Volumes:
-    disk2s1:
-      Capacity:	    209.7 MB (209,715,200 bytes)
-      BSD Name:     disk2s1
-      Content:      EFI
-    RAICHU:
-      Available:    3.6 GB (3,595,005,952 bytes)
-      Capacity:     3.62 GB (3,621,216,256 bytes)
+    PIKACHU:
+      Available:	  7.94 GB (7,935,361,024 bytes)
+      Capacity:	    7.94 GB (7,944,011,776 bytes)
       Writable:	    Yes
-      File System:	Journaled HFS+
-      BSD Name:	    disk2s2
-      Mount Point:	/Volumes/RAICHU
-      Content:      Apple_HFS
-      Volume UUID:  D89DAEEA-FC4E-323D-8FEC-161FF67A2A7D
+      File System:	MS-DOS FAT32
+      BSD Name:	    disk2s1
+      Mount Point:	/Volumes/PIKACHU
+      iocontent:	  DOS_FAT_32
 
 
 SDIO Debug over SerialUSB
@@ -73,15 +68,6 @@ SDIO_DBG: Initializing card
 SDIO_DBG: Sending CMD8
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response timeout
-SDIO_ERR: Command mismatch, response from CMD0
-SDIO_ERR: Unexpected response status
-SDIO_DBG: Sending CMD0
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Command sent
-SDIO_DBG: Card should be in IDLE state
-SDIO_DBG: Sending CMD8
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response received
 SDIO_ERR: Command mismatch, response from CMD0
 SDIO_ERR: Unexpected response status
 SDIO_DBG: Sending CMD0
@@ -119,43 +105,34 @@ SDIO_DBG: Sending CMD55
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response received
 SDIO_DBG: Response from CMD55
-SDIO_DBG: Sending ACMD41
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
-SDIO_DBG: Response from ACMD41
-SDIO_DBG: OCR busy
-SDIO_DBG: Sending CMD55
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response received
-SDIO_DBG: Response from CMD55
-SDIO_DBG: Sending ACMD41
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
-SDIO_DBG: Response from ACMD41
-SDIO_DBG: OCR busy
-SDIO_DBG: Sending CMD55
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response received
-SDIO_DBG: Response from CMD55
-SDIO_DBG: Sending ACMD41
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
-SDIO_DBG: Response from ACMD41
-SDIO_DBG: OCR busy
-SDIO_DBG: Sending CMD55
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response received
-SDIO_DBG: Response from CMD55
-SDIO_DBG: Sending ACMD41
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
-SDIO_DBG: Response from ACMD41
-SDIO_DBG: OCR busy
-SDIO_DBG: Sending CMD55
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response received
-SDIO_DBG: Response from CMD55
 SDIO_DBG: AppCmd not enabled, try again
+SDIO_DBG: Sending CMD55
+SDIO_DBG: Command active
+SDIO_DBG: Wait for interrupt... Response received
+SDIO_DBG: Response from CMD55
+SDIO_DBG: Sending ACMD41
+SDIO_DBG: Command active
+SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
+SDIO_DBG: Response from ACMD41
+SDIO_DBG: OCR busy
+SDIO_DBG: Sending CMD55
+SDIO_DBG: Command active
+SDIO_DBG: Wait for interrupt... Response received
+SDIO_DBG: Response from CMD55
+SDIO_DBG: Sending ACMD41
+SDIO_DBG: Command active
+SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
+SDIO_DBG: Response from ACMD41
+SDIO_DBG: OCR busy
+SDIO_DBG: Sending CMD55
+SDIO_DBG: Command active
+SDIO_DBG: Wait for interrupt... Response received
+SDIO_DBG: Response from CMD55
+SDIO_DBG: Sending ACMD41
+SDIO_DBG: Command active
+SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
+SDIO_DBG: Response from ACMD41
+SDIO_DBG: OCR busy
 SDIO_DBG: Sending CMD55
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response received
@@ -175,10 +152,10 @@ SDIO_DBG: Wait for interrupt... Response received
 SDIO_DBG: Response from CMD2
 SDIO_DBG: Manufaturer ID 3
 SDIO_DBG: Application ID SD
-SDIO_DBG: Product name SU04G
+SDIO_DBG: Product name SU08G
 SDIO_DBG: Product revision 8.0
-SDIO_DBG: Serial number 360732848
-SDIO_DBG: Manufacture date 1/2012
+SDIO_DBG: Serial number 33855119
+SDIO_DBG: Manufacture date 5/2012
 SDIO_DBG: Getting new Relative Card Address
 SDIO_DBG: Sending CMD3
 SDIO_DBG: Command active
@@ -201,5 +178,15 @@ SDIO_DBG: READ_BL_PARTIAL 0
 SDIO_DBG: WRITE_BLK_MISALIGN 0
 SDIO_DBG: READ_BLK_MISALIGN 0
 SDIO_DBG: DSR_IMP 0
-SDIO_DBG: C_SIZE 7562
+SDIO_DBG: C_SIZE 15159
 *** SDMC test complete ***
+
+
+Discussion
+------------------------------------------------------------------------------
+
+In previous tests, the card was not ready in the alotted number of tries. This 
+test gave the correct CID information verified from an independent source. The 
+next step is to verify the CSD register values with some other source since 
+Apple hardware does not provide this information with their hardware tools. 
+`blkid` has been rumored to fit this bill.
