@@ -1,6 +1,9 @@
 Reading SD Card Registers
 ===============================================================================
 
+This document details how to read card specific information from microSD cards
+ using the Android SDK and an old HTC Eris mobile phone connected over USB.
+
 * Author: Brian E Tovar
 * Email:  betovar@leaflabs.com
 * Date:   14 Oct 2012
@@ -9,9 +12,17 @@ Reading SD Card Registers
 Introduction and Objective
 ===============================================================================
 
-One of the most important parts of testing an algorithm is knowing the expected data output. This paper details how to read card specific information from microSD cards using the Android SDK on Ubuntu and an old HTC Eris mobile phone connected over USB.
+One of the most important parts of testing an algorithm is knowing the expected
+ output of the data. Obtaining card specific values (like the `cid` and `csd`) 
+ from an independent source is critical to testing a method for retrieving 
+ these values. 
 
-These card specific values (`cid` and `csd`) will be compare will those read from the same cards on Maple Native hardware using the Wirish SD-Card library.
+The objective of this document is to provide a means to compare the card 
+ specific information provided by the Wirish SD-Card library. As mentioned, 
+ USB card readers cannot provide access to these values. Readers built into 
+ motherboards can provide these values, but not with ease. This procedure 
+ outlines the simplest, most through method available to me at the time. Other 
+ methods do exist and might be easier for you.
 
 
 Experimental
@@ -22,14 +33,20 @@ Summary of steps taken to set up phone for reading cards:
 1. [Download] [1] the Android SDK manager 
 2. [Install] [2] the platform-tools
 3. [Setup] [3] USB debugging with a udev rule for device
-4. [Run] [4] adb shell from <sdk>/platform-tools/
+4. [Run] [4] `adb shell` from <sdk>/platform-tools/
 5. [Cat] [5] register values from /sys/block/mmcblk*/device/
 
+[1]: http://developer.android.com/sdk/index.html
+[2]: http://developer.android.com/sdk/installing/adding-packages.html
+[3]: http://developer.android.com/tools/device.html#setting-up
+[4]: http://developer.android.com/tools/help/adb.html
+[5]: http://stackoverflow.com/a/7197463
 
 Results and Data
 ===============================================================================
 
-These results are from five different cards of various sizes and speed classes. They are identified by their screen printed labeling (or lack thereof).
+These results are from five different cards of various sizes and speed classes.
+ They are identified by their screen printed labeling (or lack thereof).
 
 Unlabeled 1GB
 -------------
@@ -70,20 +87,16 @@ SanDisk 8GB
 Discussion
 ===============================================================================
 
-Upon inspection of these values, the 4GB Transcend card has not given a matching `cid` register after two successful attempts where the card is ready. It is possible that these readings are using an immature version of the class and suggests another reading in the future to verify this inconsistency.
+Upon inspection of these values, the 4GB Transcend card is the only one to not
+ provide a matching `cid` register after two successful attempts where the 
+ card is ready. It is possible that these readings are using an immature 
+ version of the library and suggests another reading in the future to verify 
+ this inconsistency.
 
 
 Conclusion
 ===============================================================================
 
-For the most part, the algorithm and cmd line communication seem robust when the card is ready. Therefore efforts should be made to make a reliable `begin()` routine for getting the card into a ready state.
-
-
-References
-===============================================================================
-
-[1]: http://developer.android.com/sdk/index.html
-[2]: http://developer.android.com/sdk/installing/adding-packages.html
-[3]: http://developer.android.com/tools/device.html#setting-up
-[4]: http://developer.android.com/tools/help/adb.html
-[5]: http://stackoverflow.com/a/7197463
+For the most part, the algorithm and cmd line communication seem robust when 
+ the card is ready. Therefore efforts should be made to make a reliable 
+ `begin()` routine for getting the card into a ready state.

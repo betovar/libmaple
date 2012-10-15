@@ -120,7 +120,6 @@ HardwareSDIO::HardwareSDIO(void) {
  * @brief Configure common startup settings 
  */
 void HardwareSDIO::begin(SDIOClockFrequency freq) {
-    this->clkFreq = freq;
     sdio_set_clkcr(SDIO_CLK_INIT | SDIO_CLKCR_CLKEN);
     sdio_cfg_gpio();
     sdio_init();
@@ -147,8 +146,18 @@ void HardwareSDIO::begin(SDIOClockFrequency freq) {
     this->idle();
     this->initialization();
     this->identification();
-    this->clockFreq(this->clkFreq);
+    this->clockFreq(freq);
     this->getCSD();
+    #if defined(SDIO_DEBUG_ON)
+    DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x");
+    DEBUG_DEVICE.println(sdio_get_resp1(), HEX);
+    DEBUG_DEVICE.print("SDIO_DBG: RESP2 0x");
+    DEBUG_DEVICE.println(sdio_get_resp2(), HEX);
+    DEBUG_DEVICE.print("SDIO_DBG: RESP3 0x");
+    DEBUG_DEVICE.println(sdio_get_resp3(), HEX);
+    DEBUG_DEVICE.print("SDIO_DBG: RESP4 0x");
+    DEBUG_DEVICE.println(sdio_get_resp4(), HEX);
+    #endif
     this->getCID();
 }
 
@@ -156,7 +165,7 @@ void HardwareSDIO::begin(SDIOClockFrequency freq) {
  * @brief General startup settings 
  */
 void HardwareSDIO::begin(void) {
-    this->begin(SDIO_3_MHZ);
+    this->begin(SDIO_1_MHZ);
 }
 
 /**
@@ -167,7 +176,7 @@ void HardwareSDIO::end(void) {
     sdio_reset();
     this->RCA.RCA = 0x0;
     this->CSD.CSD_STRUCTURE = 3;
-    delay(10);
+    delay(1000);
 }
 
 /**
@@ -305,22 +314,14 @@ void HardwareSDIO::identification(void) {
     this->command(ALL_SEND_CID); //CMD2
     this->response(ALL_SEND_CID);
     #if defined(SDIO_DEBUG_ON)
-    DEBUG_DEVICE.print("SDIO_DBG: Manufaturer ID ");
-    DEBUG_DEVICE.println(CID.MID, DEC);
-    DEBUG_DEVICE.print("SDIO_DBG: Application ID ");
-    DEBUG_DEVICE.println(this->CID.OID);
-    DEBUG_DEVICE.print("SDIO_DBG: Product name ");
-    DEBUG_DEVICE.println(this->CID.PNM);
-    DEBUG_DEVICE.print("SDIO_DBG: Product revision ");
-    DEBUG_DEVICE.print(this->CID.PRV.N, DEC);
-    DEBUG_DEVICE.print(".");
-    DEBUG_DEVICE.println(this->CID.PRV.M, DEC);
-    DEBUG_DEVICE.print("SDIO_DBG: Serial number ");
-    DEBUG_DEVICE.println(this->CID.PSN, DEC);
-    DEBUG_DEVICE.print("SDIO_DBG: Manufacture date ");
-    DEBUG_DEVICE.print(this->CID.MDT.MONTH, DEC);
-    DEBUG_DEVICE.print("/");
-    DEBUG_DEVICE.println(this->CID.MDT.YEAR+2000, DEC);
+    DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x");
+    DEBUG_DEVICE.println(sdio_get_resp1(), HEX);
+    DEBUG_DEVICE.print("SDIO_DBG: RESP2 0x");
+    DEBUG_DEVICE.println(sdio_get_resp2(), HEX);
+    DEBUG_DEVICE.print("SDIO_DBG: RESP3 0x");
+    DEBUG_DEVICE.println(sdio_get_resp3(), HEX);
+    DEBUG_DEVICE.print("SDIO_DBG: RESP4 0x");
+    DEBUG_DEVICE.println(sdio_get_resp4(), HEX);
 /* --------------------------------------------------------------------------*/
     DEBUG_DEVICE.println("SDIO_DBG: Getting new Relative Card Address");
     #endif
@@ -344,7 +345,7 @@ void HardwareSDIO::clockFreq(SDIOClockFrequency freq) {
     #if defined(SDIO_DEBUG_ON)
     float speed = (CYCLES_PER_MICROSECOND*1000.0)/((float)freq+2.0);
     DEBUG_DEVICE.println("SDIO_DBG: Clock speed is ");
-    if (speed > 1000.0) {
+    if (speed >= 1000.0) {
         speed /= 1000.0;
         DEBUG_DEVICE.print(speed, DEC);
         DEBUG_DEVICE.println(" MHz");
@@ -353,6 +354,7 @@ void HardwareSDIO::clockFreq(SDIOClockFrequency freq) {
         DEBUG_DEVICE.println(" kHz");
     }
     #endif
+    this->clkFreq = freq;
 }
 
 /**
@@ -616,7 +618,6 @@ void HardwareSDIO::response(SDCommand cmd) {
         break;
       case WRITE_BLOCK:
         this->convert(&this->CSR, temp);
-        if ()
         break;
       case SEND_STATUS:
       default: //FIXME assumed all others are TYPE_R1
