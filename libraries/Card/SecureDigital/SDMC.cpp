@@ -1557,6 +1557,13 @@ void HardwareSDIO::writeBlock(uint32 addr, uint32 *src) {
     this->response(WRITE_BLOCK);
     if (this->responseFlag != SDIO_FLAG_CMDREND) {
         return;
+    } else if (this->CSR.READY_FOR_DATA == SDIO_CSR_READY) {
+        break;
+    } else {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.print("SDIO_ERR: Unknown error in WRITE_BLOCK");
+        #endif
+        return;
     }
   //this->transfer(WRITE_BLOCK);
     uint8 txed = 0;
