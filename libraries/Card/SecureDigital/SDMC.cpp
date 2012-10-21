@@ -145,20 +145,10 @@ void HardwareSDIO::begin(SDIOClockFrequency freq) {
     delay(10);//Microseconds(185);
     this->idle();
     this->initialization();
+    /*
     this->identification();
     this->clockFreq(freq);
-    this->getCSD();
-    #if defined(SDIO_DEBUG_ON)
-    DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x");
-    DEBUG_DEVICE.println(sdio_get_resp1(), HEX);
-    DEBUG_DEVICE.print("SDIO_DBG: RESP2 0x");
-    DEBUG_DEVICE.println(sdio_get_resp2(), HEX);
-    DEBUG_DEVICE.print("SDIO_DBG: RESP3 0x");
-    DEBUG_DEVICE.println(sdio_get_resp3(), HEX);
-    DEBUG_DEVICE.print("SDIO_DBG: RESP4 0x");
-    DEBUG_DEVICE.println(sdio_get_resp4(), HEX);
-    #endif
-    this->getCID();
+    */
 }
 
 /**
@@ -172,7 +162,7 @@ void HardwareSDIO::begin(void) {
  * @brief Reset sdio device
  */
 void HardwareSDIO::end(void) {
-    //this->command(GO_INACTIVE_STATE);
+  //this->command(GO_INACTIVE_STATE);
     sdio_reset();
     this->RCA.RCA = 0x0;
     this->CSD.CSD_STRUCTURE = 3;
@@ -189,9 +179,7 @@ void HardwareSDIO::idle(void) {
         this->wait(GO_IDLE_STATE);
         switch (this->responseFlag) {
           case SDIO_FLAG_CMDSENT:
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_DBG: Card should be in IDLE state");
-            #endif
+            //FIXME: check that card is in idle state
             this->responseFlag = temp;
             return;
           default:
@@ -209,14 +197,51 @@ void HardwareSDIO::initialization(void) {
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.println("SDIO_DBG: Initializing card");
     #endif
+    uint8 MAX_TRIALS = 3;
     uint32 arg = SDIO_HOST_CAPACITY_SUPPORT;
-    for (int i=1; i<=3; i++) {
-        this->getICR();
-        switch (this->responseFlag) {
-          case SDIO_FLAG_CMDREND:
-            i = 1000;
+    for (int i=1; i<=MAX_TRIALS; i++) {
+        this->command(SEND_IF_COND, //CMD8
+                    //SDIO_SDXC_POWER_CONTROL |
+                      SDIO_VOLTAGE_HOST_SUPPORT |
+                      SDIO_CHECK_PATTERN);
+        this->wait(SEND_IF_COND);
+        this->response(SEND_IF_COND);
+        if (this->responseFlag == SDIO_FLAG_CMDREND) {
+            if (this->ICR.CHECK_PATTERN == SDIO_CHECK_PATTERN) {
+                #if defined(SDIO_DEBUG_ON)
+                DEBUG_DEVICE.println("SDIO_DBG: Valid check pattern");
+                #endif
+                break; 
+            } else {
+                #if defined(SDIO_DEBUG_ON)
+                DEBUG_DEVICE.print("SDIO_ERR: Unusuable Card, ");
+                DEBUG_DEVICE.print("Check pattern 0x");
+                DEBUG_DEVICE.println(this->ICR.CHECK_PATTERN, HEX);
+                #endif
+                ASSERT(0);
+                return;
+            }
+            if (this->ICR.VOLTAGE_ACCEPTED == SDIO_VOLTAGE_SUPPLIED) {
+                #if defined(SDIO_DEBUG_ON)
+                DEBUG_DEVICE.println("SDIO_DBG: Valid supplied voltage");
+                #endif
+                break;
+            } else {
+                #if defined(SDIO_DEBUG_ON)
+                DEBUG_DEVICE.print("SDIO_ERR: Unusuable Card, ");
+                DEBUG_DEVICE.print("Accepted voltage 0x");
+                DEBUG_DEVICE.println(this->ICR.VOLTAGE_ACCEPTED, HEX);
+                #endif
+                ASSERT(0);
+                return;
+            }
+            #if defined(SDIO_DEBUG_ON)
+            DEBUG_DEVICE.println("SDIO_DBG: Interface condition check passed");
+            #endif
+            // version 2.0 card
+            this->CSD.CSD_STRUCTURE = 1;
             break;
-          case SDIO_FLAG_CTIMEOUT:
+        } else if (this->responseFlag == SDIO_FLAG_CTIMEOUT) {
             #if defined(SDIO_DEBUG_ON)
             DEBUG_DEVICE.println("SDIO_DBG: Card does not support CMD8");
             #endif
@@ -224,49 +249,58 @@ void HardwareSDIO::initialization(void) {
             arg &= ~SDIO_HOST_CAPACITY_SUPPORT;
             // probably version 1.x memory card
             this->CSD.CSD_STRUCTURE = 0;
-            i = 1000;
             break;
-          default:
+        } else if (i == MAX_TRIALS) {
+            #if defined(SDIO_DEBUG_ON)
+            DEBUG_DEVICE.println("SDIO_ERR: Initialization failed!");
+            #endif
+            ASSERT(0);
+            return;
+        } else {
             #if defined(SDIO_DEBUG_ON)
             DEBUG_DEVICE.println("SDIO_ERR: Unexpected response status");
             #endif
             idle();
-            break;
-        }
+            continue;
+        } 
     }
 /* --------------------------------------------------------------------------*/
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.println("SDIO_DBG: This is the inquiry ACMD41");
     #endif
     this->command(SD_SEND_OP_COND); //ACMD41: arg 0 means inquiry ACMD41
-    switch (this->responseFlag) {
-      case SDIO_FLAG_CTIMEOUT:
+    this->wait((SDCommand)SD_SEND_OP_COND);
+    if (this->responseFlag == SDIO_FLAG_CMDREND) {
+        this->response(SD_SEND_OP_COND);
+    } else if (this->responseFlag == SDIO_FLAG_CTIMEOUT) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.println("SDIO_ERR: Not SD Card");
         #endif
-        return; // ASSERT(0);
-    //case SDIO_FLAG_CCRCFAIL:
-    //  return;
-      case SDIO_FLAG_CMDREND:
-        this->response(SD_SEND_OP_COND);
-      default:
+        ASSERT(0);
+        return;
+    } else {
         #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.print("SDIO_DBG: Volatge window of the card 0x");
+        DEBUG_DEVICE.print("SDIO_ERR: Volatge window of the card 0x");
         DEBUG_DEVICE.println((uint16)OCR.VOLTAGE_WINDOW, HEX);
         #endif
-        break;
+        return;
     }
 /* --------------------------------------------------------------------------*/
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.println("SDIO_DBG: This is the first ACMD41");
     #endif
     for (int i=1; i<=10; i++) {
-        this->getOCR(); //ACMD41: first ACMD41
+        this->command(SD_SEND_OP_COND, //ACMD41: first ACMD41
+                      SDIO_HOST_CAPACITY_SUPPORT | 
+                      (SDIO_VALID_VOLTAGE_WINDOW << 8));
+        this->wait((SDCommand)SD_SEND_OP_COND);
+        this->response(SD_SEND_OP_COND);
         if (this->OCR.BUSY == 1) {
             #if defined(SDIO_DEBUG_ON)
             DEBUG_DEVICE.print("SDIO_DBG: Card is ready ");
             DEBUG_DEVICE.println("<-----------------------------------------");
             #endif
+            //FIXME: add variable that card is ready?
             break;
         } else {
             #if defined(SDIO_DEBUG_ON)
@@ -279,6 +313,7 @@ void HardwareSDIO::initialization(void) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.println("SDIO_ERR: Card is not ready");
         #endif
+        ASSERT(0);
         return;
     } else if (OCR.VOLTAGE_WINDOW & SDIO_VALID_VOLTAGE_WINDOW) {
         #if defined(SDIO_DEBUG_ON)
@@ -288,6 +323,7 @@ void HardwareSDIO::initialization(void) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.println("SDIO_ERR: Unusuable Card");
         #endif
+        ASSERT(0);
         return;
     }
     if (OCR.CCS == 0) {
@@ -312,6 +348,7 @@ void HardwareSDIO::identification(void) {
     DEBUG_DEVICE.println("SDIO_DBG: Getting Card Identification Number");
     #endif
     this->command(ALL_SEND_CID); //CMD2
+    this->wait(ALL_SEND_CID);
     this->response(ALL_SEND_CID);
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x");
@@ -365,6 +402,7 @@ void HardwareSDIO::clockFreq(SDIOClockFrequency freq) {
 void HardwareSDIO::busMode(SDIOBusMode width) {
     this->select();
     this->command(SET_BUS_WIDTH, width); //ACMD6
+    this->wait((SDCommand)SET_BUS_WIDTH);
     this->response(SET_BUS_WIDTH);
     //this->check(0x8FF9FE20);
     switch (width) {
@@ -404,6 +442,7 @@ void HardwareSDIO::blockSize(SDIOBlockSize size) {
     }
     this->select();
     this->command(SET_BLOCKLEN, 0x1 << size);
+    this->wait(SET_BLOCKLEN);
   //this->check(0x2FF9FE00);
     this->response(SET_BLOCKLEN);
     if (this->CSR.ERROR == SDIO_CSR_ERROR) {
@@ -519,6 +558,7 @@ void HardwareSDIO::command(SDAppCommand acmd) {
 void HardwareSDIO::command(SDAppCommand acmd, uint32 arg) {
     for (uint32 i=1; i<=4; i++) {
         this->command(APP_CMD, (uint32)this->RCA.RCA << 16);
+        this->wait(APP_CMD);
         this->response(APP_CMD);
       //this->check(0xFF9FC21);
         if (this->CSR.APP_CMD == SDIO_CSR_DISABLED) {
@@ -559,16 +599,13 @@ void HardwareSDIO::command(SDAppCommand acmd, uint32 arg) {
  * @param cmd SDCommand enumeration to process response for
  */
 void HardwareSDIO::response(SDCommand cmd) {
-    if (this->responseFlag != SDIO_FLAG_CMDREND) {
-        return;
-    }
-    
     uint32 respcmd = sdio_get_command(); //check response matches command
     if (respcmd == (uint32)cmd) {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.print("SDIO_DBG: Response from CMD");
         DEBUG_DEVICE.println(respcmd, DEC);
         #endif
+        this->responseFlag = SDIO_FLAG_CMDREND;
     } else if (respcmd == 0x3F) { //RM0008: pg.576 special case
         switch (cmd) {
           case ALL_SEND_CID:
@@ -617,8 +654,6 @@ void HardwareSDIO::response(SDCommand cmd) {
         this->convert(&this->CSD);
         break;
       case WRITE_BLOCK:
-        this->convert(&this->CSR, temp);
-        break;
       case SEND_STATUS:
       default: //FIXME assumed all others are TYPE_R1
         this->convert(&this->CSR, temp);
@@ -638,12 +673,14 @@ void HardwareSDIO::response(SDAppCommand acmd) {
         DEBUG_DEVICE.print("SDIO_DBG: Response from ACMD");
         DEBUG_DEVICE.println(respcmd, DEC);
         #endif
+        this->responseFlag = SDIO_FLAG_CMDREND;
     } else if (respcmd == 0x3F) { //RM0008: pg.576 special case
         switch (acmd) {
           case SD_SEND_OP_COND:
             #if defined(SDIO_DEBUG_ON)
             DEBUG_DEVICE.println("SDIO_DBG: Response from ACMD41");
             #endif
+            this->responseFlag = SDIO_FLAG_CMDREND;
             break;
           default:
             #if defined(SDIO_DEBUG_ON)
@@ -660,10 +697,8 @@ void HardwareSDIO::response(SDAppCommand acmd) {
         this->responseFlag = SDIO_FLAG_ERROR;
         return;
     }
-    switch (this->responseFlag) {
-      case SDIO_FLAG_CMDREND:
-        break;
-      default:
+
+    if (this->responseFlag != SDIO_FLAG_CMDREND) {
         return;
     }
     uint32 temp = sdio_get_resp1();
@@ -867,8 +902,8 @@ void HardwareSDIO::wait(SDCommand cmd) {
                 return;
             }
             sdio_clear_interrupt(SDIO_ICR_CCRCFAILC);
-            delay(10);
             this->responseFlag = SDIO_FLAG_CMDREND;
+            return;
         } else if (sdio_check_status(SDIO_STA_CMDREND)) {
             switch (cmd) {
               case READ_SINGLE_BLOCK:
@@ -919,6 +954,7 @@ void HardwareSDIO::wait(SDCommand cmd) {
  */
 void HardwareSDIO::newRCA(void) {
     this->command(SEND_RELATIVE_ADDR); //CMD3
+    this->wait(SEND_RELATIVE_ADDR);
     this->response(SEND_RELATIVE_ADDR);
     if (this->RCA.COM_CRC_ERROR == SDIO_CSR_ERROR) {
         #if defined(SDIO_DEBUG_ON)
@@ -964,70 +1000,11 @@ void HardwareSDIO::newRCA(void) {
 }
 
 /**
- * @brief Gets the Interface Condition Register (ICR)
- *        tells whether the operating voltage of the host is valid for the card
- * @note  Only allowed during identification mode
- */
-void HardwareSDIO::getICR(void) {
-    this->command(SEND_IF_COND, //CMD8
-                //SDIO_SDXC_POWER_CONTROL |
-                  SDIO_VOLTAGE_HOST_SUPPORT |
-                  SDIO_CHECK_PATTERN);
-    this->response(SEND_IF_COND);
-    switch (this->responseFlag) {
-      case SDIO_FLAG_CMDREND:
-        if (this->ICR.CHECK_PATTERN != SDIO_CHECK_PATTERN) {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.print("SDIO_ERR: Unusuable Card, ");
-            DEBUG_DEVICE.print("Check pattern 0x");
-            DEBUG_DEVICE.println(this->ICR.CHECK_PATTERN, HEX);
-            #endif
-            return; // ASSERT(0);
-        } else {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_DBG: Valid check pattern");
-            #endif
-        }
-        if (this->ICR.VOLTAGE_ACCEPTED != SDIO_VOLTAGE_SUPPLIED) {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.print("SDIO_ERR: Unusuable Card, ");
-            DEBUG_DEVICE.print("Accepted voltage 0x");
-            DEBUG_DEVICE.println(this->ICR.VOLTAGE_ACCEPTED, HEX);
-            #endif
-            return; // ASSERT(0);
-        } else {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_DBG: Valid supplied voltage");
-            #endif
-        }
-        #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_DBG: Interface condition check passed");
-        #endif
-        // version 2.0 card
-        CSD.CSD_STRUCTURE = 1;
-        break;
-      default:
-        return;
-    }
-}
-
-/**
- * @brief Gets the Operating Conditions Register (OCR)
- * @note  Only allowed during identification mode
- */
-void HardwareSDIO::getOCR(void) {
-    this->command(SD_SEND_OP_COND, //ACMD41
-                //SDIO_HOST_CAPACITY_SUPPORT | (OCR.VOLTAGE_WINDOW << 8),
-                  SDIO_HOST_CAPACITY_SUPPORT | 
-                  (SDIO_VALID_VOLTAGE_WINDOW << 8));
-    this->response(SD_SEND_OP_COND);
-}
-
-/**
  * @brief Gets the Card IDentification number (CID)
  */
 void HardwareSDIO::getCID(void) {
     this->command(SEND_CID, (uint32)RCA.RCA << 16); //CMD10
+    this->wait(SEND_CID);
     this->response(SEND_CID);
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.print("SDIO_DBG: MID ");
@@ -1054,6 +1031,7 @@ void HardwareSDIO::getCID(void) {
  */
 void HardwareSDIO::getCSD(void) {
     this->command(SEND_CSD, (uint32)RCA.RCA << 16); //CMD9
+    this->wait(SEND_CSD);
     this->response(SEND_CSD);
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.print("SDIO_DBG: Card version ");
@@ -1117,6 +1095,7 @@ void HardwareSDIO::getSCR(void) {
     sdio_set_dcr((this->blkSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR);
     this->command(SEND_SCR); //ACMD51
+    this->wait((SDCommand)SEND_SCR);
     this->response(SEND_SCR);
   //this->transfer(SEND_SCR);
 
@@ -1264,6 +1243,7 @@ void HardwareSDIO::getSSR(void) {
  */
 void HardwareSDIO::getCSR(void) {
     this->command(SEND_STATUS, this->RCA.RCA << 16);
+    this->wait(SEND_STATUS);
     this->response(SEND_STATUS);
 }
 
@@ -1285,6 +1265,7 @@ void HardwareSDIO::setDSR(void) {
  */
 void HardwareSDIO::select(uint16 card) {
     this->command(SELECT_DESELECT_CARD, (uint32)card << 16); //CMD7
+    this->wait(SELECT_DESELECT_CARD);
     this->response(SELECT_DESELECT_CARD);
   //this->check(0xFF9FF00);
 }
@@ -1445,18 +1426,10 @@ void HardwareSDIO::stop(void) {
  * @count Number of blocks to be read, cannot be zero
  */
 void HardwareSDIO::read(uint32 addr, uint32 *dst, uint32 count) {
-    if (count == 0) {
-        #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_ERR: Block count of zero");
-        #endif
-        return;
-    } else if (count == 1) {
-        this->readBlock(addr, dst);
-    } else { //FIXME: multiBlock read rountine to follow
-        #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_ERR: Multi-block read not supported yet");
-        #endif
-    }
+    #if defined(SDIO_DEBUG_ON)
+    DEBUG_DEVICE.println("SDIO_ERR: HardwareSDIO::read not yet supported,");
+    DEBUG_DEVICE.println("          checkout the sdio-readblock branch");
+    #endif
 }
 
 /**
@@ -1487,58 +1460,6 @@ void HardwareSDIO::write(uint32 addr, uint32 *src, uint32 count) {
  * @note Data is send little-endian format
  */
 void HardwareSDIO::readBlock(uint32 addr, uint32 *dst) {
-    if (this->blkSize != SDIO_BKSZ_512) { //FIXME
-        this->blockSize(SDIO_BKSZ_512);
-    }
-    //FIXME: CCS must equal one for block unit addressing
-    this->select();
-    //check for busy signal on dat0 line?
-    sdio_cfg_dma_rx(dst, 0x1 << this->blkSize);
-    this->command(READ_SINGLE_BLOCK, addr);
-    switch (this->responseFlag) {
-      case SDIO_FLAG_CMDREND:
-        this->response(READ_SINGLE_BLOCK);
-        break;
-      default:
-        #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_ERR: Unknown response in readBlock");
-        #endif
-        return;
-    }
-  //this->check(0xCFF9FE00);
-    while (1) {
-        if (sdio_check_status(SDIO_STA_DTIMEOUT)) {
-            sdio_clear_interrupt(SDIO_ICR_DTIMEOUTC);
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_ERR: Data timeout");
-            #endif
-            return;
-        } else if (sdio_check_status(SDIO_STA_DCRCFAIL)) {
-            sdio_clear_interrupt(SDIO_ICR_DCRCFAILC);
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_ERR: Data CRC fail");
-            #endif
-            return;
-        } else if (sdio_check_status(SDIO_STA_STBITERR)) {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_ERR: Data start-bit");
-            #endif
-            return;
-        } else if (sdio_check_status(SDIO_STA_RXOVERR)) {
-            #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_ERR: Data FIFO overrun");
-            #endif
-            return;
-        } else if (sdio_check_status(SDIO_STA_DBCKEND)) {
-            break;
-        }
-    }
-    #if defined(SDIO_DEBUG_ON)
-    DEBUG_DEVICE.print("SDIO_DBG: Transfer complete");
-    #endif
-    sdio_clear_interrupt(SDIO_ICR_DBCKENDC);
-    sdio_dma_disable();
-  //dma_disable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
 }
 
 /**
@@ -1554,11 +1475,15 @@ void HardwareSDIO::writeBlock(uint32 addr, uint32 *src) {
     this->select();
   //sdio_cfg_dma_tx(src, 0x1 << this->blkSize);
     this->command(WRITE_BLOCK, addr);
+    this->wait(WRITE_BLOCK);
     this->response(WRITE_BLOCK);
     if (this->responseFlag != SDIO_FLAG_CMDREND) {
         return;
-    } else if (this->CSR.READY_FOR_DATA == SDIO_CSR_READY) {
-        break;
+    } else if (this->CSR.READY_FOR_DATA == SDIO_CSR_NOT_READY) {
+        #if defined(SDIO_DEBUG_ON)
+        DEBUG_DEVICE.print("SDIO_ERR: WRITE_BLOCK not ready for data");
+        #endif
+        return;
     } else {
         #if defined(SDIO_DEBUG_ON)
         DEBUG_DEVICE.print("SDIO_ERR: Unknown error in WRITE_BLOCK");

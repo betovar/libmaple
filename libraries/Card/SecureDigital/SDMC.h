@@ -420,7 +420,6 @@ class HardwareSDIO {
     void initialization(void);
     void identification(void);
     /*--------------------------------------- card register access functions */
-    void getICR(void);
     void getOCR(void);
     void newRCA(void);
     void getCID(void);
