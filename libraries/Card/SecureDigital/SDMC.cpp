@@ -274,7 +274,7 @@ void HardwareSDIO::initialization(void) {
         return;
     } else {
         #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.print("SDIO_ERR: Volatge window of the card 0x");
+        DEBUG_DEVICE.print("SDIO_ERR: Voltage window of the card 0x");
         DEBUG_DEVICE.println((uint16)OCR.VOLTAGE_WINDOW, HEX);
         #endif
         return;
@@ -283,7 +283,7 @@ void HardwareSDIO::initialization(void) {
     #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.println("SDIO_DBG: This is the first ACMD41");
     #endif
-    for (int i=1; i<=3; i++) {
+    for (int i=1; i<=5; i++) {
         this->command(SD_SEND_OP_COND, //ACMD41: first ACMD41
                       SDIO_HOST_CAPACITY_SUPPORT | 
                       (SDIO_VALID_VOLTAGE_WINDOW << 8));
@@ -299,7 +299,7 @@ void HardwareSDIO::initialization(void) {
             #if defined(SDIO_DEBUG_ON)
             DEBUG_DEVICE.println("SDIO_DBG: OCR busy");
             #endif
-            delay(10);
+            delay(10*i);
             continue;
         }
     }
@@ -309,9 +309,10 @@ void HardwareSDIO::initialization(void) {
         #endif
         ASSERT(0);
         return;
-    } else if (OCR.VOLTAGE_WINDOW & SDIO_VALID_VOLTAGE_WINDOW) {
+    }
+    if (OCR.VOLTAGE_WINDOW & SDIO_VALID_VOLTAGE_WINDOW) {
         #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_DBG: Valid volatge window");
+        DEBUG_DEVICE.println("SDIO_DBG: Valid voltage window");
         #endif
     } else {
         #if defined(SDIO_DEBUG_ON)
@@ -343,16 +344,8 @@ void HardwareSDIO::identification(void) {
     #endif
     this->command(ALL_SEND_CID); //CMD2
     this->response(ALL_SEND_CID);
-    #if defined(SDIO_DEBUG_ON)
-    DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x");
-    DEBUG_DEVICE.println(sdio_get_resp1(), HEX);
-    DEBUG_DEVICE.print("SDIO_DBG: RESP2 0x");
-    DEBUG_DEVICE.println(sdio_get_resp2(), HEX);
-    DEBUG_DEVICE.print("SDIO_DBG: RESP3 0x");
-    DEBUG_DEVICE.println(sdio_get_resp3(), HEX);
-    DEBUG_DEVICE.print("SDIO_DBG: RESP4 0x");
-    DEBUG_DEVICE.println(sdio_get_resp4(), HEX);
 /* --------------------------------------------------------------------------*/
+    #if defined(SDIO_DEBUG_ON)
     DEBUG_DEVICE.println("SDIO_DBG: Getting new Relative Card Address");
     #endif
     this->newRCA();
@@ -946,47 +939,49 @@ void HardwareSDIO::wait(SDCommand cmd) {
  * @brief Card publishes a new Relative Card Address (RCA)
  */
 void HardwareSDIO::newRCA(void) {
+    uint16 temp = this->RCA.RCA;
     for (int i=1; i<=3; i++) {
         this->command(SEND_RELATIVE_ADDR); //CMD3
         this->response(SEND_RELATIVE_ADDR);
-        #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x"); //FIXME
-        DEBUG_DEVICE.println(sdio_get_resp1(), HEX);
-        #endif
-        if (this->RCA.RCA != 0) {
+        if (this->RCA.RCA == temp) {
+            #if defined(SDIO_DEBUG_ON)
+            DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x"); //FIXME: remove
+            DEBUG_DEVICE.println(sdio_get_resp1(), HEX);
+            #endif
+        } else {
             break;
         }
     }
     if (this->RCA.COM_CRC_ERROR == SDIO_CSR_ERROR) {
         #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_ERR: CRC error in RCA response");
+        DEBUG_DEVICE.println("SDIO_ERR: CRC error");
         #endif
         ASSERT(0);
         return;
     } else if (this->RCA.ILLEGAL_COMMAND == SDIO_CSR_ERROR) {
         #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_ERR: Illegal command in RCA response");
+        DEBUG_DEVICE.println("SDIO_ERR: Illegal command");
         #endif
         ASSERT(0);
         return;
     } else if (this->RCA.ERROR == SDIO_CSR_ERROR) {
         #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_ERR: Generic error in RCA response");
+        DEBUG_DEVICE.println("SDIO_ERR: General error");
         #endif
         ASSERT(0);
         return;
-    } else if (this->RCA.READY_FOR_DATA == SDIO_CSR_NOT_READY) {
+/*  } else if (this->RCA.READY_FOR_DATA == SDIO_CSR_NOT_READY) {
         #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_ERR: Ready for data in RCA response");
+        DEBUG_DEVICE.println("SDIO_ERR: Not ready for data");
         #endif
         ASSERT(0);
         return;
     } else if (this->RCA.APP_CMD == SDIO_CSR_ENABLED) {
         #if defined(SDIO_DEBUG_ON)
-        DEBUG_DEVICE.println("SDIO_ERR: AppCmd enabled in RCA response");
+        DEBUG_DEVICE.println("SDIO_ERR: AppCmd enabled");
         #endif
         ASSERT(0);
-        return;
+        return; */
     } else {
         switch (this->RCA.CURRENT_STATE) {
           case SDIO_CSR_STBY:
@@ -996,10 +991,9 @@ void HardwareSDIO::newRCA(void) {
             break;
           default:
             #if defined(SDIO_DEBUG_ON)
-            DEBUG_DEVICE.println("SDIO_ERR: Card now in UNKNOWN state");
+            DEBUG_DEVICE.println("SDIO_ERR: Card now in an UNKNOWN state");
             #endif
-            ASSERT(0);
-            return;
+            break;
         }
     }
     #if defined(SDIO_DEBUG_ON)
@@ -1009,35 +1003,12 @@ void HardwareSDIO::newRCA(void) {
 }
 
 /**
- * @brief Gets the Card IDentification number (CID)
- */
-void HardwareSDIO::getCID(void) {
-    this->command(SEND_CID, (uint32)RCA.RCA << 16); //CMD10
-    this->response(SEND_CID);
-    #if defined(SDIO_DEBUG_ON)
-    DEBUG_DEVICE.print("SDIO_DBG: MID ");
-    DEBUG_DEVICE.println(CID.MID, DEC);
-    DEBUG_DEVICE.print("SDIO_DBG: OID ");
-    DEBUG_DEVICE.println(this->CID.OID);
-    DEBUG_DEVICE.print("SDIO_DBG: PNM ");
-    DEBUG_DEVICE.println(this->CID.PNM);
-    DEBUG_DEVICE.print("SDIO_DBG: PRV ");
-    DEBUG_DEVICE.print(this->CID.PRV.N, DEC);
-    DEBUG_DEVICE.print(".");
-    DEBUG_DEVICE.println(this->CID.PRV.M, DEC);
-    DEBUG_DEVICE.print("SDIO_DBG: PSN ");
-    DEBUG_DEVICE.println(this->CID.PSN, DEC);
-    DEBUG_DEVICE.print("SDIO_DBG: MDT ");
-    DEBUG_DEVICE.print(this->CID.MDT.MONTH, DEC);
-    DEBUG_DEVICE.print("/");
-    DEBUG_DEVICE.println(this->CID.MDT.YEAR+2000, DEC);
-    #endif
-}
-
-/**
  * @brief Gets the Card Specific Data (CSD)
  */
 void HardwareSDIO::getCSD(void) {
+    #if defined(SDIO_DEBUG_ON)
+    DEBUG_DEVICE.println("SDIO_DBG: Getting Card Specific Data");
+    #endif
     this->command(SEND_CSD, (uint32)RCA.RCA << 16); //CMD9
     this->response(SEND_CSD);
     #if defined(SDIO_DEBUG_ON)
@@ -1088,6 +1059,35 @@ void HardwareSDIO::getCSD(void) {
       default:
         break;
     }
+    #endif
+}
+
+/**
+ * @brief Gets the Card IDentification number (CID)
+ */
+void HardwareSDIO::getCID(void) {
+    #if defined(SDIO_DEBUG_ON)
+    DEBUG_DEVICE.println("SDIO_DBG: Getting Card Identification Number");
+    #endif
+    this->command(SEND_CID, (uint32)RCA.RCA << 16); //CMD10
+    this->response(SEND_CID);
+    #if defined(SDIO_DEBUG_ON)
+    DEBUG_DEVICE.print("SDIO_DBG: MID ");
+    DEBUG_DEVICE.println(CID.MID, DEC);
+    DEBUG_DEVICE.print("SDIO_DBG: OID ");
+    DEBUG_DEVICE.println(this->CID.OID);
+    DEBUG_DEVICE.print("SDIO_DBG: PNM ");
+    DEBUG_DEVICE.println(this->CID.PNM);
+    DEBUG_DEVICE.print("SDIO_DBG: PRV ");
+    DEBUG_DEVICE.print(this->CID.PRV.N, DEC);
+    DEBUG_DEVICE.print(".");
+    DEBUG_DEVICE.println(this->CID.PRV.M, DEC);
+    DEBUG_DEVICE.print("SDIO_DBG: PSN ");
+    DEBUG_DEVICE.println(this->CID.PSN, DEC);
+    DEBUG_DEVICE.print("SDIO_DBG: MDT ");
+    DEBUG_DEVICE.print(this->CID.MDT.MONTH, DEC);
+    DEBUG_DEVICE.print("/");
+    DEBUG_DEVICE.println(this->CID.MDT.YEAR+2000, DEC);
     #endif
 }
 
