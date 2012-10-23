@@ -164,7 +164,7 @@ void HardwareSDIO::end(void) {
     sdio_reset();
     this->RCA.RCA = 0x0;
     this->CSD.CSD_STRUCTURE = 3;
-    delay(1000);
+    delay(100);
 }
 
 /**

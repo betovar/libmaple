@@ -1,11 +1,17 @@
 Card Library
 ===============================================================================
 
+/**
+ * @file README.md
+ * @author Brian E Tovar
+ * @modified 22 Oct 2012
+ */
+
 A Wirish class for reading and writing to SD cards
 
 * Author: Brian E Tovar
 * Email: betovar@leaflabs.com
-* Modified: 15 Sep 2012
+* Date: 22 Oct 2012
 
 
 Overview
@@ -100,7 +106,7 @@ The CID register, which includes data like the serial number and manufacture
  fully tested.
 
 
-Reading and Writing Blocks (work in progress)
+Reading and Writing Blocks (wip)
 --------------------------
 
 First up is reading any block on the card, later writing will be tested. This 
