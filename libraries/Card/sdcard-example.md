@@ -8,7 +8,7 @@ Example Card Analysis
  */
 
 An example of the SD Card library is performed on an 8GB card with serial 
-debugging over USB.
+debugging over USB. Checkout out the commit tagged `sdio-demo` to try it out.
 
 * Author: Brian E Tovar
 * Email:  betovar@leaflabs.com
