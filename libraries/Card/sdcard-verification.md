@@ -1,12 +1,18 @@
 Reading SD Card Registers
 ===============================================================================
 
+/**
+ * @file sdcard-verification.md
+ * @author Brian E Tovar
+ * @modified 22 Oct 2012
+ */
+
 This document details how to read card specific information from microSD cards
  using the Android SDK and an old HTC Eris mobile phone connected over USB.
 
 * Author: Brian E Tovar
 * Email:  betovar@leaflabs.com
-* Date:   14 Oct 2012
+* Date:   22 Oct 2012
 
 
 Introduction and Objective
@@ -92,6 +98,7 @@ Upon inspection of these values, the 4GB Transcend card is the only one to not
  card is ready. It is possible that these readings are using an immature 
  version of the library and suggests another reading in the future to verify 
  this inconsistency.
+With a new update to library, some incosistencies still exist in the 4GB card.
 
 
 Conclusion

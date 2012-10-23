@@ -2,60 +2,35 @@ Example Card Analysis
 ==============================================================================
 
 /**
- * @file example-8GBcard.md
+ * @file sdcard-example.md
  * @author Brian E Tovar
- * @modified 24 Sep 2012
+ * @modified 22 Oct 2012
  */
+
+An example of the SD Card library is performed on an 8GB card with serial 
+debugging over USB.
+
+* Author: Brian E Tovar
+* Email:  betovar@leaflabs.com
+* Date:   22 Oct 2012
 
 
 Overview
-------------------------------------------------------------------------------
+==============================================================================
 
-This document is a comparison between the debug log for this class and an 
-independent hardware source. In this example, the built-in Apple Internal 
-Memory Card Reader on a newer-model Macintosh is used. The System Profiler 
-app provides access to this information.
+This document is a comparison between the debug log for the SD Card library 
+and an independent hardware source. In this example, the CID and CSD registers 
+are obtained from an Android mobile phone connect to a personal computer with 
+USB debugging. Details on this process are described in 
+`sdcard-verification.md`.
 
 
-Mac OSX System Profiler (Card Reader Pane)
-------------------------------------------------------------------------------
-
-Built in SD Card Reader:
-
-  Vendor ID:	          0x14e4
-  Device ID:	          0x16bc
-  Subsystem Vendor ID:	0x14e4
-  Subsystem ID:	        0x0000
-  Revision:	            0x0010
-  Link Width:	          x1
-  Link Speed:	          2.5 GT/s
-
-SDHC Card (Class 4):
-
-  Product Name:	          SDSU08G
-  Manufacturer ID:	      0x03
-  Revision:	              8.0
-  Serial Number:	        33855119
-  Manufacturing Date:	    2012-05
-  Specification Version:	3.0
-  Capacity:	              7.95 GB (7,948,206,080 bytes)
-  Removable Media:	      Yes
-  BSD Name:	              disk2
-  Partition Map Type:	    MBR (Master Boot Record)
-  S.M.A.R.T. status:	    Not Supported
-  Volumes:
-    PIKACHU:
-      Available:	  7.94 GB (7,935,361,024 bytes)
-      Capacity:	    7.94 GB (7,944,011,776 bytes)
-      Writable:	    Yes
-      File System:	MS-DOS FAT32
-      BSD Name:	    disk2s1
-      Mount Point:	/Volumes/PIKACHU
-      iocontent:	  DOS_FAT_32
+Results
+==============================================================================
 
 
 SDIO Debug over SerialUSB
-------------------------------------------------------------------------------
+-------------------------
 
 *** Starting SDMC test ***
 SDIO_DBG: Card detected
@@ -63,17 +38,17 @@ SDIO_DBG: Powered on
 SDIO_DBG: Sending CMD0
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Command sent
-SDIO_DBG: Card should be in IDLE state
-SDIO_DBG: Initializing card
-SDIO_DBG: Sending CMD8
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response timeout
-SDIO_ERR: Command mismatch, response from CMD0
-SDIO_ERR: Unexpected response status
+SDIO_DBG: Response from CMD0
 SDIO_DBG: Sending CMD0
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Command sent
-SDIO_DBG: Card should be in IDLE state
+SDIO_DBG: Response from CMD0
+SDIO_DBG: Sending CMD0
+SDIO_DBG: Command active
+SDIO_DBG: Wait for interrupt... Command sent
+SDIO_DBG: Response from CMD0
+SDIO_ERR: Card not in IDLE state
+SDIO_DBG: Initializing card
 SDIO_DBG: Sending CMD8
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response received
@@ -86,16 +61,17 @@ SDIO_DBG: Sending CMD55
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response received
 SDIO_DBG: Response from CMD55
+SDIO_DBG: AppCmd enabled
 SDIO_DBG: Sending ACMD41
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
 SDIO_DBG: Response from ACMD41
-SDIO_DBG: Volatge window of the card 0xFF80
 SDIO_DBG: This is the first ACMD41
 SDIO_DBG: Sending CMD55
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response received
 SDIO_DBG: Response from CMD55
+SDIO_DBG: AppCmd enabled
 SDIO_DBG: Sending ACMD41
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
@@ -105,44 +81,13 @@ SDIO_DBG: Sending CMD55
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response received
 SDIO_DBG: Response from CMD55
-SDIO_DBG: AppCmd not enabled, try again
-SDIO_DBG: Sending CMD55
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response received
-SDIO_DBG: Response from CMD55
+SDIO_DBG: AppCmd enabled
 SDIO_DBG: Sending ACMD41
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
 SDIO_DBG: Response from ACMD41
-SDIO_DBG: OCR busy
-SDIO_DBG: Sending CMD55
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response received
-SDIO_DBG: Response from CMD55
-SDIO_DBG: Sending ACMD41
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
-SDIO_DBG: Response from ACMD41
-SDIO_DBG: OCR busy
-SDIO_DBG: Sending CMD55
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response received
-SDIO_DBG: Response from CMD55
-SDIO_DBG: Sending ACMD41
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
-SDIO_DBG: Response from ACMD41
-SDIO_DBG: OCR busy
-SDIO_DBG: Sending CMD55
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Response received
-SDIO_DBG: Response from CMD55
-SDIO_DBG: Sending ACMD41
-SDIO_DBG: Command active
-SDIO_DBG: Wait for interrupt... Ignoring CRC for ACMD41
-SDIO_DBG: Response from ACMD41
-SDIO_DBG: Card is ready <-------------
-SDIO_DBG: Valid volatge window
+SDIO_DBG: Card is ready <-----------------------------------------
+SDIO_DBG: Valid voltage window
 SDIO_DBG: Card supports SDHC and SDXC
 SDIO_DBG: Initialization complete
 SDIO_DBG: Getting Card Identification Number
@@ -150,20 +95,14 @@ SDIO_DBG: Sending CMD2
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response received
 SDIO_DBG: Response from CMD2
-SDIO_DBG: Manufaturer ID 3
-SDIO_DBG: Application ID SD
-SDIO_DBG: Product name SU08G
-SDIO_DBG: Product revision 8.0
-SDIO_DBG: Serial number 33855119
-SDIO_DBG: Manufacture date 5/2012
 SDIO_DBG: Getting new Relative Card Address
 SDIO_DBG: Sending CMD3
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response received
 SDIO_DBG: Response from CMD3
+SDIO_ERR: Card now in an UNKNOWN state
 SDIO_DBG: New RCA is 0xAAAA
-SDIO_DBG: RESP1 0xAAAA0520
-SDIO_DBG: Card should now be in STANDBY state
+SDIO_DBG: Getting Card Specific Data
 SDIO_DBG: Sending CMD9
 SDIO_DBG: Command active
 SDIO_DBG: Wait for interrupt... Response received
@@ -179,14 +118,45 @@ SDIO_DBG: WRITE_BLK_MISALIGN 0
 SDIO_DBG: READ_BLK_MISALIGN 0
 SDIO_DBG: DSR_IMP 0
 SDIO_DBG: C_SIZE 15159
+SDIO_DBG: Getting Card Identification Number
+SDIO_DBG: Sending CMD10
+SDIO_DBG: Command active
+SDIO_DBG: Wait for interrupt... Response received
+SDIO_DBG: Response from CMD10
+SDIO_DBG: MID 3
+SDIO_DBG: OID SD
+SDIO_DBG: PNM SU08G
+SDIO_DBG: PRV 8.0
+SDIO_DBG: PSN 33855119
+SDIO_DBG: MDT 5/2012
 *** SDMC test complete ***
 
 
-Discussion
-------------------------------------------------------------------------------
+Comparison of Data
+------------------
 
-In previous tests, the card was not ready in the alotted number of tries. This 
-test gave the correct CID information verified from an independent source. The 
-next step is to verify the CSD register values with some other source since 
-Apple hardware does not provide this information with their hardware tools. 
-`blkid` has been rumored to fit this bill.
+The first four lines in each set are printed out over SerialUSB on the 
+maple_native. 
+The longer fifth line is from the Andriod SDK `adb` shell.
+
+CID1: 0x03534453
+CID2: 0x55303847
+CID3: 0x80020496
+CID4: 0x8F00C560
+CID:  0x03534453 55303847 80020496 8f00c560
+
+CSD1: 0x400E0032
+CSD2: 0x5B590000
+CSD3: 0x3B377F80
+CSD4: 0x0A4040AE
+CSD:  0x400e003 25b590000 3b377f80 0a4040ae
+
+
+Discussion
+==============================================================================
+
+These results from the maple-native match those taken from the independent 
+source. It is possible that these results are complete and reliable due to the 
+fact that this 8GB card is new, and menufactured by SanDisk. With the low cost 
+of cards like this one weighed against the number of knock-off cards out there 
+in the market, it's not worth saving the extra cents on an unreliable card.
