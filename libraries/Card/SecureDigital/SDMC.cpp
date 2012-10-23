@@ -943,7 +943,7 @@ void HardwareSDIO::newRCA(void) {
     for (int i=1; i<=3; i++) {
         this->command(SEND_RELATIVE_ADDR); //CMD3
         this->response(SEND_RELATIVE_ADDR);
-        if (this->RCA.RCA == temp) {
+        if (this->RCA.RCA == temp) { //FIXME: mmake sure RCA changes
             #if defined(SDIO_DEBUG_ON)
             DEBUG_DEVICE.print("SDIO_DBG: RESP1 0x"); //FIXME: remove
             DEBUG_DEVICE.println(sdio_get_resp1(), HEX);
