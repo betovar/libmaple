@@ -31,7 +31,10 @@ cSRCS_$(d) += util.c
 sSRCS_$(d) := exc.S
 ifeq ($(MCU_SERIES),stm32f1)
 cSRCS_$(d) += i2c.c  # I2C support must be ported to F2
-cSRCS_$(d) += sdio.c # FIXME only for High and XL Density boards
+endif
+
+ifeq ($(BOARD),maple_native) # FIXME library only available on maple_native
+cSRCS_$(d) += sdio.c
 endif
 
 cFILES_$(d) := $(cSRCS_$(d):%=$(d)/%)

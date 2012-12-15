@@ -25,13 +25,13 @@
  *****************************************************************************/
 
 /**
- * @file SDMC.cpp
+ * @file HardwareSDIO.cpp
  * @author Brian E Tovar <betovar@leaflabs.com>
  * @brief Wirish SD Memory Card implementation
  */
 
-#include "SDMC.h"
-#include "wirish.h"
+#include "HardwareSDIO.h"
+#include <wirish/wirish.h>
 
 #ifndef SDIO_DEBUG_OFF
 #define SDIO_DEBUG_ON

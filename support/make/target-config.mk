@@ -17,8 +17,7 @@ ifeq ($(MEMORY_TARGET), jtag)
 VECT_BASE_ADDR := VECT_TAB_BASE
 endif
 
-# Pull in the board configuration file here, so it can override the
-# above.
+# Pull in the board configuration file here, so it can override the above.
 
 include $(BOARD_INCLUDE_DIR)/$(BOARD).mk
 

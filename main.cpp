@@ -1,9 +1,7 @@
 /**
  * SDMC test will try to initialize a memory card and read it's registers.
  * 
- * Instructions: Plug any working micro SD card into the slot on the
- *               Maple Native board. Listen on SerialUSB, and press the 
- *               on-board button to begin the test.
+ * Instructions: Use JTAG debugger
  *
  * This file is released into the public domain.
  *  
@@ -11,8 +9,8 @@
  * Email:  <betovar@leaflabs.com>
  */
 
-#include "wirish.h"
-#include "libraries/Card/SecureDigital/SDMC.h"
+#include <wirish/wirish.h>
+#include "libraries/Card/SecureDigital/HardwareSDIO.h"
 
 #define SIZEOF_CACHE 512
 
@@ -20,34 +18,19 @@ HardwareSDIO SDMC;
 uint8 cacheBlock[SIZEOF_CACHE];
 
 void setup() {
+    enableDebugPorts();
     pinMode(BOARD_LED_PIN, OUTPUT);
     digitalWrite(BOARD_LED_PIN, HIGH);
 }
 
 void loop() {
-    waitForButtonPress();
-    SerialUSB.println("*** Starting SDMC test ***");
+    //waitForButtonPress();
+    //SerialUSB.println("*** Starting SDMC test ***");
     SDMC.begin();
     SDMC.getCSD();
-    SerialUSB.print("CSD1: 0x");
-    SerialUSB.println(sdio_get_resp1(), HEX);
-    SerialUSB.print("CSD2: 0x");
-    SerialUSB.println(sdio_get_resp2(), HEX);
-    SerialUSB.print("CSD3: 0x");
-    SerialUSB.println(sdio_get_resp3(), HEX);
-    SerialUSB.print("CSD4: 0x");
-    SerialUSB.println(sdio_get_resp4(), HEX);
     SDMC.getCID();
-    SerialUSB.print("CID1: 0x");
-    SerialUSB.println(sdio_get_resp1(), HEX);
-    SerialUSB.print("CID2: 0x");
-    SerialUSB.println(sdio_get_resp2(), HEX);
-    SerialUSB.print("CID3: 0x");
-    SerialUSB.println(sdio_get_resp3(), HEX);
-    SerialUSB.print("CID4: 0x");
-    SerialUSB.println(sdio_get_resp4(), HEX);
     SDMC.end();
-    SerialUSB.println("*** SDMC test complete ***");
+    //SerialUSB.println("*** SDMC test complete ***");
 }
 
 // Force init to be called *first*, i.e. before static object allocation.

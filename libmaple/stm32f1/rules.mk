@@ -27,8 +27,8 @@ cSRCS_$(d) += spi.c
 cSRCS_$(d) += timer.c
 cSRCS_$(d) += usart.c
 
-ifeq ($(MCU_SERIES),stm32f1)
-cSRCS_$(d) += sdio.c # FIXME
+ifeq ($(BOARD),maple_native) # FIXME library only available on maple_native
+cSRCS_$(d) += sdio.c
 endif
 
 sFILES_$(d) := $(sSRCS_$(d):%=$(d)/%)

@@ -25,18 +25,18 @@
  *****************************************************************************/
 
 /**
- * @file SDMC.h
+ * @file HardwareSDIO.h
  * @author Brian E Tovar <betovar@leaflabs.com>
  * @brief Wirish SD Memory Card implementation
  * @note These devices share DMA Channel4: TIM5_CH2 SDIO TIM7_UP/DAC_Channel2
  */
 
-#include "sdio.h"
+#include <libmaple/libmaple_types.h>
+#include <libmaple/sdio.h>
 #include "commands.h"
-#include "libmaple_types.h"
 
-#ifndef _SDMC_H_
-#define _SDMC_H_
+#ifndef _HARDWARESDIO_H_
+#define _HARDWARESDIO_H_
 
 /*
  * SDIO Enumerations
