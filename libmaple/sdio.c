@@ -30,24 +30,10 @@
  * @brief SDIO interface support
  */
 
-#include "sdio.h"
-#include "gpio.h"
-#include "timer.h"
-#include "delay.h"
-
-/*
- * SDIO device
- */
-
-#ifdef STM32_HIGH_DENSITY
-static sdio_dev sdio = {
-    .regs     = SDIO_BASE,
-    .clk_id   = RCC_SDIO,
-    .irq_num  = NVIC_SDIO,
-};
-/** SDIO device */
-sdio_dev *SDIO = &sdio;
-#endif
+#include <libmaple/sdio.h>
+#include <libmaple/gpio.h>
+#include <libmaple/timer.h>
+#include <libmaple/delay.h>
 
 /*
  * SDIO configure functions
@@ -105,20 +91,14 @@ void sdio_cfg_clkcr(uint32 spc, uint32 val) {
     SDIO->regs->CLKCR = temp;
 }
 
-/**
- * @brief Configure GPIO bit modes for use as an SDIO port's pins
- * @note 8-bit data bus width is only allowed for UHS-I cards
- */
-void sdio_cfg_gpio(void) {
-    //These gpio devices and pins are constant for the F1 line
-    gpio_set_mode(GPIOC,   11, GPIO_INPUT_FLOATING); //SDIO_D3
-    gpio_set_mode(GPIOC,   10, GPIO_INPUT_FLOATING); //SDIO_D2
-    gpio_set_mode(GPIOC,    9, GPIO_INPUT_FLOATING); //SDIO_D1
-    timer_set_mode(TIMER8,  4,      TIMER_DISABLED);
-    gpio_set_mode(GPIOC,    8, GPIO_INPUT_FLOATING); //SDIO_D0
-    timer_set_mode(TIMER8,  3,      TIMER_DISABLED);
-    gpio_set_mode(GPIOC,   12,   GPIO_AF_OUTPUT_PP); //SDIO_CK
-    gpio_set_mode(GPIOD,    2,   GPIO_AF_OUTPUT_PP); //SDIO_CMD
+uint32 sdio_card_powered(void) {
+    int i;
+    for (i = 1; i <=5; i++) {
+        if (SDIO->regs->POWER == SDIO_POWER_ON) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /*
@@ -132,6 +112,7 @@ void sdio_cfg_gpio(void) {
  * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
  */
 void sdio_cfg_dma_rx(uint32 *dst, uint16 count) {
+    /*
     dma_init(SDIO_DMA_DEVICE);
     dma_setup_transfer(SDIO_DMA_DEVICE,   SDIO_DMA_CHANNEL,
                        &SDIO->regs->FIFO, DMA_SIZE_32BITS,
@@ -140,6 +121,7 @@ void sdio_cfg_dma_rx(uint32 *dst, uint16 count) {
     dma_set_num_transfers(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, count);
     dma_attach_interrupt(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, sdio_dma_rx_irq);
     dma_enable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
+    */
 }
 
 /**
@@ -158,7 +140,7 @@ void sdio_cfg_dma_tx(uint32 *src, uint16 count) {
     c)  Program DMA2_Channel4 control register (memory increment, not 
         peripheral increment, peripheral and source width is word size)
     d)  Enable DMA2_Channel4
-    */
+    *
     dma_init(SDIO_DMA_DEVICE);
     dma_setup_transfer(SDIO_DMA_DEVICE,   SDIO_DMA_CHANNEL, 
                        &SDIO->regs->FIFO, DMA_SIZE_32BITS,
@@ -167,6 +149,7 @@ void sdio_cfg_dma_tx(uint32 *src, uint16 count) {
     dma_set_num_transfers(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, count);
     dma_attach_interrupt(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, sdio_dma_tx_irq);
     dma_enable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
+    */
 }
 
 /**
@@ -237,34 +220,6 @@ void sdio_send_command(uint32 cmd) {
 uint32 sdio_get_command(void) {
     uint32 resp = SDIO->regs->RESPCMD;
     return resp & SDIO_RESPCMD_RESPCMD;
-}
-
-/*
- * SDIO status functions
- */
-
-/**
- * @brief Detects if card is inserted
- */
-uint32 sdio_card_detect(void) {
-    gpio_set_mode(GPIOC, 11, GPIO_INPUT_PD); //SDIO_D3
-    sdio_cfg_gpio();
-    delay_us(1000);
-    if (gpio_read_bit(GPIOC, 11)) {
-        return 1;
-    } else {
-        return 0;        
-    }
-}
-
-uint32 sdio_card_powered(void) {
-    int i;
-    for (i = 1; i <=5; i++) {
-        if (SDIO->regs->POWER == SDIO_POWER_ON) {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 /*
@@ -339,6 +294,156 @@ uint32 sdio_read_data(void) {
  */
 void sdio_write_data(uint32 data) {
     SDIO->regs->FIFO = data;
+}
+
+/*
+ * SDIO inline functions
+ */
+
+/**
+ * @brief Power on the SDIO Device
+ * @note At least seven HCLK clock periods are needed between two write
+ *       accesses to this register.
+ */
+void sdio_power_on(void) {
+    SDIO->regs->POWER = ~SDIO_POWER_RESERVED & SDIO_POWER_ON;
+}
+
+/**
+ * @brief Power off the SDIO Device
+ * @note At least seven HCLK clock periods are needed between two write
+ *       accesses to this register.
+ */
+void sdio_power_off(void) {
+    SDIO->regs->POWER = ~SDIO_POWER_RESERVED & SDIO_POWER_OFF;
+}
+
+/**
+ * @brief Enable SDIO Data Transfer
+ */
+void sdio_dt_enable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 1);
+}
+
+/**
+ * @brief Disable SDIO Data Transfer
+ */
+void sdio_dt_disable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DTEN_BIT, 0);
+}
+
+/**
+ * @brief Enable SDIO peripheral clock
+ */
+void sdio_clock_enable(void) {
+    bb_peri_set_bit(&SDIO->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 1);
+}
+
+/**
+ * @brief Disable SDIO peripheral clock
+ */
+void sdio_clock_disable(void) {
+    bb_peri_set_bit(&SDIO->regs->CLKCR, SDIO_CLKCR_CLKEN_BIT, 0);
+}
+
+/**
+ * @brief Enable DMA requests
+ */
+void sdio_dma_enable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 1);
+}
+
+/**
+ * @brief Disable DMA requests
+ */
+void sdio_dma_disable(void) {
+    bb_peri_set_bit(&SDIO->regs->DCTRL, SDIO_DCTRL_DMAEN_BIT, 0);
+}
+
+/**
+ * @brief Gets response buffer 1 from the SDIO Device
+ * @retval Copy of the 32-bit response buffer
+ */
+uint32 sdio_get_resp1() {
+    return SDIO->regs->RESP1;
+}
+
+/**
+ * @brief Gets response buffer 2 from the SDIO Device
+ * @retval Copy of the 32-bit response buffer
+ */
+uint32 sdio_get_resp2() {
+    return SDIO->regs->RESP2;
+}
+
+/**
+ * @brief Gets response buffer 3 from the SDIO Device
+ * @retval Copy of the 32-bit response buffer
+ */
+uint32 sdio_get_resp3() {
+    return SDIO->regs->RESP3;
+}
+
+/**
+ * @brief Gets response buffer 4 from the SDIO Device
+ * @retval Copy of the 32-bit response buffer
+ */
+uint32 sdio_get_resp4() {
+    return SDIO->regs->RESP4;
+}
+
+/**
+ * @brief Is the command active?
+ */
+uint32 sdio_is_cmd_active(void) {
+    return SDIO->regs->STA & SDIO_STA_CMDACT;
+}
+
+/**
+ * @brief Is data transfer active?
+ */
+uint32 sdio_is_dt_active(void) {
+    return SDIO->regs->STA & (SDIO_STA_RXACT | SDIO_STA_TXACT);
+}
+
+/**
+ * @brief Is data (available) in FIFO?
+ */
+uint32 sdio_is_data_available(void) {
+    return SDIO->regs->STA & (SDIO_STA_RXDAVL | SDIO_STA_TXDAVL);
+}
+
+/**
+ * @brief Checks whether the specified SDIO interrupt has occurred or not
+ * @param mask Specifies the SDIO interrupt source(s) to check
+ * @retval Status of the masked interrupt(s)
+ */
+uint32 sdio_check_status(uint32 mask) {
+    return SDIO->regs->STA & mask;
+}
+
+/**
+ * @brief Clears the SDIO's pending interrupt flags
+ * @param flag Specifies the interrupt to clear
+ */
+void sdio_clear_interrupt(uint32 flag) {
+    SDIO->regs->ICR = ~SDIO_ICR_RESERVED & flag;
+}
+
+/**
+ * @brief Add interrupt flag to generate an interrupt request
+ * @param mask Interrupt sources to enable
+ */
+void sdio_add_interrupt(uint32 mask) { //FIXME
+    SDIO->regs->MASK |= ~SDIO_MASK_RESERVED & mask;
+}
+
+/**
+ * @brief Writes to interrupt mask register to generate an interrupt request
+ * @param mask Interrupt sources to enable
+ */
+void sdio_enable_interrupt(uint32 mask) {
+    SDIO->regs->MASK = ~SDIO_MASK_RESERVED & mask;
 }
 
 /**
