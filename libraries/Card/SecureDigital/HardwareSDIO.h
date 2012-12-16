@@ -33,7 +33,7 @@
 
 #include <libmaple/libmaple_types.h>
 #include <libmaple/sdio.h>
-#include "commands.h"
+#include <Card/SecureDigital/commands.h>
 
 #ifndef _HARDWARESDIO_H_
 #define _HARDWARESDIO_H_

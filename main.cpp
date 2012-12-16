@@ -1,7 +1,11 @@
 /**
  * SDMC test will try to initialize a memory card and read it's registers.
  * 
+<<<<<<< Updated upstream
  * Instructions: Use JTAG debugger
+=======
+ * Instructions: use gdb for debugging over black magic probe
+>>>>>>> Stashed changes
  *
  * This file is released into the public domain.
  *  
@@ -10,7 +14,7 @@
  */
 
 #include <wirish/wirish.h>
-#include "libraries/Card/SecureDigital/HardwareSDIO.h"
+#include <Card/SecureDigital/HardwareSDIO.h>
 
 #define SIZEOF_CACHE 512
 
@@ -18,19 +22,17 @@ HardwareSDIO SDMC;
 uint8 cacheBlock[SIZEOF_CACHE];
 
 void setup() {
-    enableDebugPorts();
+    enableDebugPorts(); // for debugging over JTAG
     pinMode(BOARD_LED_PIN, OUTPUT);
     digitalWrite(BOARD_LED_PIN, HIGH);
 }
 
 void loop() {
     //waitForButtonPress();
-    //SerialUSB.println("*** Starting SDMC test ***");
     SDMC.begin();
     SDMC.getCSD();
     SDMC.getCID();
     SDMC.end();
-    //SerialUSB.println("*** SDMC test complete ***");
 }
 
 // Force init to be called *first*, i.e. before static object allocation.

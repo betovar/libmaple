@@ -28,7 +28,7 @@ BOARD_INCLUDE_DIR := $(MAKEDIR)/board-includes
 ##
 
 # Try "make help" for more information on BOARD and MEMORY_TARGET;
-# these default to a Maple Native Flash build.
+# these default to a Maple Flash build.
 BOARD ?= maple
 MEMORY_TARGET ?= flash
 
@@ -79,7 +79,9 @@ LIBMAPLE_MODULES += $(SRCROOT)/libraries/LiquidCrystal
 LIBMAPLE_MODULES += $(SRCROOT)/libraries/Wire
 # Experimental libraries:
 #LIBMAPLE_MODULES += $(SRCROOT)/libraries/FreeRTOS
-LIBMAPLE_MODULES += $(SRCROOT)/libraries/Card/SecureDigital
+ifeq ($(BOARD),maple_native)
+	LIBMAPLE_MODULES += $(SRCROOT)/libraries/Card/SecureDigital
+endif
 
 # User modules:
 ifneq ($(USER_MODULES),)

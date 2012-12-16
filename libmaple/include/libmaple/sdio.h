@@ -329,7 +329,6 @@ typedef struct sdio_dev {
 #ifdef STM32_HIGH_DENSITY
 extern sdio_dev *SDIO;
 #endif
-
 	
 /*
  * SDIO Convenience functions

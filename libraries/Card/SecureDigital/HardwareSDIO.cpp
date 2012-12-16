@@ -30,12 +30,12 @@
  * @brief Wirish SD Memory Card implementation
  */
 
-#include "HardwareSDIO.h"
+#include <Card/SecureDigital/HardwareSDIO.h>
 #include <wirish/wirish.h>
 
-#ifndef SDIO_DEBUG_OFF
-#define SDIO_DEBUG_ON
-#endif
+//#ifndef SDIO_DEBUG_OFF
+//#define SDIO_DEBUG_ON
+//#endif
 #ifndef DEBUG_DEVICE
 #define DEBUG_DEVICE SerialUSB
 #endif
@@ -604,9 +604,9 @@ void HardwareSDIO::response(SDCommand cmd) {
           default:
             #if defined(SDIO_DEBUG_ON)
             DEBUG_DEVICE.println("SDIO_ERR: Unexpected response command");
+            #endif
             this->responseFlag = SDIO_FLAG_ERROR;
             return;
-            #endif
         }
     } else {
         #if defined(SDIO_DEBUG_ON)

@@ -91,16 +91,6 @@ void sdio_cfg_clkcr(uint32 spc, uint32 val) {
     SDIO->regs->CLKCR = temp;
 }
 
-uint32 sdio_card_powered(void) {
-    int i;
-    for (i = 1; i <=5; i++) {
-        if (SDIO->regs->POWER == SDIO_POWER_ON) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 /*
  * SDIO DMA functions
  */
@@ -220,6 +210,17 @@ void sdio_send_command(uint32 cmd) {
 uint32 sdio_get_command(void) {
     uint32 resp = SDIO->regs->RESPCMD;
     return resp & SDIO_RESPCMD_RESPCMD;
+}
+
+
+uint32 sdio_card_powered(void) {
+    int i;
+    for (i = 1; i <=5; i++) {
+        if (SDIO->regs->POWER == SDIO_POWER_ON) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /*
