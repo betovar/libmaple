@@ -31,9 +31,6 @@
  */
 
 #include <libmaple/sdio.h>
-#include <libmaple/gpio.h>
-#include <libmaple/timer.h>
-#include <libmaple/delay.h>
 
 /*
  * SDIO configure functions
@@ -92,96 +89,6 @@ void sdio_cfg_clkcr(uint32 spc, uint32 val) {
 }
 
 /*
- * SDIO DMA functions
- */
-
-/**
- * @brief Configure DMA for host to receive data
- * @param rx_buf pointer to 32-bit memory address
- * @param count Number of transfers to receive
- * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
- */
-void sdio_cfg_dma_rx(uint32 *dst, uint16 count) {
-    /*
-    dma_init(SDIO_DMA_DEVICE);
-    dma_setup_transfer(SDIO_DMA_DEVICE,   SDIO_DMA_CHANNEL,
-                       &SDIO->regs->FIFO, DMA_SIZE_32BITS,
-                       dst,               DMA_SIZE_32BITS,
-                       DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
-    dma_set_num_transfers(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, count);
-    dma_attach_interrupt(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, sdio_dma_rx_irq);
-    dma_enable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
-    */
-}
-
-/**
- * @brief Configure DMA for host to trasmit data
- * @param rx_buf pointer to 32-bit memory address
- * @param count Number of transfers to receive
- * @note DMA channel conflicts: TIM5_CH2 and TIM7_UP / DAC_Channel2
- */
-void sdio_cfg_dma_tx(uint32 *src, uint16 count) {
-    /*
-    4.  Configure the DMA2 as follows:
-    a)  Enable DMA2 controller and clear any pending interrupts
-    b)  Program the DMA2_Channel4 source address register with the memory 
-        location’s base address and DMA2_Channel4 destination address register 
-        with the SDIO_FIFO register address
-    c)  Program DMA2_Channel4 control register (memory increment, not 
-        peripheral increment, peripheral and source width is word size)
-    d)  Enable DMA2_Channel4
-    *
-    dma_init(SDIO_DMA_DEVICE);
-    dma_setup_transfer(SDIO_DMA_DEVICE,   SDIO_DMA_CHANNEL, 
-                       &SDIO->regs->FIFO, DMA_SIZE_32BITS,
-                       src,               DMA_SIZE_32BITS,
-                       DMA_MINC_MODE | DMA_TRNS_CMPLT | DMA_TRNS_ERR);
-    dma_set_num_transfers(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, count);
-    dma_attach_interrupt(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL, sdio_dma_tx_irq);
-    dma_enable(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
-    */
-}
-
-/**
- * @brief  
- */
-void sdio_dma_rx_irq(void) {
-    if (sdio_check_status(SDIO_STA_DTIMEOUT)) {}
-    if (sdio_check_status(SDIO_STA_STBITERR)) {}
-    if (sdio_check_status(SDIO_STA_RXFIFOE)) {}
-    if (sdio_check_status(SDIO_STA_RXFIFOF)) {}
-    if (sdio_check_status(SDIO_STA_RXFIFOHF)) {}
-    if (sdio_check_status(SDIO_STA_RXOVERR)) {}
-    if (sdio_check_status(SDIO_STA_RXDAVL)) {}
-    if (sdio_check_status(SDIO_STA_DATAEND)) {}
-    if (sdio_check_status(SDIO_STA_DCRCFAIL)) {}
-    if (sdio_check_status(SDIO_STA_DBCKEND)) {
-        sdio_dma_disable();
-    }
-}
-
-/**
- * @brief  
- */
-void sdio_dma_tx_irq(void) {
-    dma_irq_cause cause;
-    cause = dma_get_irq_cause(SDIO_DMA_DEVICE, SDIO_DMA_CHANNEL);
-    switch (cause) {
-      case DMA_TRANSFER_HALF_COMPLETE:
-        break;
-      case DMA_TRANSFER_COMPLETE:
-        if (sdio_check_status(SDIO_STA_DBCKEND)) {
-            sdio_dma_disable();
-        } else {
-
-        }
-        break;
-      default:
-      break;
-    }
-}
-
-/*
  * SDIO command functions
  */
 
@@ -210,17 +117,6 @@ void sdio_send_command(uint32 cmd) {
 uint32 sdio_get_command(void) {
     uint32 resp = SDIO->regs->RESPCMD;
     return resp & SDIO_RESPCMD_RESPCMD;
-}
-
-
-uint32 sdio_card_powered(void) {
-    int i;
-    for (i = 1; i <=5; i++) {
-        if (SDIO->regs->POWER == SDIO_POWER_ON) {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 /*
@@ -298,26 +194,8 @@ void sdio_write_data(uint32 data) {
 }
 
 /*
- * SDIO inline functions
+ * SDIO other functions
  */
-
-/**
- * @brief Power on the SDIO Device
- * @note At least seven HCLK clock periods are needed between two write
- *       accesses to this register.
- */
-void sdio_power_on(void) {
-    SDIO->regs->POWER = ~SDIO_POWER_RESERVED & SDIO_POWER_ON;
-}
-
-/**
- * @brief Power off the SDIO Device
- * @note At least seven HCLK clock periods are needed between two write
- *       accesses to this register.
- */
-void sdio_power_off(void) {
-    SDIO->regs->POWER = ~SDIO_POWER_RESERVED & SDIO_POWER_OFF;
-}
 
 /**
  * @brief Enable SDIO Data Transfer

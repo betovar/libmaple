@@ -34,14 +34,38 @@
 #define _LIBMAPLE_STM32F1_SDIO_H_
 
 #include <libmaple/libmaple_types.h>
-#include <libmaple/dma.h>
-#include <libmaple/rcc.h>
-#include <libmaple/nvic.h>
-#include <libmaple/util.h>
-#include <libmaple/bitband.h>
-#include <libmaple/gpio.h>
-#include <libmaple/timer.h>
-#include <libmaple/delay.h>
+#include <libmaple/sdio.h>
+
+/* SDIO DMA device and channel (constant for STM32F1 line) */
+#define SDIO_DMA_DEVICE  DMA2 //FIXME: fix for multi- family support
+#define SDIO_DMA_CHANNEL DMA_CH6
+
+//These gpio values are constant for STM32F103xE chips
+#define BOARD_SDIO_D0_PIN       15
+#define BOARD_SDIO_D1_PIN       16
+#define BOARD_SDIO_D2_PIN       17
+#define BOARD_SDIO_D3_PIN       18
+#define BOARD_SDIO_CLK_PIN      19
+#define BOARD_SDIO_CMD_PIN      27
+#define BOARD_SDIO_PWR_PIN      26
+#define BOARD_SDIO_CD_PIN       14
+
+#define BOARD_SDIO_D0_DEV      GPIOC
+#define BOARD_SDIO_D0_BIT      8
+#define BOARD_SDIO_D1_DEV      GPIOC
+#define BOARD_SDIO_D1_BIT      9
+#define BOARD_SDIO_D2_DEV      GPIOC
+#define BOARD_SDIO_D2_BIT      10
+#define BOARD_SDIO_D3_DEV      GPIOC
+#define BOARD_SDIO_D3_BIT      11
+#define BOARD_SDIO_CLK_DEV     GPIOC
+#define BOARD_SDIO_CLK_BIT     12
+#define BOARD_SDIO_CMD_DEV     GPIOD
+#define BOARD_SDIO_CMD_BIT     2
+#define BOARD_SDIO_PWR_DEV     GPIOB
+#define BOARD_SDIO_PWR_BIT     9
+#define BOARD_SDIO_CD_DEV      GPIOC
+#define BOARD_SDIO_CD_BIT      7
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,7 +77,7 @@ extern "C" {
 
 struct sdio_reg_map;
 
-#define SDIO_BASE                   ((struct sdio_reg_map*)0x40018000)
+#define SDIO_BASE ((struct sdio_reg_map*)0x40018000)
 
 /*
  * Device pointers
@@ -65,15 +89,10 @@ struct sdio_dev;
 extern struct sdio_dev *SDIO;
 #endif
 
-/*
- * Routines
- */
-
-/* SDIO DMA device and channel (constant for STM32F1 line) */
-#define SDIO_DMA_DEVICE  DMA2 //FIXME: fix for multi- family support
-#define SDIO_DMA_CHANNEL DMA_CH6
-
 void sdio_cfg_gpio(void);
+void sdio_power_on(void);
+void sdio_power_off(void);
+uint32 sdio_card_powered(void);
 uint32 sdio_card_detect(void);
 
 #ifdef __cplusplus

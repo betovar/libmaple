@@ -77,9 +77,10 @@ LIBMAPLE_MODULES += $(SRCROOT)/wirish
 LIBMAPLE_MODULES += $(SRCROOT)/libraries/Servo
 LIBMAPLE_MODULES += $(SRCROOT)/libraries/LiquidCrystal
 LIBMAPLE_MODULES += $(SRCROOT)/libraries/Wire
+
 # Experimental libraries:
 #LIBMAPLE_MODULES += $(SRCROOT)/libraries/FreeRTOS
-ifeq ($(BOARD),maple_native)
+ifeq ($(MCU_F1_LINE),performance)
 	LIBMAPLE_MODULES += $(SRCROOT)/libraries/Card/SecureDigital
 endif
 

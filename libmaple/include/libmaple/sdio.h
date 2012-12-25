@@ -337,14 +337,6 @@ extern sdio_dev *SDIO;
 // SDIO configure functions
 void sdio_init(void);
 void sdio_reset(void);
-//void sdio_cfg_gpio(void);
-//uint32 sdio_card_detect(void);
-uint32 sdio_card_powered(void);
-// SDIO DMA functions
-void sdio_cfg_dma_rx(uint32 *dst, uint16 count);
-void sdio_cfg_dma_tx(uint32 *src, uint16 count);
-void sdio_dma_rx_irq(void);
-void sdio_dma_tx_irq(void);
 // SDIO command functions
 void sdio_set_clkcr(uint32 val);
 void sdio_cfg_clkcr(uint32 spc, uint32 val);
@@ -360,9 +352,7 @@ uint32 sdio_get_data_count(void);
 uint32 sdio_get_fifo_count(void);
 uint32 sdio_read_data(void);
 void sdio_write_data(uint32 data);
-
-void sdio_power_on(void);
-void sdio_power_off(void);
+// SDIO other functions
 void sdio_dt_enable(void);
 void sdio_dt_disable(void);
 void sdio_clock_enable(void);

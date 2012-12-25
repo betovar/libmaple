@@ -1,11 +1,7 @@
 /**
  * SDMC test will try to initialize a memory card and read it's registers.
  * 
-<<<<<<< Updated upstream
  * Instructions: Use JTAG debugger
-=======
- * Instructions: use gdb for debugging over black magic probe
->>>>>>> Stashed changes
  *
  * This file is released into the public domain.
  *  
@@ -30,8 +26,8 @@ void setup() {
 void loop() {
     //waitForButtonPress();
     SDMC.begin();
-    SDMC.getCSD();
     SDMC.getCID();
+    SDMC.getCSD();
     SDMC.end();
 }
 

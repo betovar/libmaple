@@ -33,6 +33,7 @@
 
 #include <libmaple/libmaple_types.h>
 #include <libmaple/sdio.h>
+#include <wirish/wirish.h>
 #include <Card/SecureDigital/commands.h>
 
 #ifndef _HARDWARESDIO_H_
