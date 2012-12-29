@@ -171,15 +171,15 @@ bool boardUsesPin(uint8 pin);
                               defined(BOARD_USB_DISC_BIT))
 
 /** Feature test: nonzero iff the board has SDIO. */
-#define BOARD_HAVE_SDIO (defined(BOARD_SDIO_CLK_DEV) && \
-                         defined(BOARD_SDIO_CLK_BIT))
-#define BOARD_HAVE_SDIO_1BIT (defined(BOARD_SDIO_D0_DEV) && \
-                              defined(BOARD_SDIO_D0_BIT))
-#define BOARD_HAVE_SDIO_4BIT (defined(BOARD_SDIO_D3_DEV) && \
-                              defined(BOARD_SDIO_D3_BIT))
-#define BOARD_HAVE_SDIO_PWR (defined(BOARD_SDIO_PWR_DEV) && \
-                             defined(BOARD_SDIO_PWR_BIT))
-#define BOARD_HAVE_SDIO_CD (defined(BOARD_SDIO_CD_DEV) && \
-                            defined(BOARD_SDIO_CD_BIT))
+#define BOARD_HAVE_SDIO        (defined(BOARD_SDIO_CLK_DEV) && \
+                                defined(BOARD_SDIO_CLK_BIT))
+#define BOARD_HAVE_SDIO_1BIT   (defined(BOARD_SDIO_D0_DEV) && \
+                                defined(BOARD_SDIO_D0_BIT))
+#define BOARD_HAVE_SDIO_4BIT   (defined(BOARD_SDIO_D3_DEV) && \
+                                defined(BOARD_SDIO_D3_BIT))
+#define BOARD_HAVE_SDIO_PWR    (defined(BOARD_SDIO_PWR_DEV) && \
+                                defined(BOARD_SDIO_PWR_BIT))
+#define BOARD_HAVE_SDIO_CD     (defined(BOARD_SDIO_CD_DEV) && \
+                                defined(BOARD_SDIO_CD_BIT))
 
 #endif

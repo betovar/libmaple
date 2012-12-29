@@ -12,10 +12,10 @@
 #include <wirish/wirish.h>
 #include <Card/SecureDigital/HardwareSDIO.h>
 
-#define SIZEOF_CACHE 512
+//#define SIZEOF_CACHE 512
 
 HardwareSDIO SDMC;
-uint8 cacheBlock[SIZEOF_CACHE];
+//uint8 cacheBlock[SIZEOF_CACHE];
 
 void setup() {
     enableDebugPorts(); // for debugging over JTAG
