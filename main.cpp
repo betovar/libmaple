@@ -1,7 +1,7 @@
 /**
  * SDMC test will try to initialize a memory card and read it's registers.
  * 
- * Instructions: Use JTAG debugger
+ * Instructions: Use a JTAG debugger with the .gdbinit file
  *
  * This file is released into the public domain.
  *  
@@ -18,7 +18,8 @@ HardwareSDIO SDMC;
 //uint8 cacheBlock[SIZEOF_CACHE];
 
 void setup() {
-    enableDebugPorts(); // for debugging over JTAG
+    SerialUSB.end();
+    enableDebugPorts();
     pinMode(BOARD_LED_PIN, OUTPUT);
     digitalWrite(BOARD_LED_PIN, HIGH);
 }
@@ -26,8 +27,6 @@ void setup() {
 void loop() {
     //waitForButtonPress();
     SDMC.begin();
-    SDMC.getCID();
-    SDMC.getCSD();
     SDMC.end();
 }
 

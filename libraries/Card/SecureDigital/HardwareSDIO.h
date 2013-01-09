@@ -32,9 +32,9 @@
  */
 
 #include <libmaple/libmaple_types.h>
-#include <libmaple/sdio.h>
-#include <wirish/wirish.h>
 #include <Card/SecureDigital/commands.h>
+#include <libmaple/sdio.h>
+ 
 
 #ifndef _HARDWARESDIO_H_
 #define _HARDWARESDIO_H_
@@ -82,38 +82,6 @@ typedef enum SDIOBlockSize {
     SDIO_BKSZ_16384   = 14,
     SDIO_BKSZ_DEFAULT = 9
 } SDIOBlockSize;
-
-typedef enum SDIOInterruptFlag {
-    SDIO_FLAG_CCRCFAIL  = 0,
-    SDIO_FLAG_DCRCFAIL  = 1,
-    SDIO_FLAG_CTIMEOUT  = 2,
-    SDIO_FLAG_DTIMEOUT  = 3,
-    SDIO_FLAG_TXUNDERR  = 4,
-    SDIO_FLAG_RXOVERR   = 5,
-    SDIO_FLAG_CMDREND   = 6,
-    SDIO_FLAG_CMDSENT   = 7,
-    SDIO_FLAG_DATAEND   = 8,
-    SDIO_FLAG_STBITERR  = 9,
-    SDIO_FLAG_DBCKEND   = 10,
-    SDIO_FLAG_CMDACT    = 11,
-    SDIO_FLAG_TXACT     = 12,
-    SDIO_FLAG_RXACT     = 13,
-    SDIO_FLAG_TXFIFOHE  = 14,
-    SDIO_FLAG_RXFIFOHF  = 15,
-    SDIO_FLAG_TXFIFOF   = 16,
-    SDIO_FLAG_RXFIFOF   = 17,
-    SDIO_FLAG_TXFIFOE   = 18,
-    SDIO_FLAG_RXFIFOE   = 19,
-    SDIO_FLAG_TXDAVL    = 20,
-    SDIO_FLAG_RXDAVL    = 21,
-    SDIO_FLAG_SDIOIT    = 22,
-    SDIO_FLAG_CEATAEND  = 23,
-    // added
-    SDIO_FLAG_NONE      = 32,
-    SDIO_FLAG_ERROR     = 33
-} SDIOInterruptFlag;
-
-
 
 /*
  * SD Structure Specific Enumerations
@@ -401,7 +369,6 @@ class HardwareSDIO {
     dsr DSR; // Default is 0x0404
     csr CSR;
     SDAppCommand appCmd;
-    SDIOInterruptFlag responseFlag;
     SDIOClockFrequency clkFreq;
     SDIOBlockSize blkSize;
 
@@ -416,11 +383,8 @@ class HardwareSDIO {
     void write(uint32, uint32*, uint32);
 //protected:
     sdio_dev *sdio_d;
-    /*------------------------------------------------------- setup routines */
-    void idle(void);
-    void initialization(void);
-    void identification(void);
     /*--------------------------------------- card register access functions */
+    void getICR(uint32);
     void getOCR(void);
     void newRCA(void);
     void getCID(void);
@@ -434,7 +398,9 @@ class HardwareSDIO {
     void convert(csd*);
     void convert(cid*);
     void convert(rca*);
-    /*-----------------------------------------------_ convenience functions */
+    /*------------------------------------------------ convenience functions */
+    void idle(void);
+    void initialization(void);
     void clockFreq(SDIOClockFrequency);
     void busMode(SDIOBusMode);
     void blockSize(SDIOBlockSize);
@@ -445,27 +411,12 @@ class HardwareSDIO {
     void stop(void);
     void readBlock(uint32, uint32*);
     void writeBlock(uint32, uint32*);
-  private:
-    void wait(SDCommand);
+  //private:
     /*---------------------------------------------------- command functions */
     void command(SDCommand, uint32);
-    void command(SDCommand);
-    void response(SDCommand);
-    void transfer(SDCommand);
-    /*------------------------------------------------ app command functions */
     void command(SDAppCommand, uint32);
-    void command(SDAppCommand);
+    void response(SDCommand);
     void response(SDAppCommand);
-    void transfer(SDAppCommand);
-
-    /* future functions
-    void protect(void); // write protect
-    void passwordSet(void);
-    void passwordReset(void);
-    void cardLock(void);
-    void cardUnlock(void);
-    void erase(void);
-    */
 };
 
 #endif

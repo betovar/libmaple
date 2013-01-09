@@ -47,10 +47,8 @@
 #define BOARD_SDIO_D3_PIN       18
 #define BOARD_SDIO_CLK_PIN      19
 #define BOARD_SDIO_CMD_PIN      27
-/*
-#define BOARD_SDIO_PWR_PIN      26
-#define BOARD_SDIO_CD_PIN       14
-*/
+//#define BOARD_SDIO_PWR_PIN      26
+//#define BOARD_SDIO_CD_PIN       14
 
 #define BOARD_SDIO_D0_DEV      GPIOC
 #define BOARD_SDIO_D0_BIT      8
@@ -64,12 +62,10 @@
 #define BOARD_SDIO_CLK_BIT     12
 #define BOARD_SDIO_CMD_DEV     GPIOD
 #define BOARD_SDIO_CMD_BIT     2
-/*
-#define BOARD_SDIO_PWR_DEV     GPIOB
-#define BOARD_SDIO_PWR_BIT     9
-#define BOARD_SDIO_CD_DEV      GPIOC
-#define BOARD_SDIO_CD_BIT      7
-*/
+//#define BOARD_SDIO_PWR_DEV     GPIOB
+//#define BOARD_SDIO_PWR_BIT     9
+//#define BOARD_SDIO_CD_DEV      GPIOC
+//#define BOARD_SDIO_CD_BIT      7
 
 #ifdef __cplusplus
 extern "C" {

@@ -31,6 +31,7 @@
  */
 
 #include <Card/SecureDigital/HardwareSDIO.h>
+#include <wirish/wirish_time.h>
 
 static const uint32 SDIO_HOST_CAPACITY_SUPPORT  = 0x1 << 30;
 //static const uint32 SDIO_FAST_BOOT              = 0x1 << 29; //Reserved
@@ -109,119 +110,53 @@ HardwareSDIO::HardwareSDIO(void) {
 }
 
 /**
- * @brief Configure common startup settings 
- */
-void HardwareSDIO::begin(SDIOClockFrequency freq) {
-    sdio_set_clkcr(SDIO_CLK_INIT | SDIO_CLKCR_CLKEN);
-    sdio_card_detect();
-    sdio_init();
-    sdio_power_on();
-  //sdio_clock_enable();
-    delay(10);//Microseconds(185);
-    this->idle();
-    this->initialization();
-    this->identification();
-    this->clockFreq(freq);
-}
-
-/**
- * @brief General startup settings 
+ * @brief General startup setting
  */
 void HardwareSDIO::begin(void) {
     this->begin(SDIO_1_MHZ);
 }
 
 /**
- * @brief Reset sdio device
+ * @brief Configure common startup settings
  */
-void HardwareSDIO::end(void) {
-  //this->command(GO_INACTIVE_STATE);
-    sdio_reset();
-    this->RCA.RCA = 0x0;
-    this->CSD.CSD_STRUCTURE = 3;
-    delay(100);
-}
-
-/**
- * @brief Send CMD0 to set card into idle state
- */
-void HardwareSDIO::idle(void) {
-    SDIOInterruptFlag temp = this->responseFlag;
-    for (int i=1; i<=3; i++) {
-        this->command(GO_IDLE_STATE);
-        this->response(GO_IDLE_STATE);
-        switch (this->responseFlag) {
-          case SDIO_FLAG_CMDSENT:
-            //FIXME: check that card is in idle state
-            this->responseFlag = temp;
-            return;
-          default:
-            delay(10);
-            break;
-        }
-    }
-}
-
-/**
- * @brief Card Initialization method
- */
-void HardwareSDIO::initialization(void) {
-    uint8 MAX_TRIALS = 3;
-    uint32 arg = SDIO_HOST_CAPACITY_SUPPORT;
-    for (int i=1; i<=MAX_TRIALS; i++) {
-        this->command(SEND_IF_COND, //CMD8
-                    //SDIO_SDXC_POWER_CONTROL |
-                      SDIO_VOLTAGE_HOST_SUPPORT |
-                      SDIO_CHECK_PATTERN);
-        this->response(SEND_IF_COND);
-        if (this->responseFlag == SDIO_FLAG_CMDREND) {
-            if (this->ICR.CHECK_PATTERN != SDIO_CHECK_PATTERN) {
-                ASSERT(0);
-                return;
-            }
-            if (this->ICR.VOLTAGE_ACCEPTED != SDIO_VOLTAGE_SUPPLIED) {
-                ASSERT(0);
-                return;
-            }
-            // version 2.0 card
-            this->CSD.CSD_STRUCTURE = 1;
-            break;
-        } else if (this->responseFlag == SDIO_FLAG_CTIMEOUT) {
-            // the host should set HCS to 0 if the card returns no response
-            arg &= ~SDIO_HOST_CAPACITY_SUPPORT;
-            // probably version 1.x memory card
-            this->CSD.CSD_STRUCTURE = 0;
-            break;
-        } else if (i == MAX_TRIALS) {
-            ASSERT(0);
-            return;
-        } else {
-            idle();
-            continue;
-        } 
-    }
-/* --------------------------------------------------------------------------*/
-    this->command(SD_SEND_OP_COND); //ACMD41: arg 0 means inquiry ACMD41
-    if (this->responseFlag == SDIO_FLAG_CMDREND) {
-        this->response(SD_SEND_OP_COND);
-    } else if (this->responseFlag == SDIO_FLAG_CTIMEOUT) {
-        ASSERT(0);
-        return;
+void HardwareSDIO::begin(SDIOClockFrequency freq) {
+    ASSERT(sdio_card_detect()); //FIXME: use EXTI for checking periodically
+    sdio_set_clkcr(SDIO_CLK_INIT);
+    sdio_set_data_timeout(SDIO_DTIMER_DATATIME); //longest wait time
+    sdio_init();
+    sdio_power_on();
+    sdio_clock_enable();
+    delay_us(200);
+/* ---------------------------------------------------------- initialization */
+    this->idle();
+    this->getICR(5);
+    this->command(SD_SEND_OP_COND, 0); //ACMD41: arg 0 means inquiry ACMD41
+    if (SDIO->regs->STA & SDIO_STA_CCRCFAIL) {
+            sdio_clear_interrupt(SDIO_ICR_CCRCFAILC);
+            delay_us(100);
     } else {
         ASSERT(0);
         return;
     }
-/* --------------------------------------------------------------------------*/
+    this->response(SD_SEND_OP_COND);
     for (int i=1; i<=5; i++) {
         this->command(SD_SEND_OP_COND, //ACMD41: first ACMD41
                       SDIO_HOST_CAPACITY_SUPPORT | 
                       (SDIO_VALID_VOLTAGE_WINDOW << 8));
+        if (SDIO->regs->STA & SDIO_STA_CCRCFAIL) {
+            sdio_clear_interrupt(SDIO_ICR_CCRCFAILC);
+            delay_us(100);
+        } else if (SDIO->regs->STA & SDIO_STA_CTIMEOUT) {
+            continue;
+        } else {
+            ASSERT(0);
+            return;
+        }
         this->response(SD_SEND_OP_COND);
-        if (this->OCR.BUSY == 1) {
-            //FIXME: add variable that card is ready?
+        if (this->OCR.BUSY == 1) { //FIXME: add variable that card is ready?
             break;
         } else {
-            delay(10*i);
+            delay_us(10000*i);
             continue;
         }
     }
@@ -242,17 +177,44 @@ void HardwareSDIO::initialization(void) {
         CSD.capacity = SD_CAP_SDHC;
         // Card supports SDHC and SDXC
     }
-    sdio_set_data_timeout(SDIO_DTIMER_DATATIME); //longest wait time
+/* ---------------------------------------------------------- identification */
+    this->command(ALL_SEND_CID, 0); //CMD2
+    this->response(ALL_SEND_CID);
+    this->newRCA();
+    this->clockFreq(freq);
 }
 
 /**
- * @brief Identify the card with a Relative Card Address
+ * @brief Reset sdio device
  */
-void HardwareSDIO::identification(void) {
-    this->command(ALL_SEND_CID); //CMD2
-    this->response(ALL_SEND_CID);
-/* --------------------------------------------------------------------------*/
-    this->newRCA();
+void HardwareSDIO::end(void) {
+  //this->command(GO_INACTIVE_STATE);
+    sdio_reset();
+    this->RCA.RCA = 0x0;
+    this->CSD.CSD_STRUCTURE = 3;
+    delay_us(10000);
+}
+
+/**
+ * @brief Send CMD0 to set card into idle state
+ */
+void HardwareSDIO::idle(void) {
+    for (int i=1; i<=3; i++) {
+        this->command(GO_IDLE_STATE, 0);
+        this->response(GO_IDLE_STATE); //FIXME: not needed
+        if (SDIO->regs->STA & SDIO_STA_CMDSENT) {
+            return;
+        } else {
+            delay_us(100*i);
+        }
+    }
+}
+
+/**
+ * @brief Card Initialization method
+ */
+void HardwareSDIO::initialization(void) {
+    
 }
 
 /**
@@ -261,11 +223,10 @@ void HardwareSDIO::identification(void) {
  */
 void HardwareSDIO::clockFreq(SDIOClockFrequency freq) {
     if (freq > SDIO_CLKCR_CLKDIV) {
-        // Invalid clock frequency
-        return;
+        return; // Invalid clock frequency
     }
     sdio_clock_disable();
-    delay(10);
+    delay_us(10);
     sdio_cfg_clkcr(SDIO_CLKCR_CLKDIV, (uint32)freq);
     this->clkFreq = freq;
 }
@@ -324,23 +285,16 @@ void HardwareSDIO::blockSize(SDIOBlockSize size) {
  */
 
 /**
- * @brief Command (without argument) to send to card
- * @param cmd Command index to send
- */
-void HardwareSDIO::command(SDCommand cmd) {
-    this->command(cmd, 0);
-}
-
-/**
  * @brief Command to send to card
  * @param cmd Command index to send
  * @param arg Argument to send
  */
 void HardwareSDIO::command(SDCommand cmd, uint32 arg) {
-    sdio_clock_enable();
     sdio_enable_interrupt(0x3FFFFF); //almost all interrupts
     sdio_clear_interrupt(~SDIO_ICR_RESERVED);
     sdio_load_arg(arg);
+    sdio_clock_enable();
+    delay_us(200); // wait at least 8 clocks for CPSM to clear
     uint32 cmdreg = (cmd & SDIO_CMD_CMDINDEX) | SDIO_CMD_CPSMEN;
     switch(cmd) {
       case GO_IDLE_STATE:
@@ -348,42 +302,34 @@ void HardwareSDIO::command(SDCommand cmd, uint32 arg) {
       case GO_INACTIVE_STATE:
         cmdreg |= SDIO_CMD_WAITRESP_NONE;
         break;
-      case ALL_SEND_CID:
       case SEND_CID:
       case SEND_CSD:
+      case ALL_SEND_CID:
         cmdreg |= SDIO_CMD_WAITRESP_LONG;
         break;
       case READ_SINGLE_BLOCK:
-    //case READ_MULTIPLE_BLOCK: //FIXME: add support for other read commands
-    //case SEND_WRITE_PROT:
-    //case GEN_CMD: //in read mode
+    //case READ_MULTIPLE_BLOCK:
         cmdreg |= SDIO_CMD_WAITRESP_SHORT;
         sdio_set_data_length(0x1 << this->blkSize);
         break;
       case WRITE_BLOCK:
     //case WRITE_MULTIPLE_BLOCK:
-    //case PROGRAM_CSD:
-    //case LOCK_UNLOCK:
-    //case GEN_CMD: //in write mode
         cmdreg |= SDIO_CMD_WAITRESP_SHORT;
         sdio_set_data_length(0x1 << this->blkSize);
         break;
       default:
+      case SEND_IF_COND:
         cmdreg |= SDIO_CMD_WAITRESP_SHORT;
         break;
     }
-    delay(10); // wait at least 8 clocks for CPSM to clear
     sdio_send_command(cmdreg);
-    if (sdio_check_status(SDIO_STA_CMDACT)) {
-    }
-}
-
-/**
- * @brief Application Command (without argument) to send to card
- * @param acmd Application Command to send
- */
-void HardwareSDIO::command(SDAppCommand acmd) {
-    this->command(acmd, 0);
+    //ASSERT(sdio_check_status(SDIO_STA_CMDACT))
+    //delay_us(100);
+    while (1) {
+        if (SDIO->regs->STA & 0xC5) {
+            break;
+        }
+    } //this->wait(cmd);
 }
 
 /**
@@ -392,7 +338,7 @@ void HardwareSDIO::command(SDAppCommand acmd) {
  * @param arg Argument to send
  */
 void HardwareSDIO::command(SDAppCommand acmd, uint32 arg) {
-    for (uint32 i=1; i<=4; i++) {
+    for (uint32 i=1; i<=5; i++) {
         this->command(APP_CMD, (uint32)this->RCA.RCA << 16);
         this->response(APP_CMD);
       //this->check(0xFF9FC21);
@@ -411,6 +357,7 @@ void HardwareSDIO::command(SDAppCommand acmd, uint32 arg) {
     } else {
         this->appCmd = acmd; //keep track of which app command this is
         this->command((SDCommand)acmd, arg);
+        this->appCmd = (SDAppCommand)0; //FIXME: is this safe?
     }
 }
 
@@ -419,35 +366,30 @@ void HardwareSDIO::command(SDAppCommand acmd, uint32 arg) {
  * @param cmd SDCommand enumeration to process response for
  */
 void HardwareSDIO::response(SDCommand cmd) {
-    this->wait(cmd);
-    uint32 respcmd = sdio_get_command(); //check response matches command
-    if (respcmd == (uint32)cmd) {
-        this->responseFlag = SDIO_FLAG_CMDREND;
-    } else if (respcmd == 0x3F) { //RM0008: pg.576 special case
-        switch (cmd) {
-          case ALL_SEND_CID:
-          case SEND_CID:
-          case SEND_CSD:
-            this->responseFlag = SDIO_FLAG_CMDREND;
+    switch (cmd) {
+      case ALL_SEND_CID:
+      case SEND_CID:
+      case SEND_CSD:
+        if (sdio_get_command() == 0x3F) { //RM0008: pg.576 special case
             break;
-          default:
-            this->responseFlag = SDIO_FLAG_ERROR;
+        } else {
             return;
         }
-    } else {
-        this->responseFlag = SDIO_FLAG_ERROR;
-        return;
+      default:
+        if (sdio_get_command() == cmd) {
+            break;
+        } else {
+            return;
+        }
     }
-
-    uint32 temp = sdio_get_resp1();
     switch (cmd) {
       case GO_IDLE_STATE: //NO_RESPONSE
       case SET_DSR:
       case GO_INACTIVE_STATE:
         return;
       case SEND_IF_COND: //TYPE_R7
-        this->ICR.VOLTAGE_ACCEPTED = (0xF00 & temp) >> 8;
-        this->ICR.CHECK_PATTERN = (0xFF & temp);
+        this->ICR.VOLTAGE_ACCEPTED = (sdio_get_resp1() & 0xF00) >> 8;
+        this->ICR.CHECK_PATTERN    = (sdio_get_resp1() & 0xFF);
         break;
       case SEND_RELATIVE_ADDR: //TYPE_R6
         this->convert(&this->RCA);
@@ -462,7 +404,7 @@ void HardwareSDIO::response(SDCommand cmd) {
       case WRITE_BLOCK:
       case SEND_STATUS:
       default: //FIXME assumed all others are TYPE_R1
-        this->convert(&this->CSR, temp);
+        this->convert(&this->CSR, sdio_get_resp1());
         break;
     }
 }
@@ -472,35 +414,30 @@ void HardwareSDIO::response(SDCommand cmd) {
  * @param acmd SDAppCommand enumeration to process response for
  */
 void HardwareSDIO::response(SDAppCommand acmd) {
-    this->wait((SDCommand)acmd);
-    this->appCmd = (SDAppCommand)0; //FIXME: is this safe?
-    uint32 respcmd = sdio_get_command();
-    if (respcmd == (uint32)acmd) {
-        this->responseFlag = SDIO_FLAG_CMDREND;
-    } else if (respcmd == 0x3F) { //RM0008: pg.576 special case
-        switch (acmd) {
-          case SD_SEND_OP_COND:
-            this->responseFlag = SDIO_FLAG_CMDREND;
+    switch (acmd) {
+      case SD_SEND_OP_COND:
+        if (sdio_get_command() == 0x3F) { //RM0008: pg.576 special case
             break;
-          default:
-            this->responseFlag = SDIO_FLAG_ERROR;
+        } else {
             return;
         }
-    } else {
-        this->responseFlag = SDIO_FLAG_ERROR;
-        return;
+      default:
+        if (sdio_get_command() == acmd) {
+            break;
+        } else {
+            return;
+        }
     }
-
-    if (this->responseFlag != SDIO_FLAG_CMDREND) {
-        return;
-    }
-    uint32 temp = sdio_get_resp1();
     switch (acmd) {
       case SD_SEND_OP_COND: //TYPE_R3
-        this->OCR.BUSY = (0x80000000 & temp) >> 31;
-        this->OCR.CCS = (0x40000000 & temp) >> 30;
-        this->OCR.S18A = (0x1000000 & temp) >> 24;
-        this->OCR.VOLTAGE_WINDOW = (0xFFFF00 & temp) >> 8;
+        if (sdio_get_command() == 0x3F) {
+            this->OCR.BUSY           = (sdio_get_resp1() & 0x80000000) >> 31;
+            this->OCR.CCS            = (sdio_get_resp1() & 0x40000000) >> 30;
+            this->OCR.S18A           = (sdio_get_resp1() & 0x1000000) >> 24;
+            this->OCR.VOLTAGE_WINDOW = (sdio_get_resp1() & 0xFFFF00) >> 8;
+        } else {
+            return;
+        }
         break;
       case SD_STATUS: //TYPE_R1
       case SET_BUS_WIDTH:
@@ -515,148 +452,54 @@ void HardwareSDIO::response(SDAppCommand acmd) {
 }
 
 /**
- * @brief Sets up and handles DMA data transfer for AppCommands
- */
-void HardwareSDIO::transfer(SDCommand cmd) {
-    switch (cmd) {
-      case READ_SINGLE_BLOCK:
-      case READ_MULTIPLE_BLOCK:
-        return;
-      case WRITE_BLOCK:
-      case WRITE_MULTIPLE_BLOCK:
-        break;
-    //case SEND_TUNING_BLOCK:
-      case PROGRAM_CSD:
-      case SEND_WRITE_PROT:
-      case LOCK_UNLOCK:
-      case GEN_CMD:
-    //case SWITCH_FUNC:
-        return;
-      default:
-        return;
-    }
-    while (!sdio_check_status(SDIO_STA_DBCKEND)) {
-        if (sdio_check_status(SDIO_STA_STBITERR | SDIO_STA_DTIMEOUT |
-                              SDIO_STA_DCRCFAIL | SDIO_STA_TXUNDERR)) {
-            return;
-        }
-    }
-}
-
-/**
- * @brief Sets up and handles polling data transfer for AppCommands
- */
-void HardwareSDIO::transfer(SDAppCommand cmd) {
-    switch (cmd) {
-      case SD_STATUS:
-      case SEND_SCR:
-        break;
-      case SEND_NUM_WR_BLOCKS:
-        return;
-      default:
-        return;
-    }
-
-    if (this->CSR.READY_FOR_DATA == SDIO_CSR_READY) {}
-
-    while (1) {
-        if (sdio_check_status(SDIO_STA_DTIMEOUT)) {
-            sdio_clear_interrupt(SDIO_ICR_DTIMEOUTC);
-            return;
-        }
-        if (sdio_check_status(SDIO_STA_DCRCFAIL)) {
-            sdio_clear_interrupt(SDIO_ICR_DCRCFAILC);
-            return;
-        }
-        if (sdio_check_status(SDIO_STA_STBITERR)) {
-            return;
-        }
-        if (sdio_check_status(SDIO_STA_RXOVERR)) {
-            return;
-        }
-    }
-
-    uint32 buf[16]; //max 64-bytes or 512-bits in 32-bit words
-    int rxed = 0;
-    while (sdio_get_fifo_count() > 0) {
-        buf[rxed++] = sdio_read_data();
-    }
-
-    switch (cmd) {
-      case SD_STATUS:
-        break;
-      case SEND_SCR:
-        this->SCR.SCR_STRUCTURE = (0xF0000000 & buf[0]) >> 28;
-        this->SCR.SD_SPEC = (0xF000000 & buf[0]) >> 24;
-        this->SCR.DATA_STAT_AFTER_ERASE = (0x800000 & buf[0]) >> 23;
-        this->SCR.SD_SECURITY = (0x700000 & buf[0]) >> 20;
-        this->SCR.SD_BUS_WIDTHS = (0xF0000 & buf[0]) >> 16;
-        this->SCR.SD_SPEC3 = (0x8000 & buf[0]) >> 15;
-        this->SCR.EX_SECURITY = (0x7800 & buf[0]) >> 11;
-        this->SCR.CMD_SUPPORT = (0x3 & buf[0]);
-        break;
-      case SEND_NUM_WR_BLOCKS:
-      default:
-        return;
-    }
-}
-
-/**
- * @brief 
- */
-void HardwareSDIO::wait(SDCommand cmd) {
-    while (1) {
-        if (sdio_check_status(SDIO_STA_CTIMEOUT)) {
-            sdio_clear_interrupt(SDIO_ICR_CTIMEOUTC);
-            this->responseFlag = SDIO_FLAG_CTIMEOUT;
-            return;
-        } else if (sdio_check_status(SDIO_STA_CMDSENT)) {
-            sdio_clear_interrupt(SDIO_ICR_CMDSENTC);
-            this->responseFlag = SDIO_FLAG_CMDSENT;
-            return;
-        } else if (sdio_check_status(SDIO_STA_CCRCFAIL)) {
-            switch (this->appCmd) {
-              case SD_SEND_OP_COND: // special response format for ACMD41
-                this->responseFlag = SDIO_FLAG_CMDREND;
-                break;
-              default:
-                this->responseFlag = SDIO_FLAG_CCRCFAIL;
-                break;
-            }
-            sdio_clear_interrupt(SDIO_ICR_CCRCFAILC);
-            return;
-        } else if (sdio_check_status(SDIO_STA_CMDREND)) {
-            switch (cmd) {
-              case READ_SINGLE_BLOCK:
-              case READ_MULTIPLE_BLOCK:
-                sdio_set_dcr((this->blkSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
-                             SDIO_DCTRL_DMAEN | SDIO_DCTRL_DTDIR |
-                             SDIO_DCTRL_DTEN);
-                this->responseFlag = SDIO_FLAG_CMDREND;
-                break;
-              case WRITE_BLOCK:
-              case WRITE_MULTIPLE_BLOCK:
-                sdio_set_dcr((this->blkSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
-                             SDIO_DCTRL_DMAEN |
-                             SDIO_DCTRL_DTEN);
-                this->responseFlag = SDIO_FLAG_CMDREND;
-                break;
-              default:
-                this->responseFlag = SDIO_FLAG_CMDREND;
-                break;
-            }
-            sdio_clear_interrupt(SDIO_ICR_CMDRENDC);
-            return;
-        } else {
-            this->responseFlag = SDIO_FLAG_ERROR;
-            return;
-        }
-    }
-}
-
-/**
  * Card register functions
  */
+
+/**
+ * @brief Card sends Interface Condition (ICR) to host
+ */
+void HardwareSDIO::getICR(uint32 trials) {
+  //uint32 arg = SDIO_HOST_CAPACITY_SUPPORT;
+    for (uint32 i=1; i<=trials; i++) {
+        this->command(SEND_IF_COND, //CMD8
+                    //SDIO_SDXC_POWER_CONTROL |
+                      SDIO_VOLTAGE_HOST_SUPPORT |
+                      SDIO_CHECK_PATTERN);
+        this->response(SEND_IF_COND);
+        if (SDIO->regs->STA & SDIO_STA_CMDREND) {
+            if (this->ICR.CHECK_PATTERN != SDIO_CHECK_PATTERN) {
+                ASSERT(0);
+                return;
+            }
+            if (this->ICR.VOLTAGE_ACCEPTED != SDIO_VOLTAGE_SUPPLIED) {
+                ASSERT(0);
+                return;
+            }
+            // version 2.0 card
+            this->CSD.CSD_STRUCTURE = 1;
+            break;
+        } else if (SDIO->regs->STA & SDIO_STA_CTIMEOUT) {
+            // the host should set HCS to 0 if the card returns no response
+            //arg &= ~SDIO_HOST_CAPACITY_SUPPORT;
+            // probably version 1.x memory card
+            this->CSD.CSD_STRUCTURE = 0;
+            break;
+        } else if (i == trials) {
+            ASSERT(0);
+            return;
+        } else {
+            idle();
+            continue;
+        } 
+    }
+}
+
+/**
+ * @brief Card sends Operating Condition (OCR) to host
+ */
+void HardwareSDIO::getOCR(void) {
+
+}
 
 /**
  * @brief Card publishes a new Relative Card Address (RCA)
@@ -664,7 +507,7 @@ void HardwareSDIO::wait(SDCommand cmd) {
 void HardwareSDIO::newRCA(void) {
     uint16 temp = this->RCA.RCA;
     for (int i=1; i<=3; i++) {
-        this->command(SEND_RELATIVE_ADDR); //CMD3
+        this->command(SEND_RELATIVE_ADDR, 0); //CMD3
         this->response(SEND_RELATIVE_ADDR);
         if (this->RCA.RCA == temp) { //FIXME: mmake sure RCA changes
         } else {
@@ -722,7 +565,7 @@ void HardwareSDIO::getSCR(void) {
     sdio_set_data_length(8); //64-bits or 8-bytes
     sdio_set_dcr((this->blkSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR);
-    this->command(SEND_SCR); //ACMD51
+    this->command(SEND_SCR, 0); //ACMD51
     this->response(SEND_SCR);
   //this->transfer(SEND_SCR);
 }
@@ -739,7 +582,7 @@ void HardwareSDIO::getSSR(void) {
   //this->select();
     sdio_set_dcr((this->blkSize << SDIO_DCTRL_DBLOCKSIZE_BIT) |
                  SDIO_DCTRL_DTDIR);
-    this->command(SD_STATUS); //ACMD13
+    this->command(SD_STATUS, 0); //ACMD13
   //this->response(SD_STATUS);
   //this->check(0xFF9FC20);
   //this->transfer(SD_STATUS);
@@ -919,7 +762,7 @@ void HardwareSDIO::convert(rca* TEMP) {
  * @brief Stops data stream transmission to/from card
  */
 void HardwareSDIO::stop(void) {
-    this->command(STOP_TRANSMISSION); //CMD12
+    this->command(STOP_TRANSMISSION, 0); //CMD12
     //this->check(0xC6F85E00);
     //FIXME: handle DPSM for stopping read or write early
 }
