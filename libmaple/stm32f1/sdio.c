@@ -58,13 +58,13 @@ void sdio_cfg_gpio(void) {
                   BOARD_SDIO_PWR_BIT,
                   GPIO_OUTPUT_PP);
 #endif
-#ifndef BOARD_SDIO_CD_PIN
-    gpio_set_mode(BOARD_SDIO_D3_DEV,
-                  BOARD_SDIO_D3_BIT,
-                  GPIO_INPUT_PD);
-#else
+#ifdef BOARD_SDIO_CD_PIN
     gpio_set_mode(BOARD_SDIO_CD_DEV,
                   BOARD_SDIO_CD_BIT,
+                  GPIO_INPUT_PD);
+#else
+    gpio_set_mode(BOARD_SDIO_D3_DEV,
+                  BOARD_SDIO_D3_BIT,
                   GPIO_INPUT_PD);
 #endif
     gpio_set_mode(BOARD_SDIO_D0_DEV,

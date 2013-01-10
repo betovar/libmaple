@@ -1,0 +1,95 @@
+Target voltage: 3.3V
+Device  IR Len  IDCODE      Description
+0	4	0x3BA00477  ARM Limited: ADIv5 JTAG-DP port.
+1	5	0x06414041  ST Microelectronics: STM32, High density.
+
+Available Targets:
+No. Att Driver
+ 1      STM32, High density.
+usart_tx (dev=0x200003cc, buf=0x2000ff97 "R\265R", len=1)
+    at libmaple/usart.c:91
+91	uint32 usart_tx(usart_dev *dev, const uint8 *buf, uint32 len) {
+Symbols from "/Users/betovar/Git/libmaple/build/maple_native.elf".
+Extended remote serial target in gdb-specific protocol:
+Debugging a target over a serial line.
+	While running this, GDB does not access memory from...
+Local exec file:
+	`/Users/betovar/Git/libmaple/build/maple_native.elf', 
+        file type elf32-littlearm.
+	Entry point: 0x8002a48
+	0x08000000 - 0x080049b0 is .text
+	0x080049b0 - 0x080049b8 is .ARM.exidx
+	0x20000000 - 0x20001088 is .data
+	0x08005a40 - 0x08005f80 is .rodata
+	0x20001088 - 0x20001330 is .bss
+Breakpoint 1 at 0x8004062: file libraries/Card/SecureDigital/HardwareSDIO.cpp, line 141.
+Loading section .text, size 0x49b0 lma 0x8000000
+Loading section .ARM.exidx, size 0x8 lma 0x80049b0
+Loading section .data, size 0x1088 lma 0x80049b8
+Loading section .rodata, size 0x540 lma 0x8005a40
+Start address 0x8002a49, load size 24448
+Transfer rate: 17 KB/sec, 873 bytes/write.
+Continuing.
+Note: automatically using hardware breakpoints for read-only addresses.
+
+Program received signal SIGINT, Interrupt.
+0x0800073c in usart_putc (dev=0x200003cc, byte=82 'R')
+    at ./libmaple/include/libmaple/usart.h:441
+441	    while (!usart_tx(dev, &byte, 1))
+8: SDIO->regs->STA = 64
+7: SDIO->regs->RESPCMD = 24
+6: SDIO->regs->CMD = 1096
+5: SDIO->regs->ARG = 426
+4: SDIO->regs->RESP1 = 480
+3: SDIO->regs->RESP2 = 0
+2: SDIO->regs->RESP3 = 0
+1: SDIO->regs->RESP4 = 0
+$1 = {ICR = {VOLTAGE_ACCEPTED = 1, CHECK_PATTERN = 224}, OCR = {BUSY = 0, 
+    CCS = 0, S18A = 0, VOLTAGE_WINDOW = 0}, CID = {MID = 0 '\000', 
+    OID = "\000\000", PNM = "\000\000\000\000\000", PSN = 0, PRV = {N = 0, 
+      M = 0}, MDT = {YEAR = 0, MONTH = 0}, CRC = 0}, CSD = {
+    capacity = SD_CAP_UNDEF, CSD_STRUCTURE = 3, TAAC = 0 '\000', 
+    NSAC = 0 '\000', TRAN_SPEED = 0 '\000', CCC = 0, READ_BL_LEN = 0, 
+    READ_BL_PARTIAL = 0, WRITE_BLK_MISALIGN = 0, READ_BLK_MISALIGN = 0, 
+    DSR_IMP = 0, C_SIZE = 0, VDD_R_CURR_MIN = 0, VDD_R_CURR_MAX = 0, 
+    VDD_W_CURR_MIN = 0, VDD_W_CURR_MAX = 0, C_SIZE_MULT = 0, 
+    ERASE_BLK_EN = 0, SECTOR_SIZE = 0, WP_GRP_SIZE = 0, WP_GRP_ENABLE = 0, 
+    R2W_FACTOR = 0, WRITE_BL_LEN = 0, WRITE_BL_PARTIAL = 0, 
+    FILE_FORMAT_GRP = 0, COPY = 0, PERM_WRITE_PROTECT = 0, 
+    TMP_WRITE_PROTECT = 0, FILE_FORMAT = 0, CRC = 0}, RCA = {RCA = 0, 
+    COM_CRC_ERROR = 0, ILLEGAL_COMMAND = 0, ERROR = 0, CURRENT_STATE = 0, 
+    READY_FOR_DATA = 0, APP_CMD = 0, AKE_SEQ_ERROR = 0}, SCR = {
+    SCR_STRUCTURE = 0, SD_SPEC = 0, DATA_STAT_AFTER_ERASE = 0, 
+    SD_SECURITY = 0, SD_BUS_WIDTHS = 0, SD_SPEC3 = 0, EX_SECURITY = 0, 
+    CMD_SUPPORT = 0}, SSR = {DAT_BUS_WIDTH = 0, SECURED_MODE = 0, 
+    SD_CARD_TYPE = 0, SIZE_OF_PROTECTED_AREA = 0, SPEED_CLASS = 0 '\000', 
+    PERFORMANCE_MOVE = 0 '\000', AU_SIZE = 0, ERASE_SIZE = 0, 
+    ERASE_TIMEOUT = 0, ERASE_OFFSET = 0, UHS_SPEED_GRADE = 0, 
+    UHS_AU_SIZE = 0}, DSR = 0, CSR = {OUT_OF_RANGE = 0, ADDRESS_ERROR = 0, 
+    BLOCK_LEN_ERROR = 0, ERASE_SEQ_ERROR = 0, ERASE_PARAM = 0, 
+    WP_VIOLATION = 0, CARD_IS_LOCKED = 0, LOCK_UNLOCK_FAILED = 0, 
+    COM_CRC_ERROR = 0, ILLEGAL_COMMAND = 0, CARD_ECC_FAILED = 0, 
+    CC_ERROR = 0, ERROR = 0, CSD_OVERWRITE = 0, WP_ERASE_SKIP = 0, 
+    CARD_ECC_DISABLED = 0, ERASE_RESET = 0, CURRENT_STATE = 0, 
+    READY_FOR_DATA = 0, APP_CMD = 0, AKE_SEQ_ERROR = 0}, appCmd = 0, 
+  clkFreq = 0, blkSize = SDIO_BKSZ_1, sdio_d = 0x200004c8}
+#0  0x0800073c in usart_putc (dev=0x200003cc, byte=82 'R')
+    at ./libmaple/include/libmaple/usart.h:441
+#1  0x08000754 in usart_putstr (dev=0x200003cc, 
+    str=0x8005ace "E)ERRRR A ALDLDASASR(R() ) lblbalal/2/2.")
+    at ./libmaple/include/libmaple/usart.h:456
+#2  0x080007ec in _fail (
+    file=0x8005de8 "libraries/Card/SecureDigital/HardwareSDIO.cpp", line=404, 
+    exp=0x8005edc "this->ICR.CHECK_PATTERN == SDIO_CHECK_PATTERN")
+    at libmaple/util.c:74
+#3  0x08004012 in HardwareSDIO::getICR (this=0x20001258, trials=5)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:404
+#4  0x080040cc in HardwareSDIO::begin (this=0x20001258, freq=SDIO_1_MHZ)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:124
+#5  0x08004156 in loop () at main.cpp:29
+#6  0x08004192 in main () at main.cpp:42
+A debugging session is active.
+
+	Inferior 1 [Remote target] will be detached.
+
+Quit anyway? (y or n) Detached from remote process.

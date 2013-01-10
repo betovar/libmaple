@@ -10,13 +10,13 @@ target extended-remote /dev/cu.usbmodemDDE4C3C1
 mon jtag_scan
 attach 1
 info target
-#break HardwareSDIO.cpp:132
+break HardwareSDIO::end
 load
 display SDIO->regs->RESP4
 display SDIO->regs->RESP3
 display SDIO->regs->RESP2
 display SDIO->regs->RESP1
-display SDIO->regs->RESPCMD
 display SDIO->regs->ARG
 display SDIO->regs->CMD
+display SDIO->regs->RESPCMD
 display SDIO->regs->STA

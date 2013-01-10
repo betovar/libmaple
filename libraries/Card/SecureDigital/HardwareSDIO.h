@@ -61,7 +61,7 @@ typedef enum SDIOClockFrequency {
     SDIO_500_KHZ  = 142,
     SDIO_400_KHZ  = 178,
     SDIO_300_KHZ  = 238,
-    SDIO_CLK_INIT = SDIO_400_KHZ
+    SDIO_CLK_INIT = 254 // 281,250 Hz
 } SDIOClockFrequency;
 
 typedef enum SDIOBlockSize {
@@ -87,7 +87,7 @@ typedef enum SDIOBlockSize {
  * SD Structure Specific Enumerations
  */
 
-typedef enum SdCardCapacity {
+typedef enum SdCardCapacity { //FIXME: don't see the need to use this
     SD_CAP_UNDEF = 0,
     SD_CAP_SDSC  = 1,
     SD_CAP_SDHC  = 2,
@@ -157,6 +157,7 @@ typedef enum SDIOStatusResponseTag {
  */
 
 typedef struct InterfaceConditionResponse {
+  //unsigned Reserved               :20;
     unsigned VOLTAGE_ACCEPTED       :4;
     unsigned CHECK_PATTERN          :8;
 } icr;
@@ -178,7 +179,7 @@ typedef struct OperationConditionsRegister { //MSBit first
     unsigned S18A                   :1;
     unsigned VOLTAGE_WINDOW         :16; // 2.7v - 3.6v
   //unsigned Reserved               :8; // Reserved for low voltage range
-}ocr;
+} ocr;
 
 typedef struct product_revision {
     unsigned N                      :4;
@@ -385,7 +386,7 @@ class HardwareSDIO {
     sdio_dev *sdio_d;
     /*--------------------------------------- card register access functions */
     void getICR(uint32);
-    void getOCR(void);
+    void getOCR(uint32);
     void newRCA(void);
     void getCID(void);
     void getCSD(void);
@@ -394,7 +395,8 @@ class HardwareSDIO {
     void getSSR(void);
     void getCSR(void);
     /*----------------------------------------- card register save functions */
-    void convert(csr*, uint32);    
+    void convert(ocr*);
+    void convert(csr*, uint32);
     void convert(csd*);
     void convert(cid*);
     void convert(rca*);

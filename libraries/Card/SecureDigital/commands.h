@@ -30,6 +30,16 @@
  * @brief SD/MMC command listing
  */
 
+/*  //FIXME temporary, replace these with more general routines
+static const uint32 SDIO_SWITCH_1V8_REQUEST     = 0x1 << 24; //Not allowed
+static const uint32 SDIO_SDXC_POWER_CONTROL     = 0x1 << 28; 
+static const uint32 SDIO_FAST_BOOT              = 0x1 << 29; //Reserved      */
+static const uint32 SDIO_HOST_CAPACITY_SUPPORT  = 0x1 << 30;
+static const uint32 SDIO_CHECK_PATTERN          = 0xAA;
+static const uint32 SDIO_VOLTAGE_SUPPLIED       = 0x1;
+static const uint32 SDIO_VOLTAGE_HOST_SUPPORT   = SDIO_VOLTAGE_SUPPLIED << 8;
+static const uint32 SDIO_VALID_VOLTAGE_WINDOW   = 0x3000; //3.2-3.4 volts
+
 typedef enum SDCommand {
 // Basic Commands (class 0)
     /* CMD0 - Resets all cards to idle state */
