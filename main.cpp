@@ -27,6 +27,8 @@ void setup() {
 void loop() {
     //waitForButtonPress();
     SDMC.begin();
+    SDMC.getCID();
+    SDMC.getCSD();
     SDMC.end();
 }
 

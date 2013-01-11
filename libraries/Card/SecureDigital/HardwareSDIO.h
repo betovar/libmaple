@@ -61,7 +61,7 @@ typedef enum SDIOClockFrequency {
     SDIO_500_KHZ  = 142,
     SDIO_400_KHZ  = 178,
     SDIO_300_KHZ  = 238,
-    SDIO_CLK_INIT = 254 // 281,250 Hz
+    SDIO_CLK_INIT = SDIO_300_KHZ //254 //281,250 Hz
 } SDIOClockFrequency;
 
 typedef enum SDIOBlockSize {
@@ -383,7 +383,6 @@ class HardwareSDIO {
   //void write(uint32, uint32*);
     void write(uint32, uint32*, uint32);
 //protected:
-    sdio_dev *sdio_d;
     /*--------------------------------------- card register access functions */
     void getICR(uint32);
     void getOCR(uint32);

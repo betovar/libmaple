@@ -6,9 +6,9 @@ Device  IR Len  IDCODE      Description
 Available Targets:
 No. Att Driver
  1      STM32, High density.
-usart_tx (dev=0x200003cc, buf=0x2000ff97 "R\265R", len=1)
-    at libmaple/usart.c:91
-91	uint32 usart_tx(usart_dev *dev, const uint8 *buf, uint32 len) {
+0x0800073c in usart_putc (dev=0x200003cc, byte=82 'R')
+    at ./libmaple/include/libmaple/usart.h:441
+441	    while (!usart_tx(dev, &byte, 1))
 Symbols from "/Users/betovar/Git/libmaple/build/maple_native.elf".
 Extended remote serial target in gdb-specific protocol:
 Debugging a target over a serial line.
@@ -17,79 +17,151 @@ Local exec file:
 	`/Users/betovar/Git/libmaple/build/maple_native.elf', 
         file type elf32-littlearm.
 	Entry point: 0x8002a48
-	0x08000000 - 0x080049b0 is .text
-	0x080049b0 - 0x080049b8 is .ARM.exidx
+	0x08000000 - 0x08004a54 is .text
+	0x08004a54 - 0x08004a58 is .text.align
+	0x08004a58 - 0x08004a60 is .ARM.exidx
 	0x20000000 - 0x20001088 is .data
-	0x08005a40 - 0x08005f80 is .rodata
-	0x20001088 - 0x20001330 is .bss
-Breakpoint 1 at 0x8004062: file libraries/Card/SecureDigital/HardwareSDIO.cpp, line 141.
-Loading section .text, size 0x49b0 lma 0x8000000
-Loading section .ARM.exidx, size 0x8 lma 0x80049b0
-Loading section .data, size 0x1088 lma 0x80049b8
-Loading section .rodata, size 0x540 lma 0x8005a40
-Start address 0x8002a49, load size 24448
-Transfer rate: 17 KB/sec, 873 bytes/write.
+	0x08005ae8 - 0x080060a4 is .rodata
+	0x20001088 - 0x20001328 is .bss
+Breakpoint 1 at 0x8003ec8: file libraries/Card/SecureDigital/HardwareSDIO.cpp, line 471.
+Breakpoint 2 at 0x8003ee2: file libraries/Card/SecureDigital/HardwareSDIO.cpp, line 463.
+Breakpoint 3 at 0x800411e: file libraries/Card/SecureDigital/HardwareSDIO.cpp, line 137.
+Loading section .text, size 0x4a54 lma 0x8000000
+Loading section .ARM.exidx, size 0x8 lma 0x8004a58
+Loading section .data, size 0x1088 lma 0x8004a60
+Loading section .rodata, size 0x5bc lma 0x8005ae8
+Start address 0x8002a49, load size 24736
+Transfer rate: 17 KB/sec, 883 bytes/write.
 Continuing.
 Note: automatically using hardware breakpoints for read-only addresses.
 
 Program received signal SIGINT, Interrupt.
-0x0800073c in usart_putc (dev=0x200003cc, byte=82 'R')
+0x08000672 in usart_tx (dev=<optimized out>, buf=0x2000ff87 "R\aR", len=1)
+    at libmaple/usart.c:94
+94	    while ((regs->SR & USART_SR_TXE) && (txed < len)) {
+8: /x SDIO->regs->STA = 0x40
+7: /x SDIO->regs->RESPCMD = 0x18
+6: /x SDIO->regs->CMD = 0x448
+5: /x SDIO->regs->ARG = 0x1aa
+4: /x SDIO->regs->RESP1 = 0x3e2
+3: /x SDIO->regs->RESP2 = 0x0
+2: /x SDIO->regs->RESP3 = 0x0
+1: /x SDIO->regs->RESP4 = 0x0
+#0  0x08000672 in usart_tx (dev=<optimized out>, buf=0x2000ff87 "R", len=1)
+    at libmaple/usart.c:94
+#1  0x0800073c in usart_putc (dev=0x200003cc, byte=82 'R')
     at ./libmaple/include/libmaple/usart.h:441
-441	    while (!usart_tx(dev, &byte, 1))
-8: SDIO->regs->STA = 64
-7: SDIO->regs->RESPCMD = 24
-6: SDIO->regs->CMD = 1096
-5: SDIO->regs->ARG = 426
-4: SDIO->regs->RESP1 = 480
-3: SDIO->regs->RESP2 = 0
-2: SDIO->regs->RESP3 = 0
-1: SDIO->regs->RESP4 = 0
-$1 = {ICR = {VOLTAGE_ACCEPTED = 1, CHECK_PATTERN = 224}, OCR = {BUSY = 0, 
-    CCS = 0, S18A = 0, VOLTAGE_WINDOW = 0}, CID = {MID = 0 '\000', 
-    OID = "\000\000", PNM = "\000\000\000\000\000", PSN = 0, PRV = {N = 0, 
-      M = 0}, MDT = {YEAR = 0, MONTH = 0}, CRC = 0}, CSD = {
-    capacity = SD_CAP_UNDEF, CSD_STRUCTURE = 3, TAAC = 0 '\000', 
-    NSAC = 0 '\000', TRAN_SPEED = 0 '\000', CCC = 0, READ_BL_LEN = 0, 
-    READ_BL_PARTIAL = 0, WRITE_BLK_MISALIGN = 0, READ_BLK_MISALIGN = 0, 
-    DSR_IMP = 0, C_SIZE = 0, VDD_R_CURR_MIN = 0, VDD_R_CURR_MAX = 0, 
-    VDD_W_CURR_MIN = 0, VDD_W_CURR_MAX = 0, C_SIZE_MULT = 0, 
-    ERASE_BLK_EN = 0, SECTOR_SIZE = 0, WP_GRP_SIZE = 0, WP_GRP_ENABLE = 0, 
-    R2W_FACTOR = 0, WRITE_BL_LEN = 0, WRITE_BL_PARTIAL = 0, 
-    FILE_FORMAT_GRP = 0, COPY = 0, PERM_WRITE_PROTECT = 0, 
-    TMP_WRITE_PROTECT = 0, FILE_FORMAT = 0, CRC = 0}, RCA = {RCA = 0, 
-    COM_CRC_ERROR = 0, ILLEGAL_COMMAND = 0, ERROR = 0, CURRENT_STATE = 0, 
-    READY_FOR_DATA = 0, APP_CMD = 0, AKE_SEQ_ERROR = 0}, SCR = {
-    SCR_STRUCTURE = 0, SD_SPEC = 0, DATA_STAT_AFTER_ERASE = 0, 
-    SD_SECURITY = 0, SD_BUS_WIDTHS = 0, SD_SPEC3 = 0, EX_SECURITY = 0, 
-    CMD_SUPPORT = 0}, SSR = {DAT_BUS_WIDTH = 0, SECURED_MODE = 0, 
-    SD_CARD_TYPE = 0, SIZE_OF_PROTECTED_AREA = 0, SPEED_CLASS = 0 '\000', 
-    PERFORMANCE_MOVE = 0 '\000', AU_SIZE = 0, ERASE_SIZE = 0, 
-    ERASE_TIMEOUT = 0, ERASE_OFFSET = 0, UHS_SPEED_GRADE = 0, 
-    UHS_AU_SIZE = 0}, DSR = 0, CSR = {OUT_OF_RANGE = 0, ADDRESS_ERROR = 0, 
-    BLOCK_LEN_ERROR = 0, ERASE_SEQ_ERROR = 0, ERASE_PARAM = 0, 
-    WP_VIOLATION = 0, CARD_IS_LOCKED = 0, LOCK_UNLOCK_FAILED = 0, 
-    COM_CRC_ERROR = 0, ILLEGAL_COMMAND = 0, CARD_ECC_FAILED = 0, 
-    CC_ERROR = 0, ERROR = 0, CSD_OVERWRITE = 0, WP_ERASE_SKIP = 0, 
-    CARD_ECC_DISABLED = 0, ERASE_RESET = 0, CURRENT_STATE = 0, 
-    READY_FOR_DATA = 0, APP_CMD = 0, AKE_SEQ_ERROR = 0}, appCmd = 0, 
-  clkFreq = 0, blkSize = SDIO_BKSZ_1, sdio_d = 0x200004c8}
-#0  0x0800073c in usart_putc (dev=0x200003cc, byte=82 'R')
-    at ./libmaple/include/libmaple/usart.h:441
-#1  0x08000754 in usart_putstr (dev=0x200003cc, 
-    str=0x8005ace "E)ERRRR A ALDLDASASR(R() ) lblbalal/2/2.")
+#2  0x08000754 in usart_putstr (dev=0x200003cc, 
+    str=0x8005b76 "E)ERRRR A ALDLDASASR(R() ) lblbalal/2/2.")
     at ./libmaple/include/libmaple/usart.h:456
-#2  0x080007ec in _fail (
-    file=0x8005de8 "libraries/Card/SecureDigital/HardwareSDIO.cpp", line=404, 
-    exp=0x8005edc "this->ICR.CHECK_PATTERN == SDIO_CHECK_PATTERN")
+#3  0x080007ec in _fail (
+    file=0x8005e90 "libraries/Card/SecureDigital/HardwareSDIO.cpp", line=318, 
+    exp=0x8005f20 "(SDCommand)SDIO->regs->RESPCMD == cmd")
     at libmaple/util.c:74
-#3  0x08004012 in HardwareSDIO::getICR (this=0x20001258, trials=5)
-    at libraries/Card/SecureDigital/HardwareSDIO.cpp:404
-#4  0x080040cc in HardwareSDIO::begin (this=0x20001258, freq=SDIO_1_MHZ)
-    at libraries/Card/SecureDigital/HardwareSDIO.cpp:124
-#5  0x08004156 in loop () at main.cpp:29
-#6  0x08004192 in main () at main.cpp:42
+#4  0x08003cd8 in HardwareSDIO::response (this=0x20001258, cmd=SEND_IF_COND)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:318
+#5  0x080040b8 in HardwareSDIO::getICR (this=0x20001258, trials=5)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:383
+#6  0x08004190 in HardwareSDIO::begin (this=0x20001258, freq=SDIO_1_MHZ)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:123
+#7  0x080041ee in loop () at main.cpp:29
+#8  0x08004236 in main () at main.cpp:44
+313	      case SEND_CSD:
+314	        ASSERT(SDIO->regs->RESPCMD == 0x3F);//RM0008: pg.576 special case
+315	        break;
+316	      default:
+317	        ASSERT(SDIO->regs->STA & SDIO_STA_CMDREND);
+318	        ASSERT((SDCommand)SDIO->regs->RESPCMD == cmd);
+319	        break;
+320	    }
+321	    switch (cmd) {
+322	      case SEND_IF_COND: //TYPE_R7
+The program being debugged has been started already.
+Start it from the beginning? (y or n) 
+Starting program: /Users/betovar/Git/libmaple/build/maple_native.elf 
+
+Breakpoint 1, HardwareSDIO::getCID (this=0x20001258)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:471
+471	    this->command(SEND_CID, (uint32)RCA.RCA << 16); //CMD10
+8: /x SDIO->regs->STA = 0x40
+7: /x SDIO->regs->RESPCMD = 0x3
+6: /x SDIO->regs->CMD = 0x443
+5: /x SDIO->regs->ARG = 0x0
+4: /x SDIO->regs->RESP1 = 0xaaaa4520
+3: /x SDIO->regs->RESP2 = 0x55303847
+2: /x SDIO->regs->RESP3 = 0x80020496
+1: /x SDIO->regs->RESP4 = 0x8f00c560
+$1 = {VOLTAGE_ACCEPTED = 1, CHECK_PATTERN = 170}
+$2 = {BUSY = 1, CCS = 1, S18A = 0, VOLTAGE_WINDOW = 65408}
+$3 = {MID = 3 '\003', OID = "SD", PNM = "SU08G", PSN = 33855119, PRV = {N = 8, 
+    M = 0}, MDT = {YEAR = 12, MONTH = 5}, CRC = 48}
+Continuing.
+
+Breakpoint 2, HardwareSDIO::getCSD (this=0x20001258)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:463
+463	    this->command(SEND_CSD, (uint32)RCA.RCA << 16); //CMD9
+8: /x SDIO->regs->STA = 0x40
+7: /x SDIO->regs->RESPCMD = 0x3f
+6: /x SDIO->regs->CMD = 0x4ca
+5: /x SDIO->regs->ARG = 0xaaaa0000
+4: /x SDIO->regs->RESP1 = 0x3534453
+3: /x SDIO->regs->RESP2 = 0x55303847
+2: /x SDIO->regs->RESP3 = 0x80020496
+1: /x SDIO->regs->RESP4 = 0x8f00c560
+$4 = {MID = 3 '\003', OID = "SD", PNM = "SU08G", PSN = 33855119, PRV = {N = 8, 
+    M = 0}, MDT = {YEAR = 12, MONTH = 5}, CRC = 48}
+Continuing.
+
+Breakpoint 3, HardwareSDIO::end (this=0x20001258)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:137
+137	void HardwareSDIO::end(void) {
+8: /x SDIO->regs->STA = 0x40
+7: /x SDIO->regs->RESPCMD = 0x3f
+6: /x SDIO->regs->CMD = 0x4c9
+5: /x SDIO->regs->ARG = 0xaaaa0000
+4: /x SDIO->regs->RESP1 = 0x400e0032
+3: /x SDIO->regs->RESP2 = 0x5b590000
+2: /x SDIO->regs->RESP3 = 0x3b377f80
+1: /x SDIO->regs->RESP4 = 0xa4040ae
+$5 = {capacity = SD_CAP_SDHC, CSD_STRUCTURE = 1, TAAC = 14 '\016', 
+  NSAC = 0 '\000', TRAN_SPEED = 50 '2', CCC = 1461, READ_BL_LEN = 9, 
+  READ_BL_PARTIAL = 0, WRITE_BLK_MISALIGN = 0, READ_BLK_MISALIGN = 0, 
+  DSR_IMP = 0, C_SIZE = 15159, VDD_R_CURR_MIN = 0, VDD_R_CURR_MAX = 0, 
+  VDD_W_CURR_MIN = 0, VDD_W_CURR_MAX = 0, C_SIZE_MULT = 6, ERASE_BLK_EN = 1, 
+  SECTOR_SIZE = 127, WP_GRP_SIZE = 0, WP_GRP_ENABLE = 0, R2W_FACTOR = 2, 
+  WRITE_BL_LEN = 9, WRITE_BL_PARTIAL = 0, FILE_FORMAT_GRP = 0, COPY = 1, 
+  PERM_WRITE_PROTECT = 0, TMP_WRITE_PROTECT = 0, FILE_FORMAT = 0, CRC = 87}
+$6 = {MID = 0x3, OID = {0x53, 0x44, 0x0}, PNM = {0x53, 0x55, 0x30, 0x38, 0x47, 
+    0x0}, PSN = 0x204968f, PRV = {N = 0x8, M = 0x0}, MDT = {YEAR = 0xc, 
+    MONTH = 0x5}, CRC = 0x30}
+$7 = {capacity = 0x2, CSD_STRUCTURE = 0x1, TAAC = 0xe, NSAC = 0x0, 
+  TRAN_SPEED = 0x32, CCC = 0x5b5, READ_BL_LEN = 0x9, READ_BL_PARTIAL = 0x0, 
+  WRITE_BLK_MISALIGN = 0x0, READ_BLK_MISALIGN = 0x0, DSR_IMP = 0x0, 
+  C_SIZE = 0x3b37, VDD_R_CURR_MIN = 0x0, VDD_R_CURR_MAX = 0x0, 
+  VDD_W_CURR_MIN = 0x0, VDD_W_CURR_MAX = 0x0, C_SIZE_MULT = 0x6, 
+  ERASE_BLK_EN = 0x1, SECTOR_SIZE = 0x7f, WP_GRP_SIZE = 0x0, 
+  WP_GRP_ENABLE = 0x0, R2W_FACTOR = 0x2, WRITE_BL_LEN = 0x9, 
+  WRITE_BL_PARTIAL = 0x0, FILE_FORMAT_GRP = 0x0, COPY = 0x1, 
+  PERM_WRITE_PROTECT = 0x0, TMP_WRITE_PROTECT = 0x0, FILE_FORMAT = 0x0, 
+  CRC = 0x57}
+#0  HardwareSDIO::end (this=0x20001258)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:137
+#1  0x08004236 in main () at main.cpp:44
+Continuing.
+
+Breakpoint 1, HardwareSDIO::getCID (this=0x20001258)
+    at libraries/Card/SecureDigital/HardwareSDIO.cpp:471
+471	    this->command(SEND_CID, (uint32)RCA.RCA << 16); //CMD10
+8: /x SDIO->regs->STA = 0x40
+7: /x SDIO->regs->RESPCMD = 0x3
+6: /x SDIO->regs->CMD = 0x443
+5: /x SDIO->regs->ARG = 0x0
+4: /x SDIO->regs->RESP1 = 0xaaaa4520
+3: /x SDIO->regs->RESP2 = 0x55303847
+2: /x SDIO->regs->RESP3 = 0x80020496
+1: /x SDIO->regs->RESP4 = 0x8f00c560
 A debugging session is active.
 
-	Inferior 1 [Remote target] will be detached.
+	Inferior 1 [Remote target] will be killed.
 
-Quit anyway? (y or n) Detached from remote process.
+Quit anyway? (y or n) 
